@@ -92,6 +92,6 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 
 ## Licenses and Copyrights
 
-* This project is released under MIT license.
-* The `esp_hal_smartled.rs` file is taken from (esp-hal-community repo)[https://github.com/esp-rs/esp-hal-community], which is licensed under MIT License and Apache License, version 2.0.
-* Some code snippets in the `gentable.c` were taken from (Barrier repo)[https://github.com/debauchee/barrier] and licensed under GPLv2. The main project only uses it's output, not the code itself.
+* This project is released under [MIT license](LICENSE).
+* The `esp_hal_smartled.rs` file is taken from [esp-hal-community repo](https://github.com/esp-rs/esp-hal-community), which is licensed under MIT License and Apache License, version 2.0.
+* Some code snippets in the `gentable.c` were taken from [Barrier repo](https://github.com/debauchee/barrier) and licensed under GPLv2. The main project only uses it's output, not the code itself.
