@@ -9,7 +9,6 @@ use core::{
 };
 
 use alloc::borrow::ToOwned;
-use const_env::from_env;
 use embassy_executor::Spawner;
 use embassy_futures::join::join5;
 use embassy_net::{Stack, StackResources};
@@ -40,11 +39,11 @@ use esparrier::{
 use log::{error, info, warn};
 
 #[cfg(feature = "led")]
-#[from_env]
+#[const_env::from_env]
 const LED_PIN: u8 = 21;
 
 #[cfg(feature = "smartled")]
-#[from_env]
+#[const_env::from_env]
 const SMART_LED_PIN: u8 = 35;
 
 macro_rules! mk_static {
