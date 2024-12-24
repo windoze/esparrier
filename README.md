@@ -59,6 +59,7 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 
 * If none of above features is enabled, the indicator function is disabled.
 
+* The program will output log to the UART0 by default, you can use `espmonitor` to monitor the log. If your board doesn't have separated UART0 port, you can disable the default features, this will disable the USB HID function, and you'll be able to see logs from USB OTG/J-TAG port. This is useful for debugging codes not related to USB HID.
 
 ## NOTES:
 
