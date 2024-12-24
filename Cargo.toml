@@ -73,6 +73,10 @@ embassy-usb = { version = "0.3.0", features = [
 ] }
 usbd-hid = "0.8.2"
 
+[features]
+default = []
+usb = []
+
 [profile.dev]
 # Rust debug is too slow.
 # For debug builds always builds with some optimization

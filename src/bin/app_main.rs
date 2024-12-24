@@ -89,10 +89,16 @@ async fn main(spawner: Spawner) {
     );
 
     // Build the builder.
+    #[cfg(feature = "usb")]
     let mut usb = builder.build();
+    #[cfg(not(feature = "usb"))]
+    let _usb = builder.build();
 
     // // Run the USB device.
+    #[cfg(feature = "usb")]
     let usb_fut = usb.run();
+    #[cfg(not(feature = "usb"))]
+    let usb_fut = async {};
 
     let (keyboard_writer, keyboard_out_fut) = start_hid_dev(keyboard);
     let (mouse_writer, mouse_out_fut) = start_hid_dev(mouse);
