@@ -13,7 +13,7 @@ env:
 
 jobs:
   rust-checks:
-    name: Rust Checks
+    name: Rust Build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
