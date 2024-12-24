@@ -24,7 +24,11 @@ jobs:
           - command: fmt
             args: --all -- --check --color always
           - command: clippy
-            args: --all-features --workspace -- -D warnings
+            args: --release --workspace -- -D warnings
+          - command: clippy
+            args: --release --features=led --workspace -- -D warnings
+          - command: clippy
+            args: --release --features=smartled --workspace -- -D warnings
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
