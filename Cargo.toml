@@ -65,6 +65,7 @@ serde-json-core = { version = "0.6.0" }
 embedded-storage = "0.3.1"
 esp-storage = { version = "0.4.0", features = ["esp32s3"] }
 thiserror-no-std = "2.0.2"
+fugit = "0.3.7"
 
 embassy-futures = "0.1.1"
 embassy-usb = { version = "0.3.0", features = [

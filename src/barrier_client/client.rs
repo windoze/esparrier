@@ -1,5 +1,6 @@
 use embassy_net::{tcp::TcpSocket, IpEndpoint, Ipv4Address, Stack};
 use embedded_io_async::Write;
+use esp_hal::{peripheral::Peripheral, timer::timg::Wdt};
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
 use log::{debug, error, info};
 
@@ -14,6 +15,7 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
     device_name: heapless::String<64>,
     stack: &'static Stack<WifiDevice<'_, WifiStaDevice>>,
     actor: &mut A,
+    mut watchdog: Wdt<<esp_hal::peripherals::TIMG1 as Peripheral>::P>,
 ) -> Result<(), BarrierError> {
     let screen_size: (u16, u16) = actor.get_screen_size().await?;
 
@@ -56,6 +58,7 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
     stream.write_str(device_name.as_ref()).await?;
 
     actor.connected().await?;
+    watchdog.feed();
 
     let mut last_seq_num: u32 = 0;
 
@@ -84,7 +87,11 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
             }
             Packet::KeepAlive => {
                 match packet_stream.write(Packet::KeepAlive).await {
-                    Ok(_) => Ok(()),
+                    Ok(_) => {
+                        debug!("Feed watchdog on KeepAlive");
+                        watchdog.feed();
+                        Ok(())
+                    }
                     Err(e) => {
                         actor.disconnected().await?;
                         Err(e)

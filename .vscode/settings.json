@@ -29,6 +29,7 @@
     "keepalive",
     "msos",
     "MSVC",
+    "Mwdt",
     "nostartfiles",
     "println",
     "QINF",

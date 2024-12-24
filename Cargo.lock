@@ -792,6 +792,7 @@ dependencies = [
  "esp-println",
  "esp-storage",
  "esp-wifi",
+ "fugit",
  "heapless",
  "log",
  "serde",

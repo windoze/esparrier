@@ -19,7 +19,12 @@ use embassy_usb::{
     Builder,
 };
 use esp_backtrace as _;
-use esp_hal::{otg_fs::Usb, prelude::*};
+use esp_hal::{
+    config::WatchdogStatus,
+    otg_fs::Usb,
+    prelude::*,
+    timer::timg::{MwdtStage, MwdtStageAction, TimerGroup},
+};
 use esp_wifi::{
     wifi::{
         ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
@@ -60,6 +65,17 @@ async fn main(spawner: Spawner) {
 
     // Load the configuration
     let app_config = mk_static!(AppConfig, AppConfig::load());
+
+    // Setup watchdog on TIMG1, which is by default disabled by the bootloader
+    let timg1 = TimerGroup::new(peripherals.TIMG1);
+    let mut wdt1 = timg1.wdt;
+    wdt1.set_timeout(
+        MwdtStage::Stage0,
+        fugit::MicrosDurationU64::secs(app_config.watchdog_timeout as u64),
+    );
+    wdt1.set_stage_action(MwdtStage::Stage0, MwdtStageAction::ResetSystem);
+    wdt1.enable();
+    wdt1.feed();
 
     // Initialize the USB peripheral
     let mut keyboard_state = embassy_usb::class::hid::State::new();
@@ -149,6 +165,7 @@ async fn main(spawner: Spawner) {
         consumer_writer,
     );
     let actuator_task = async {
+        wdt1.feed();
         Timer::after(Duration::from_millis(5000)).await;
         info!("Connecting to Barrier");
         start(
@@ -156,6 +173,7 @@ async fn main(spawner: Spawner) {
             app_config.screen_name.clone(),
             stack,
             &mut actuator,
+            wdt1,
         )
         .await
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
