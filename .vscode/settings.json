@@ -4,6 +4,7 @@
   "rust-analyzer.cargo.target": "xtensa-esp32s3-none-elf",
   "cSpell.words": [
     "asynch",
+    "baremetal",
     "CALV",
     "CCLP",
     "CIAK",
@@ -24,10 +25,15 @@
     "DMWM",
     "envrc",
     "espflash",
+    "espmonitor",
+    "esptool",
+    "espup",
     "EUNK",
+    "gentable",
     "heapless",
     "igmp",
     "keepalive",
+    "ldproxy",
     "msos",
     "MSVC",
     "Mwdt",
@@ -36,6 +42,7 @@
     "QINF",
     "rustc",
     "rustflags",
+    "Schoeneman",
     "serde",
     "smartled",
     "smoltcp",
@@ -46,6 +53,7 @@
     "uninit",
     "usbd",
     "Vbus",
+    "wakeup",
     "xtensa"
   ]
 }

@@ -9,6 +9,7 @@ use core::{
 };
 
 use alloc::borrow::ToOwned;
+use const_env::from_env;
 use embassy_executor::Spawner;
 use embassy_futures::join::join5;
 use embassy_net::{Stack, StackResources};
@@ -20,9 +21,7 @@ use embassy_usb::{
 };
 use esp_backtrace as _;
 use esp_hal::{
-    gpio::AnyPin,
     otg_fs::Usb,
-    peripherals::RMT,
     prelude::*,
     timer::timg::{MwdtStage, MwdtStageAction, TimerGroup},
 };
@@ -39,6 +38,14 @@ use esparrier::{
     IndicatorStatus, SynergyHid, UsbActuator,
 };
 use log::{error, info, warn};
+
+#[cfg(feature = "led")]
+#[from_env]
+const LED_PIN: u8 = 21;
+
+#[cfg(feature = "smartled")]
+#[from_env]
+const SMART_LED_PIN: u8 = 35;
 
 macro_rules! mk_static {
     ($t:ty,$val:expr) => {{
@@ -63,13 +70,29 @@ async fn main(spawner: Spawner) {
 
     let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
+
+    // No indicator
+    #[cfg(all(not(feature = "smartled"), not(feature = "led")))]
+    spawner.spawn(indicator_task(receiver)).ok();
+    // LED indicator
+    #[cfg(feature = "led")]
     spawner
         .spawn(indicator_task(
-            peripherals.RMT,
-            peripherals.GPIO35.into(),
+            // Is there any other way to obtain a pin from pin number?
+            unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
             receiver,
         ))
         .ok();
+    // SmartLED/NeoPixel indicator
+    #[cfg(feature = "smartled")]
+    spawner
+        .spawn(indicator_task(
+            peripherals.RMT,
+            unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+            receiver,
+        ))
+        .ok();
+
     let sender: IndicatorSender = channel.sender();
     sender.try_send(IndicatorStatus::WifiConnecting).ok();
 
@@ -385,7 +408,24 @@ fn start_hid_dev<'a, const N: usize>(
     (writer, out_fut)
 }
 
+#[cfg(feature = "led")]
 #[embassy_executor::task]
-async fn indicator_task(rmt: RMT, pin: AnyPin, receiver: IndicatorReceiver) {
+async fn indicator_task(pin: esp_hal::gpio::AnyPin, receiver: IndicatorReceiver) {
+    start_indicator(pin, receiver).await;
+}
+
+#[cfg(feature = "smartled")]
+#[embassy_executor::task]
+async fn indicator_task(
+    rmt: esp_hal::peripherals::RMT,
+    pin: esp_hal::gpio::AnyPin,
+    receiver: IndicatorReceiver,
+) {
     start_indicator(rmt, pin, receiver).await;
+}
+
+#[cfg(all(not(feature = "smartled"), not(feature = "led")))]
+#[embassy_executor::task]
+async fn indicator_task(receiver: IndicatorReceiver) {
+    start_indicator(receiver).await;
 }

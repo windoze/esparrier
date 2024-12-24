@@ -1,0 +1,22 @@
+{
+    "ssid": "my-wifi",
+    "password": "my-password",
+    "server": "192.168.100.200:24800",
+    "screen_name": "MY-SCREEN",
+    // Optional, default value is 1920
+    "screen_width": 1920,
+    // Optional, default value is 1080
+    "screen_height": 1080,
+    // Optional, default value is false
+    "flip_wheel": false
+    // USB VID, optional, default value is 3338(0x0d0a)
+    "vid": 3338
+    // USB PID, optional, default value is 49374(0xc0de)
+    "pid": 49374
+    // Optional, default value is "0d0a.com"
+    "manufacturer": "0d0a.com",
+    // Optional, default value is "Esparrier KVM"
+    "product": "Esparrier KVM",
+    // Optional, default value is "88888888"
+    "serial_number": "88888888",
+}

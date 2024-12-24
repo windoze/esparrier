@@ -8,19 +8,19 @@ use log::{debug, warn};
 use serde::Deserialize;
 
 #[from_env]
-pub const SSID: &str = "my-ssid";
+pub const WIFI_SSID: &str = "my-ssid";
 #[from_env]
-pub const PASSWORD: &str = "my-password";
+pub const WIFI_PASSWORD: &str = "my-password";
 #[from_env]
-pub const SERVER: &str = "192.168.100.200:24800";
+pub const BARRIER_SERVER: &str = "192.168.100.200:24800";
 #[from_env]
 pub const SCREEN_NAME: &str = "my-screen";
 #[from_env]
-pub const WIDTH: u16 = 1920;
+pub const SCREEN_WIDTH: u16 = 1920;
 #[from_env]
-pub const HEIGHT: u16 = 1080;
+pub const SCREEN_HEIGHT: u16 = 1080;
 #[from_env]
-pub const FLIP_WHEEL: bool = false;
+pub const REVERSED_WHEEL: bool = false;
 #[from_env]
 pub const USB_VID: u16 = 0x0d0a;
 #[from_env]
@@ -69,11 +69,11 @@ pub struct AppConfig {
 
 // Kinda stupid
 fn get_default_screen_width() -> u16 {
-    WIDTH
+    SCREEN_WIDTH
 }
 
 fn get_default_screen_height() -> u16 {
-    HEIGHT
+    SCREEN_HEIGHT
 }
 
 fn get_default_vid() -> u16 {
@@ -103,13 +103,13 @@ fn get_default_watchdog_timeout() -> u32 {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            ssid: String::from_str(SSID).unwrap(),
-            password: String::from_str(PASSWORD).unwrap(),
-            server: String::from_str(SERVER).unwrap(),
+            ssid: String::from_str(WIFI_SSID).unwrap(),
+            password: String::from_str(WIFI_PASSWORD).unwrap(),
+            server: String::from_str(BARRIER_SERVER).unwrap(),
             screen_name: String::from_str(SCREEN_NAME).unwrap(),
-            screen_width: WIDTH,
-            screen_height: HEIGHT,
-            flip_wheel: FLIP_WHEEL,
+            screen_width: SCREEN_WIDTH,
+            screen_height: SCREEN_HEIGHT,
+            flip_wheel: REVERSED_WHEEL,
             vid: USB_VID,
             pid: USB_PID,
             manufacturer: String::from_str(USB_MANUFACTURER).unwrap(),
