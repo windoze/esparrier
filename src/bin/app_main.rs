@@ -3,11 +3,23 @@
 
 extern crate alloc;
 
+use core::{
+    future::Future,
+    sync::atomic::{AtomicBool, Ordering},
+};
+
+use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
+use embassy_futures::join::join5;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
+use embassy_usb::{
+    class::hid::{HidReaderWriter, HidWriter, ReportId, RequestHandler},
+    control::OutResponse,
+    Builder,
+};
 use esp_backtrace as _;
-use esp_hal::prelude::*;
+use esp_hal::{otg_fs::Usb, prelude::*};
 use esp_wifi::{
     wifi::{
         ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
@@ -16,8 +28,8 @@ use esp_wifi::{
     EspWifiController,
 };
 
-use esparrier::{start, AppConfig, UsbActuator};
-use log::{error, info};
+use esparrier::{start, AppConfig, SynergyHid, UsbActuator};
+use log::{error, info, warn};
 
 macro_rules! mk_static {
     ($t:ty,$val:expr) => {{
@@ -46,6 +58,47 @@ async fn main(spawner: Spawner) {
 
     info!("Embassy initialized!");
 
+    // Load the configuration
+    let app_config = mk_static!(AppConfig, AppConfig::load());
+
+    // Initialize the USB peripheral
+    let mut keyboard_state = embassy_usb::class::hid::State::new();
+    let mut mouse_state = embassy_usb::class::hid::State::new();
+    let mut consumer_state = embassy_usb::class::hid::State::new();
+
+    let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
+    let mut builder = init_hid(
+        usb,
+        app_config.vid,
+        app_config.pid,
+        app_config.manufacturer.as_str(),
+        app_config.product.as_str(),
+        app_config.serial_number.as_str(),
+    );
+
+    let keyboard = init_hid_dev(
+        &mut builder,
+        &mut keyboard_state,
+        esparrier::ReportType::Keyboard,
+    );
+    let mouse = init_hid_dev(&mut builder, &mut mouse_state, esparrier::ReportType::Mouse);
+    let consumer = init_hid_dev(
+        &mut builder,
+        &mut consumer_state,
+        esparrier::ReportType::Consumer,
+    );
+
+    // Build the builder.
+    let mut usb = builder.build();
+
+    // // Run the USB device.
+    let usb_fut = usb.run();
+
+    let (keyboard_writer, keyboard_out_fut) = start_hid_dev(keyboard);
+    let (mouse_writer, mouse_out_fut) = start_hid_dev(mouse);
+    let (consumer_writer, consumer_out_fut) = start_hid_dev(consumer);
+
+    // Initialize WiFi
     let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
     let seed: u64 = ((rng.random() as u64) << 32) | (rng.random() as u64);
 
@@ -72,26 +125,46 @@ async fn main(spawner: Spawner) {
         )
     );
 
-    let app_config = AppConfig::load();
-
     spawner
-        .spawn(connection(controller, app_config.ssid, app_config.password))
+        .spawn(connection(
+            controller,
+            app_config.ssid.to_owned(),
+            app_config.password.to_owned(),
+        ))
         .ok();
     spawner.spawn(net_task(stack)).ok();
 
-    loop {
+    let mut actuator = UsbActuator::new(
+        app_config.screen_width,
+        app_config.screen_height,
+        app_config.flip_wheel,
+        keyboard_writer,
+        mouse_writer,
+        consumer_writer,
+    );
+    let actuator_task = async {
         Timer::after(Duration::from_millis(5000)).await;
-        let mut actuator = UsbActuator::new(app_config.screen_width, app_config.screen_height);
-
-        let actuator_task = start(
+        info!("Connecting to Barrier");
+        start(
             app_config.server.clone(),
             app_config.screen_name.clone(),
             stack,
             &mut actuator,
-        );
+        )
+        .await
+        .inspect_err(|e| error!("Failed to connect: {:?}", e))
+        .ok();
+        warn!("Disconnected from Barrier, reconnecting in 5 seconds");
+    };
 
-        actuator_task.await.ok();
-    }
+    join5(
+        usb_fut,
+        keyboard_out_fut,
+        mouse_out_fut,
+        consumer_out_fut,
+        actuator_task,
+    )
+    .await;
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/v0.22.0/examples/src/bin
 }
@@ -135,4 +208,138 @@ async fn connection(
 #[embassy_executor::task]
 async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
     stack.run().await
+}
+
+struct MyRequestHandler {}
+
+impl RequestHandler for MyRequestHandler {
+    fn get_report(&mut self, id: ReportId, _buf: &mut [u8]) -> Option<usize> {
+        info!("Get report for {:?}", id);
+        None
+    }
+
+    fn set_report(&mut self, id: ReportId, data: &[u8]) -> OutResponse {
+        info!("Set report for {:?}: {:?}", id, data);
+        OutResponse::Accepted
+    }
+
+    fn set_idle_ms(&mut self, id: Option<ReportId>, dur: u32) {
+        info!("Set idle rate for {:?} to {:?}", id, dur);
+    }
+
+    fn get_idle_ms(&mut self, id: Option<ReportId>) -> Option<u32> {
+        info!("Get idle rate for {:?}", id);
+        None
+    }
+}
+
+struct MyDeviceHandler {
+    configured: AtomicBool,
+}
+
+impl MyDeviceHandler {
+    fn new() -> Self {
+        MyDeviceHandler {
+            configured: AtomicBool::new(false),
+        }
+    }
+}
+
+impl embassy_usb::Handler for MyDeviceHandler {
+    fn enabled(&mut self, enabled: bool) {
+        self.configured.store(false, Ordering::Relaxed);
+        info!("Device {}", if enabled { "enabled" } else { "disabled" });
+    }
+
+    fn reset(&mut self) {
+        self.configured.store(false, Ordering::Relaxed);
+        info!("Bus reset, the Vbus current limit is 100mA");
+    }
+
+    fn addressed(&mut self, addr: u8) {
+        self.configured.store(false, Ordering::Relaxed);
+        info!("USB address set to: {}", addr);
+    }
+
+    fn configured(&mut self, configured: bool) {
+        self.configured.store(configured, Ordering::Relaxed);
+        if configured {
+            info!(
+                "Device configured, it may now draw up to the configured current limit from Vbus."
+            )
+        } else {
+            info!("Device is no longer configured, the Vbus current limit is 100mA.");
+        }
+    }
+}
+
+fn init_hid<'a>(
+    usb: Usb<'a>,
+    vid: u16,
+    pid: u16,
+    manufacturer: &'static str,
+    product: &'static str,
+    serial_number: &'static str,
+) -> Builder<'a, esp_hal::otg_fs::asynch::Driver<'a>> {
+    // Create the driver, from the HAL.
+    let ep_out_buffer = mk_static!([u8; 1024], [0u8; 1024]);
+    let config = esp_hal::otg_fs::asynch::Config::default();
+    let driver = esp_hal::otg_fs::asynch::Driver::new(usb, ep_out_buffer, config);
+    let mut config = embassy_usb::Config::new(vid, pid);
+    config.manufacturer = Some(manufacturer);
+    config.product = Some(product);
+    config.serial_number = Some(serial_number);
+    config.max_power = 150;
+    config.max_packet_size_0 = 64;
+
+    // Create embassy-usb DeviceBuilder using the driver and config.
+    // It needs some buffers for building the descriptors.
+    let config_descriptor = mk_static!([u8; 256], [0u8; 256]);
+    let bos_descriptor = mk_static!([u8; 256], [0u8; 256]);
+    // You can also add a Microsoft OS descriptor.
+    let msos_descriptor = mk_static!([u8; 256], [0u8; 256]);
+    let control_buf = mk_static!([u8; 256], [0u8; 256]);
+    let device_handler = mk_static!(MyDeviceHandler, MyDeviceHandler::new());
+
+    let mut builder = embassy_usb::Builder::new(
+        driver,
+        config,
+        config_descriptor,
+        bos_descriptor,
+        msos_descriptor,
+        control_buf,
+    );
+
+    builder.handler(device_handler);
+    builder
+}
+
+fn init_hid_dev<'a, const N: usize>(
+    builder: &mut Builder<'a, esp_hal::otg_fs::asynch::Driver<'a>>,
+    state: &'a mut embassy_usb::class::hid::State<'a>,
+    report_type: esparrier::ReportType,
+) -> HidReaderWriter<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N> {
+    // Create classes on the builder.
+    let config = embassy_usb::class::hid::Config {
+        report_descriptor: SynergyHid::get_report_descriptor(report_type).1,
+        request_handler: None,
+        poll_ms: 10,
+        max_packet_size: 64,
+    };
+
+    HidReaderWriter::<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N>::new(builder, state, config)
+}
+
+fn start_hid_dev<'a, const N: usize>(
+    dev: HidReaderWriter<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N>,
+) -> (
+    HidWriter<'a, esp_hal::otg_fs::asynch::Driver<'a>, N>,
+    impl Future<Output = ()> + use<'a, N>,
+) {
+    let (reader, writer) = dev.split();
+    let out_fut = async {
+        let mut request_handler = MyRequestHandler {};
+        reader.run(false, &mut request_handler).await;
+    };
+    (writer, out_fut)
 }

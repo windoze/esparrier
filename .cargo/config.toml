@@ -2,12 +2,13 @@
 runner = "espflash flash --monitor"
 
 [env]
-ESP_LOG="INFO"
+ESP_WIFI_RX_QUEUE_SIZE = "10"
+ESP_WIFI_TX_QUEUE_SIZE = "10"
+ESP_WIFI_TICK_RATE_HZ = "1000"
+ESP_LOG = "DEBUG"
 
 [build]
-rustflags = [
-  "-C", "link-arg=-nostartfiles",
-]
+rustflags = ["-C", "link-arg=-nostartfiles"]
 
 target = "xtensa-esp32s3-none-elf"
 

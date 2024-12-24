@@ -3,6 +3,7 @@
   "rust-analyzer.cargo.allTargets": false,
   "rust-analyzer.cargo.target": "xtensa-esp32s3-none-elf",
   "cSpell.words": [
+    "asynch",
     "CALV",
     "CCLP",
     "CIAK",
@@ -26,6 +27,7 @@
     "heapless",
     "igmp",
     "keepalive",
+    "msos",
     "MSVC",
     "nostartfiles",
     "println",
@@ -37,7 +39,10 @@
     "systimer",
     "timg",
     "Tlinkall",
+    "uart",
     "uninit",
+    "usbd",
+    "Vbus",
     "xtensa"
   ]
 }

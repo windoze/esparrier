@@ -21,16 +21,73 @@ pub const WIDTH: u16 = 1920;
 pub const HEIGHT: u16 = 1080;
 #[from_env]
 pub const FLIP_WHEEL: bool = false;
+#[from_env]
+pub const USB_VID: u16 = 0x0d0a;
+#[from_env]
+pub const USB_PID: u16 = 0xc0de;
+#[from_env]
+pub const USB_MANUFACTURER: &str = "0d0a.com";
+#[from_env]
+pub const USB_PRODUCT: &str = "Esparrier KVM";
+#[from_env]
+pub const USB_SERIAL_NUMBER: &str = "88888888";
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
+    // These fields must be set
     pub ssid: String<32>,
     pub password: String<64>,
     pub server: String<64>,
     pub screen_name: String<64>,
+
+    // Screen configuration
+    #[serde(default = "get_default_screen_width")]
     pub screen_width: u16,
+    #[serde(default = "get_default_screen_height")]
     pub screen_height: u16,
+    #[serde(default)]
     pub flip_wheel: bool,
+
+    // USB HID configuration
+    #[serde(default = "get_default_vid")]
+    pub vid: u16,
+    #[serde(default = "get_default_pid")]
+    pub pid: u16,
+    #[serde(default = "get_default_manufacturer")]
+    pub manufacturer: String<64>,
+    #[serde(default = "get_default_product")]
+    pub product: String<64>,
+    #[serde(default = "get_default_serial_number")]
+    pub serial_number: String<64>,
+}
+
+// Kinda stupid
+fn get_default_screen_width() -> u16 {
+    WIDTH
+}
+
+fn get_default_screen_height() -> u16 {
+    HEIGHT
+}
+
+fn get_default_vid() -> u16 {
+    USB_VID
+}
+
+fn get_default_pid() -> u16 {
+    USB_PID
+}
+
+fn get_default_manufacturer() -> String<64> {
+    String::from_str(USB_MANUFACTURER).unwrap()
+}
+
+fn get_default_product() -> String<64> {
+    String::from_str(USB_PRODUCT).unwrap()
+}
+
+fn get_default_serial_number() -> String<64> {
+    String::from_str(USB_SERIAL_NUMBER).unwrap()
 }
 
 impl Default for AppConfig {
@@ -43,6 +100,11 @@ impl Default for AppConfig {
             screen_width: WIDTH,
             screen_height: HEIGHT,
             flip_wheel: FLIP_WHEEL,
+            vid: USB_VID,
+            pid: USB_PID,
+            manufacturer: String::from_str(USB_MANUFACTURER).unwrap(),
+            product: String::from_str(USB_PRODUCT).unwrap(),
+            serial_number: String::from_str(USB_SERIAL_NUMBER).unwrap(),
         }
     }
 }

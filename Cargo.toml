@@ -9,20 +9,29 @@ esp-backtrace = { version = "0.14.2", features = [
     "exception-handler",
     "panic-handler",
     "println",
-]}
-
-esp-hal = { version = "0.22.0", features = [
-    "esp32s3",
 ] }
-esp-println = { version = "0.12.0", features = ["esp32s3", "log"] }
+
+esp-hal = { version = "0.22.0", features = ["esp32s3"] }
+esp-println = { version = "0.12.0", default-features = false, features = [
+    "colors",
+    "critical-section",
+    "esp32s3",
+    "log",
+    "uart",
+] }
 log = { version = "0.4.21" }
 esp-alloc = { version = "0.5.0" }
 embedded-io = "0.6.1"
 
 embedded-io-async = "0.6.1"
-embassy-net = { version = "0.4.0", features = [ "tcp", "udp", "dhcpv4", "medium-ethernet"] }
+embassy-net = { version = "0.4.0", features = [
+    "tcp",
+    "udp",
+    "dhcpv4",
+    "medium-ethernet",
+] }
 
-esp-wifi = { version = "0.11.0", default-features=false, features = [
+esp-wifi = { version = "0.11.0", default-features = false, features = [
     "esp32s3",
     "utils",
     "wifi",
@@ -41,12 +50,10 @@ smoltcp = { version = "0.11.0", default-features = false, features = [
     "socket-tcp",
     "socket-udp",
 ] }
-embassy-executor = { version = "0.6.0",  features = [
-    "task-arena-size-12288",
-] }
-embassy-time     = { version = "0.3.1",  features = ["generic-queue-8"] }
-esp-hal-embassy  = { version = "0.5.0",  features = ["esp32s3"] }
-static_cell      = { version = "2.1.0",  features = ["nightly"] }
+embassy-executor = { version = "0.6.0", features = ["task-arena-size-32768"] }
+embassy-time = { version = "0.3.1", features = ["generic-queue-8"] }
+esp-hal-embassy = { version = "0.5.0", features = ["esp32s3"] }
+static_cell = { version = "2.1.0", features = ["nightly"] }
 critical-section = "1.2.0"
 
 const_env = "0.1"
@@ -58,6 +65,13 @@ serde-json-core = { version = "0.6.0" }
 embedded-storage = "0.3.1"
 esp-storage = { version = "0.4.0", features = ["esp32s3"] }
 thiserror-no-std = "2.0.2"
+
+embassy-futures = "0.1.1"
+embassy-usb = { version = "0.3.0", features = [
+    "max-handler-count-4",
+    "max-interface-count-4",
+] }
+usbd-hid = "0.8.2"
 
 [profile.dev]
 # Rust debug is too slow.
