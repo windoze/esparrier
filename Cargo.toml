@@ -74,6 +74,10 @@ embassy-usb = { version = "0.3.0", features = [
 ] }
 usbd-hid = "0.8.2"
 
+embassy-sync = "0.6.1"
+smart-leds-trait = "0.3.0"
+smart-leds = "0.4.0"
+
 [features]
 default = []
 usb = []

@@ -2,11 +2,15 @@
 
 mod barrier_client;
 mod config;
+mod esp_hal_smartled;
+mod indicator;
 mod synergy_hid;
 mod usb_actuator;
 
 pub use barrier_client::*;
 pub use config::AppConfig;
+pub use esp_hal_smartled::*;
+pub use indicator::*;
 pub use synergy_hid::{ReportType, SynergyHid};
 pub use usb_actuator::UsbActuator;
 

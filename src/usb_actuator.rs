@@ -2,7 +2,7 @@ use log::{debug, info, warn};
 
 use crate::{
     synergy_hid::{ReportType, SynergyHid},
-    Actuator, BarrierError, ReportWriter,
+    Actuator, BarrierError, IndicatorSender, IndicatorStatus, ReportWriter,
 };
 
 pub struct UsbActuator<'a, 'b, 'c> {
@@ -11,6 +11,7 @@ pub struct UsbActuator<'a, 'b, 'c> {
     x: u16,
     y: u16,
     hid: SynergyHid,
+    indicator: IndicatorSender,
     keyboard_writer: ReportWriter<'a, 8>,
     mouse_writer: ReportWriter<'b, 7>,
     consumer_writer: ReportWriter<'c, 2>,
@@ -21,6 +22,7 @@ impl<'a, 'b, 'c> UsbActuator<'a, 'b, 'c> {
         width: u16,
         height: u16,
         flip_mouse_wheel: bool,
+        indicator: IndicatorSender,
         keyboard_writer: ReportWriter<'a, 8>,
         mouse_writer: ReportWriter<'b, 7>,
         consumer_writer: ReportWriter<'c, 2>,
@@ -31,6 +33,7 @@ impl<'a, 'b, 'c> UsbActuator<'a, 'b, 'c> {
             x: 0,
             y: 0,
             hid: SynergyHid::new(flip_mouse_wheel),
+            indicator,
             keyboard_writer,
             mouse_writer,
             consumer_writer,
@@ -56,13 +59,13 @@ impl<'a, 'b, 'c> UsbActuator<'a, 'b, 'c> {
 impl<'a, 'b, 'c> Actuator for UsbActuator<'a, 'b, 'c> {
     async fn connected(&mut self) -> Result<(), BarrierError> {
         info!("Connected to Barrier");
-        // self.sender.send(IndicatorStatus::ServerConnected).await;
+        self.indicator.send(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 
     async fn disconnected(&mut self) -> Result<(), BarrierError> {
         warn!("Disconnected from Barrier");
-        // self.sender.send(IndicatorStatus::ServerDisconnected).await;
+        self.indicator.send(IndicatorStatus::WifiConnected).await;
         Ok(())
     }
 
@@ -141,7 +144,7 @@ impl<'a, 'b, 'c> Actuator for UsbActuator<'a, 'b, 'c> {
 
     async fn enter(&mut self) -> Result<(), BarrierError> {
         info!("Entering");
-        // self.sender.send(IndicatorStatus::EnterScreen).await;
+        self.indicator.send(IndicatorStatus::Active).await;
         Ok(())
     }
 
@@ -154,7 +157,7 @@ impl<'a, 'b, 'c> Actuator for UsbActuator<'a, 'b, 'c> {
         self.send_report(ret).await;
         let ret = self.hid.clear(ReportType::Consumer, &mut report);
         self.send_report(ret).await;
-        // self.sender.send(IndicatorStatus::LeaveScreen).await;
+        self.indicator.send(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 }

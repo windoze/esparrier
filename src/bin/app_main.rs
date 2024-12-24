@@ -20,8 +20,9 @@ use embassy_usb::{
 };
 use esp_backtrace as _;
 use esp_hal::{
-    config::WatchdogStatus,
+    gpio::AnyPin,
     otg_fs::Usb,
+    peripherals::RMT,
     prelude::*,
     timer::timg::{MwdtStage, MwdtStageAction, TimerGroup},
 };
@@ -33,7 +34,10 @@ use esp_wifi::{
     EspWifiController,
 };
 
-use esparrier::{start, AppConfig, SynergyHid, UsbActuator};
+use esparrier::{
+    start, start_indicator, AppConfig, IndicatorChannel, IndicatorReceiver, IndicatorSender,
+    IndicatorStatus, SynergyHid, UsbActuator,
+};
 use log::{error, info, warn};
 
 macro_rules! mk_static {
@@ -56,6 +60,18 @@ async fn main(spawner: Spawner) {
     });
 
     esp_alloc::heap_allocator!(72 * 1024);
+
+    let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
+    let receiver = channel.receiver();
+    spawner
+        .spawn(indicator_task(
+            peripherals.RMT,
+            peripherals.GPIO35.into(),
+            receiver,
+        ))
+        .ok();
+    let sender: IndicatorSender = channel.sender();
+    sender.try_send(IndicatorStatus::WifiConnecting).ok();
 
     let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER)
         .split::<esp_hal::timer::systimer::Target>();
@@ -160,6 +176,7 @@ async fn main(spawner: Spawner) {
         app_config.screen_width,
         app_config.screen_height,
         app_config.flip_wheel,
+        sender,
         keyboard_writer,
         mouse_writer,
         consumer_writer,
@@ -366,4 +383,9 @@ fn start_hid_dev<'a, const N: usize>(
         reader.run(false, &mut request_handler).await;
     };
     (writer, out_fut)
+}
+
+#[embassy_executor::task]
+async fn indicator_task(rmt: RMT, pin: AnyPin, receiver: IndicatorReceiver) {
+    start_indicator(rmt, pin, receiver).await;
 }
