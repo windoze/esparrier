@@ -323,7 +323,7 @@ fn init_hid_dev<'a, const N: usize>(
     let config = embassy_usb::class::hid::Config {
         report_descriptor: SynergyHid::get_report_descriptor(report_type).1,
         request_handler: None,
-        poll_ms: 10,
+        poll_ms: 1,
         max_packet_size: 64,
     };
 
