@@ -38,7 +38,7 @@ This is a re-write of the original [Esparrier-IDF project](https://github.com/wi
 
 ## Update Configurations
 
-First, you need to install `esptool.py`, which can be installed with `pip install esptool`.
+First, you need to install `esptool.py`, which can be installed with `pip install esptool`. Refer to the [official documentation](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html) for more information.
 
 ### Prepare and Update Configurations
 
@@ -61,13 +61,35 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 
 * The program will output log to the UART0 by default, you can use `espmonitor` to monitor the log. If your board doesn't have separated UART0 port, you can disable the default features, this will disable the USB HID function, and you'll be able to see logs from USB OTG/J-TAG port. This is useful for debugging codes not related to USB HID.
 
+## Use pre-built binaries
+
+**NOTE**: Using pre-built binaries is not recommended, because it cannot utilize the full potential of the board, and you may need to change the code to fit your board. So you should build the binary yourself when possible.
+
+1. Install `esptool.py` as described in the previous section. You don't need to install Rust toolchain and any other ESP32 tools.
+
+2. Download the binary from the [releases page](https://github.com/windoze/esparrier/releases).
+
+3. Extract the binary from the archive. There are 3 pre-built binaries in the archive, choose the one that fits your board.
+    * `esparrier.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable.
+    * `esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite).
+    * `esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
+
+4. Prepare the `config.json` file as described in the previous section.
+
+5. Put the board into the download mode, then flash the binary and config to the board. Note the USB device name may vary, you may need to change it to the correct one. On most Linux systems, the device name is `/dev/ttyACMx`, where `x` is a number, you can find the correct device name by running `ls /dev/ttyACM*`.
+    ```bash
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x10000 /path/to/esparrier.bin 0x9000 /path/to/config.json
+    ```
+
+6. Exit the download mode and reset the board, you should see the new USB HID device on your host.
+
 ## NOTES:
 
 **WARNING**: This program is only for testing purpose. It is not a complete implementation of Barrier client. There could be a lot of bugs and missing features. It has no concept of security, neither on the WiFi nor on the USB. It is not recommended to use it in anywhere but a private environment.
 
-* This code is developed and tested on [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite), other ESP32S3 boards may not work, or you need to change the code.
-* A board with external antenna is strongly recommended, the ESP32S3 support 2.4G WiFi only and this band is really crowded, you may experience jittering and lagging if the wireless connection is not stable.
-* The code doesn't work on ESP8266/ESP32/ESP32C3 because they don't have required USB features.
+* This code is developed and tested on [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite), other ESP32S3 boards may not work, or you need to change the code to fit your board.
+* A board with external antenna is strongly recommended, the ESP32S3 supports 2.4G WiFi only and this band is really crowded, you may experience jittering and lagging if the wireless connection is not stable.
+* The code doesn't work on ESP8266/ESP32/ESP32C3 because they don't have required USB features, ESP32S2 may work with adaptation but it's not tested.
 * It doesn't support TLS, so you must run Barrier server without TLS.
 * The mouse is configured to the absolute mode, you must set the correct screen resolution before building, otherwise the mouse may not work properly.
 * Clipboard, file transfer, and cross-screen drag and drop are not supported due to the technical limitation, there is no way a standard USB HID device can do that, maybe an auxiliary app running on the host can help but I still don't have clear idea.
@@ -78,6 +100,7 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 * The USB remote wakeup may not work because the standard forbids a suspended device consume too much current but this program needs much more than the standard says to keep Wi-Fi connected. I still haven't figured out how to keep the program running with the current <2.5mA. Of course you can choose a board with external power source such as a battery, but it seems to be an overkill.
 * The program can accept inputs only **after** the board successfully connects to the WiFi and Barrier server, it may be too late to use the board as a USB keyboard/mouse in BIOS/EFI, some main board that has always-on USB ports may work, but I haven't tested it, or you can use a USB hub that can supply power even if the host is off.
 * The watchdog will reset the board if it doesn't receive heartbeat from the Barrier server, or the program itself runs out of control and doesn't process the heartbeat, for the number of seconds defined in `WATCHDOG_TIMEOUT` environment variable. The default watchdog timeout is 15 seconds, as the default Barrier heartbeat interval is 5 seconds, you may need to change the watchdog timeout if the Barrier server has a long heartbeat interval.
+* The clipboard sharing function can be achieved with a [ClipSync app](https://github.com/windoze/clip-sync), or the OS's built-in clipboard sharing function, such as [Clip Sync on Windows](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) or [Universal Clipboard on macOs](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac), but it's not implemented in this program.
 
 ## TODO:
 
