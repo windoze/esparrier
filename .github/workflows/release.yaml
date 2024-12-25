@@ -30,8 +30,10 @@ jobs:
           ldproxy: false
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
+      - name: Install cargo-binstall
+        run: cargo install cargo-binstall
       - name: Install espflash
-        run: cargo install espflash cargo-espflash
+        run: cargo binstall espflash cargo-espflash
       - name: Build binary
         run: cargo espflash save-image --release --chip esp32s3 esparrier.bin
       - name: Build M5AtomS3 Lite binary (with `smartled` feature enabled at PIN 35)
