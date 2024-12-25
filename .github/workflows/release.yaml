@@ -13,6 +13,8 @@ env:
 jobs:
   rust-checks:
     name: Rust Build
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
