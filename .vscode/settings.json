@@ -5,6 +5,7 @@
   "cSpell.words": [
     "asynch",
     "baremetal",
+    "buildtargets",
     "CALV",
     "CCLP",
     "CIAK",
@@ -46,6 +47,8 @@
     "serde",
     "smartled",
     "smoltcp",
+    "softprops",
+    "Swatinem",
     "systimer",
     "timg",
     "Tlinkall",
@@ -54,6 +57,7 @@
     "usbd",
     "Vbus",
     "wakeup",
+    "XIAO",
     "xtensa"
   ]
 }

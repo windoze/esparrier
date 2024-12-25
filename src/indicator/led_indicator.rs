@@ -10,9 +10,9 @@ struct LedConfig {
 impl LedConfig {
     fn get_interval(&self, is_on: bool) -> Duration {
         if is_on {
-            self.off_duration
-        } else {
             self.on_duration
+        } else {
+            self.off_duration
         }
     }
 }
@@ -44,14 +44,14 @@ pub async fn start_indicator(pin: AnyPin, receiver: IndicatorReceiver) {
     let mut is_on = false;
 
     loop {
-        let led_config = get_led_config(status);
-        let interval = led_config.get_interval(is_on);
-        is_on = !is_on;
         if is_on {
             p.set_high();
         } else {
             p.set_low();
         }
+        let led_config = get_led_config(status);
+        let interval = led_config.get_interval(is_on);
+        is_on = !is_on;
 
         if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
             status = s;

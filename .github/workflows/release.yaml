@@ -2,9 +2,8 @@ name: Release
 
 on:
   push:
-    paths-ignore:
-      - "**/README.md"
-  pull_request:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
 
 env:
@@ -20,6 +19,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Get the release version from the tag
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: Setup Rust
         uses: esp-rs/xtensa-toolchain@v1.5
         with:
@@ -28,10 +30,24 @@ jobs:
           ldproxy: false
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
-      - name: Run command
-        run: cargo build --release
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Build binary
+        run: cargo espflash save-image --release --chip esp32s3 esparrier.bin
+      - name: Build M5AtomS3 Lite binary (with `smartled` feature enabled at PIN 35)
+        run: cargo espflash save-image --release --chip esp32s3 --features smartled  esparrier-m5atoms3-lite.bin
+      - name: Build XIAO-ESP32S3 binary (with `led` feature enabled at PIN 21)
+        run: cargo espflash save-image --release --chip esp32s3 --features led  esparrier-xiao-esp32s3.bin
+      - name: Build archive
+        shell: bash
+        run: |
+          package_name="esparrier"
+          dirname="$package_name-${{ env.VERSION }}"
+          mv "esparrier.bin" "$dirname"
+          mv "esparrier-m5atoms3-lite.bin" "$dirname"
+          mv "esparrier-xiao-esp32s3.bin" "$dirname"
+          tar -czf "$dirname.tar.gz" "$dirname"
+          echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: artifact
-          path: target/xtensa-esp32s3-none-elf/release/app_main
+          files: |
+            ${{ env.ASSET }}
