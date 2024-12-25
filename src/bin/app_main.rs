@@ -24,6 +24,7 @@ use esp_hal::{
     prelude::*,
     timer::timg::{MwdtStage, MwdtStageAction, TimerGroup},
 };
+use esp_println::println;
 use esp_wifi::{
     wifi::{
         ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
@@ -36,7 +37,7 @@ use esparrier::{
     start, start_indicator, AppConfig, IndicatorChannel, IndicatorReceiver, IndicatorSender,
     IndicatorStatus, SynergyHid, UsbActuator,
 };
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 
 #[cfg(feature = "led")]
 #[const_env::from_env]
@@ -58,6 +59,12 @@ macro_rules! mk_static {
 #[main]
 async fn main(spawner: Spawner) {
     esp_println::logger::init_logger_from_env();
+
+    println!(
+        "Firmware version: {} {}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
 
     let peripherals = esp_hal::init({
         let mut config = esp_hal::Config::default();
@@ -152,7 +159,11 @@ async fn main(spawner: Spawner) {
     #[cfg(feature = "usb")]
     let usb_fut = usb.run();
     #[cfg(not(feature = "usb"))]
-    let usb_fut = async {};
+    let usb_fut = async {
+        loop {
+            Timer::after(Duration::from_secs(1)).await;
+        }
+    };
 
     let (keyboard_writer, keyboard_out_fut) = start_hid_dev(keyboard);
     let (mouse_writer, mouse_out_fut) = start_hid_dev(mouse);
@@ -194,6 +205,25 @@ async fn main(spawner: Spawner) {
         .ok();
     spawner.spawn(net_task(stack)).ok();
 
+    info!("Waiting for WiFi to connect...");
+    loop {
+        if stack.is_link_up() {
+            break;
+        }
+        Timer::after(Duration::from_millis(500)).await;
+    }
+    wdt1.feed();
+
+    info!("Waiting to get IP address...");
+    loop {
+        if let Some(config) = stack.config_v4() {
+            info!("Got IP: {}", config.address);
+            break;
+        }
+        Timer::after(Duration::from_millis(500)).await;
+    }
+    wdt1.feed();
+
     // Actuator task is responsible for connecting to Barrier and sending HID reports
     let mut actuator = UsbActuator::new(
         app_config.screen_width,
@@ -205,8 +235,6 @@ async fn main(spawner: Spawner) {
         consumer_writer,
     );
     let actuator_task = async {
-        wdt1.feed();
-        Timer::after(Duration::from_millis(5000)).await;
         info!("Connecting to Barrier");
         start(
             app_config.server.clone(),
@@ -224,7 +252,8 @@ async fn main(spawner: Spawner) {
     // Wait for anything to finish, then restart.
     // These are all necessary tasks, none of them should exit prematurely.
     let hid_reader_fut = select3(keyboard_out_fut, mouse_out_fut, consumer_out_fut);
-    select3(usb_fut, hid_reader_fut, actuator_task).await;
+    select3(actuator_task, usb_fut, hid_reader_fut).await;
+    warn!("Critical task exited, restarting...");
 }
 
 #[embassy_executor::task]
@@ -233,7 +262,7 @@ async fn connection(
     ssid: heapless::String<32>,
     password: heapless::String<64>,
 ) {
-    info!("start connection task");
+    debug!("start connection task");
     loop {
         if esp_wifi::wifi::wifi_state() == WifiState::StaConnected {
             // wait until we're no longer connected
@@ -251,7 +280,7 @@ async fn connection(
             controller.start_async().await.unwrap();
             info!("Wifi started!");
         }
-        info!("About to connect...");
+        debug!("About to connect...");
 
         match controller.connect_async().await {
             Ok(_) => info!("Wifi connected!"),
