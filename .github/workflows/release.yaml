@@ -28,12 +28,12 @@ jobs:
           default: true
           buildtargets: esp32
           ldproxy: false
-      - name: Enable caching
-        uses: Swatinem/rust-cache@v2
       - name: Install cargo-binstall
         run: cargo install cargo-binstall
       - name: Install espflash
         run: cargo binstall espflash cargo-espflash
+      - name: Enable caching
+        uses: Swatinem/rust-cache@v2
       - name: Build binary
         run: cargo espflash save-image --release --chip esp32s3 esparrier.bin
       - name: Build M5AtomS3 Lite binary (with `smartled` feature enabled at PIN 35)
@@ -45,6 +45,7 @@ jobs:
         run: |
           package_name="esparrier"
           dirname="$package_name-${{ env.VERSION }}"
+          mkdir -p "$dirname"
           mv "esparrier.bin" "$dirname"
           mv "esparrier-m5atoms3-lite.bin" "$dirname"
           mv "esparrier-xiao-esp32s3.bin" "$dirname"
