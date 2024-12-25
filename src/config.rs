@@ -151,10 +151,15 @@ fn is_valid_json_byte(b: u8) -> bool {
 }
 
 fn json_range(buf: &[u8]) -> &[u8] {
-    let start = buf.iter().position(|&b| b == b'{').unwrap_or(0);
-    buf[start..]
+    let start = buf.iter().position(|&b| b == b'{').unwrap_or_default();
+    // Find the first invalid JSON byte
+    let end = buf[start..]
         .iter()
         .position(|&b| !is_valid_json_byte(b))
-        .map(|i: usize| &buf[start..i])
-        .unwrap_or(&buf[start..])
+        .unwrap_or_default();
+    if end > 0 {
+        &buf[start..start + end]
+    } else {
+        &buf[start..]
+    }
 }

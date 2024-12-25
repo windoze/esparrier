@@ -42,6 +42,7 @@
     "nostartfiles",
     "println",
     "QINF",
+    "rposition",
     "rustc",
     "rustflags",
     "Schoeneman",

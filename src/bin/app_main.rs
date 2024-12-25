@@ -10,7 +10,7 @@ use core::{
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
-use embassy_futures::join::join5;
+use embassy_futures::select::select3;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
 use embassy_usb::{
@@ -194,6 +194,7 @@ async fn main(spawner: Spawner) {
         .ok();
     spawner.spawn(net_task(stack)).ok();
 
+    // Actuator task is responsible for connecting to Barrier and sending HID reports
     let mut actuator = UsbActuator::new(
         app_config.screen_width,
         app_config.screen_height,
@@ -217,19 +218,13 @@ async fn main(spawner: Spawner) {
         .await
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .ok();
-        warn!("Disconnected from Barrier, reconnecting in 5 seconds");
+        warn!("Disconnected from Barrier, restarting...");
     };
 
-    join5(
-        usb_fut,
-        keyboard_out_fut,
-        mouse_out_fut,
-        consumer_out_fut,
-        actuator_task,
-    )
-    .await;
-
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/v0.22.0/examples/src/bin
+    // Wait for anything to finish, then restart.
+    // These are all necessary tasks, none of them should exit prematurely.
+    let hid_reader_fut = select3(keyboard_out_fut, mouse_out_fut, consumer_out_fut);
+    select3(usb_fut, hid_reader_fut, actuator_task).await;
 }
 
 #[embassy_executor::task]
