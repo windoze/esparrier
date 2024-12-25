@@ -1,14 +1,24 @@
 {
+    // WiFi SSID and password, required
     "ssid": "my-wifi",
     "password": "my-password",
+    // Barrier server IP address and port, required
+    // NOTE: Must be IPv4 address, host/dns name or IPv6 address are not supported!
     "server": "192.168.100.200:24800",
+    // The screen name configured to be accepted by the Barrier server, required
     "screen_name": "MY-SCREEN",
-    // Optional, default value is 1920
+
+    // Optional configurations, can be omitted to use default values
+    
+    // The physical width of the screen, optional, default value is 1920
     "screen_width": 1920,
-    // Optional, default value is 1080
+    // The physical height of the screen, optional, default value is 1080
     "screen_height": 1080,
-    // Optional, default value is false
+    // Set to `true` to reverse the direction of the mouse wheels, optional, default value is false
     "flip_wheel": false
+
+    // Below are internal configurations, usually you don't need to change them and can be omitted
+
     // USB VID, optional, default value is 3338(0x0d0a)
     "vid": 3338
     // USB PID, optional, default value is 49374(0xc0de)
@@ -18,5 +28,5 @@
     // Optional, default value is "Esparrier KVM"
     "product": "Esparrier KVM",
     // Optional, default value is "88888888"
-    "serial_number": "88888888",
+    "serial_number": "88888888"
 }

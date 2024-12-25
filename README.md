@@ -45,15 +45,28 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 1. Create a JSON file, refer to [config.json.example](config.json.example) for the format.
 2. Put the board into the download mode, then use `esptool.py` to flash the NVS partition.
     ```bash
-    esptool.py --chip esp32s3 --port /dev/ttyUSB0 write_flash 0x9000 /path/to/config.json
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x9000 /path/to/config.json
     ```
 3. Exit the download mode and reset the board, the new configurations should be applied.
 
 ## Build for other ESP32S3 boards
 
-* If there is a RGB LED (WS2812B) on the board, you can use `smartled` feature to enable the LED, and you need to set the environment `SMART_LED_PIN` to the correct pin number, on M5AtomS3/Lite, it's 35, on M5StampS3, it's 21.
+* It's recommended to erase the flash before the first time flashing the binary to the board, you can do this with `esptool.py` or `cargo-espflash`:
+    ```bash
+    # With cargo-espflash
+    cargo espflash erase-flash --chip esp32s3 --port /dev/ttyACM0
+    
+    # With esptool.py
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
+    ```
 
-* If there is a ordinary LED on the board, you can use `led` feature to enable it, and you need to set the environment `LED_PIN` to the correct pin number.
+* If there is a RGB LED (WS2812B) on the board, you can use `smartled` feature to enable the LED, and you need to set the environment `SMART_LED_PIN` to the correct pin number, on M5AtomS3/Lite, it's 35, on M5StampS3, it's 21.
+    * E.g. to build and flash the binary for M5StampS3:
+        ```bash
+        SMART_LED_PIN=21 cargo run --release --features smartled
+        ```
+
+* If there is an ordinary LED on the board, you can use `led` feature to enable it, and you need to set the environment `LED_PIN` to the correct pin number.
 
 * Do not enable more than one of above features, the program won't compile.
 
