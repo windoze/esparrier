@@ -47,24 +47,6 @@ struct LedConfig {
     off_color: RGB8,
 }
 
-impl LedConfig {
-    fn get_interval(&self, is_on: bool) -> Duration {
-        if is_on {
-            self.off_duration
-        } else {
-            self.on_duration
-        }
-    }
-
-    fn get_color(&self, is_on: bool) -> RGB8 {
-        if is_on {
-            self.off_color
-        } else {
-            self.on_color
-        }
-    }
-}
-
 fn get_led_config(status: IndicatorStatus) -> LedConfig {
     match status {
         IndicatorStatus::WifiConnecting => LedConfig {
@@ -100,17 +82,25 @@ pub async fn start_indicator(rmt: RMT, pin: AnyPin, receiver: IndicatorReceiver)
     let mut led = SmartLedsAdapter::new(rmt.channel0, pin, rmt_buffer);
 
     let mut status = IndicatorStatus::WifiConnecting;
-    let mut is_on = false;
 
     loop {
         let led_config = get_led_config(status);
-        let interval = led_config.get_interval(is_on);
-        let color = [led_config.get_color(is_on)];
-        is_on = !is_on;
-        led.write(brightness(gamma(color.into_iter()), 10)).unwrap();
-
-        if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
-            status = s;
+        let interval = led_config.on_duration;
+        if interval.as_micros() > 0 {
+            let color = [led_config.on_color];
+            led.write(brightness(gamma(color.into_iter()), 10)).unwrap();
+            if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
+                status = s;
+                continue;
+            }
+        }
+        let interval = led_config.off_duration;
+        if interval.as_micros() > 0 {
+            let color = [led_config.off_color];
+            led.write(brightness(gamma(color.into_iter()), 10)).unwrap();
+            if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
+                status = s;
+            }
         }
     }
 }
