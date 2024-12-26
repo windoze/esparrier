@@ -1,5 +1,7 @@
 Esparrier
 =========
+[![en](https://img.shields.io/badge/lang-en-blue.svg)](https://github.com/windoze/esparrier/blob/master/README.md)
+[![zh-cn](https://img.shields.io/badge/lang-zh--cn-green.svg)](https://github.com/windoze/esparrier/blob/master/README.zh-cn.md)
 
 Esparrier is a [Barrier](https://github.com/debauchee/barrier) client for ESP32S3.
 

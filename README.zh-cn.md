@@ -1,6 +1,8 @@
 Esparrier
 =========
 
+[![en](https://img.shields.io/badge/lang-en-blue.svg)](https://github.com/windoze/esparrier/blob/master/README.md)
+
 Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/barrier) 客户端。
 
 这是对原有 [Esparrier-IDF 项目](https://github.com/windoze/esparrier-idf) 的重写，从 `esp-idf-hal` 迁移到 `esp-hal`。一些功能尚未完全实现，例如剪贴板支持。
