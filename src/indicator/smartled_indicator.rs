@@ -3,18 +3,12 @@ use esp_hal::{gpio::AnyPin, peripherals::RMT, prelude::*, rmt::Rmt};
 use smart_leds::{
     brightness, gamma,
     hsv::{hsv2rgb, Hsv},
-    SmartLedsWrite, RGB8,
+    SmartLedsWrite,
 };
 
 use crate::{smartLedBuffer, SmartLedsAdapter};
 
 use super::{IndicatorReceiver, IndicatorStatus};
-
-const BLACK: Hsv = Hsv {
-    hue: 0,
-    sat: 0,
-    val: 0,
-};
 
 const RED: Hsv = Hsv {
     hue: 0,
@@ -40,39 +34,64 @@ const GREEN: Hsv = Hsv {
     val: 255,
 };
 
-struct LedConfig {
-    on_duration: Duration,
-    on_color: RGB8,
-    off_duration: Duration,
-    off_color: RGB8,
+async fn wait_for_duration(
+    duration: Duration,
+    receiver: IndicatorReceiver,
+) -> Result<(), IndicatorStatus> {
+    match embassy_time::with_timeout(duration, receiver.receive()).await {
+        Ok(s) => Err(s),
+        Err(_) => Ok(()),
+    }
 }
 
-fn get_led_config(status: IndicatorStatus) -> LedConfig {
-    match status {
-        IndicatorStatus::WifiConnecting => LedConfig {
-            on_duration: Duration::from_millis(100),
-            on_color: hsv2rgb(RED),
-            off_duration: Duration::from_millis(100),
-            off_color: hsv2rgb(BLACK),
-        },
-        IndicatorStatus::WifiConnected => LedConfig {
-            on_duration: Duration::from_millis(100),
-            on_color: hsv2rgb(BLUE),
-            off_duration: Duration::from_millis(100),
-            off_color: hsv2rgb(BLACK),
-        },
-        IndicatorStatus::ServerConnected => LedConfig {
-            on_duration: Duration::from_millis(500),
-            on_color: hsv2rgb(YELLOW),
-            off_duration: Duration::from_millis(500),
-            off_color: hsv2rgb(BLACK),
-        },
-        IndicatorStatus::Active => LedConfig {
-            on_duration: Duration::from_millis(500),
-            on_color: hsv2rgb(GREEN),
-            off_duration: Duration::from_millis(500),
-            off_color: hsv2rgb(GREEN),
-        },
+async fn do_fade_in_out<const N: usize>(
+    led: &mut SmartLedsAdapter<esp_hal::rmt::Channel<esp_hal::Blocking, 0>, N>,
+    color: Hsv,
+    receiver: IndicatorReceiver,
+    min_brightness: u8,
+    max_brightness: u8,
+    step: usize,
+) -> Result<(), IndicatorStatus> {
+    led.write(brightness(
+        gamma([hsv2rgb(color)].into_iter()),
+        min_brightness,
+    ))
+    .unwrap();
+
+    loop {
+        if (min_brightness == max_brightness) || (step == 0) {
+            // No need to write the same value multiple times, just wait forever
+            wait_for_duration(Duration::from_secs(86400), receiver).await?;
+            continue;
+        }
+
+        for b in (min_brightness..=max_brightness).step_by(step) {
+            led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
+                .unwrap();
+            wait_for_duration(Duration::from_millis(100), receiver).await?;
+        }
+        for b in (min_brightness..=max_brightness).rev().step_by(step) {
+            led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
+                .unwrap();
+            wait_for_duration(Duration::from_millis(100), receiver).await?;
+        }
+    }
+}
+
+async fn fade_in_out<const N: usize>(
+    led: &mut SmartLedsAdapter<esp_hal::rmt::Channel<esp_hal::Blocking, 0>, N>,
+    color: Hsv,
+    receiver: IndicatorReceiver,
+    min_brightness: u8,
+    max_brightness: u8,
+    step: usize,
+) -> IndicatorStatus {
+    loop {
+        if let Err(s) =
+            do_fade_in_out(led, color, receiver, min_brightness, max_brightness, step).await
+        {
+            return s;
+        }
     }
 }
 
@@ -84,22 +103,18 @@ pub async fn start_indicator(rmt: RMT, pin: AnyPin, receiver: IndicatorReceiver)
     let mut status = IndicatorStatus::WifiConnecting;
 
     loop {
-        let led_config = get_led_config(status);
-        let interval = led_config.on_duration;
-        if interval.as_micros() > 0 {
-            let color = [led_config.on_color];
-            led.write(brightness(gamma(color.into_iter()), 10)).unwrap();
-            if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
-                status = s;
-                continue;
+        match status {
+            IndicatorStatus::WifiConnecting => {
+                status = fade_in_out(&mut led, RED, receiver, 0, 5, 1).await;
             }
-        }
-        let interval = led_config.off_duration;
-        if interval.as_micros() > 0 {
-            let color = [led_config.off_color];
-            led.write(brightness(gamma(color.into_iter()), 10)).unwrap();
-            if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
-                status = s;
+            IndicatorStatus::WifiConnected => {
+                status = fade_in_out(&mut led, BLUE, receiver, 0, 5, 1).await;
+            }
+            IndicatorStatus::ServerConnected => {
+                status = fade_in_out(&mut led, YELLOW, receiver, 0, 5, 1).await;
+            }
+            IndicatorStatus::Active => {
+                status = fade_in_out(&mut led, GREEN, receiver, 5, 5, 1).await;
             }
         }
     }
