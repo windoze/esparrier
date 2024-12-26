@@ -10,7 +10,6 @@ This is a re-write of the original [Esparrier-IDF project](https://github.com/wi
 1. Install Rust toolchain.
 2. Install Rust ESP32 tools:
     * `espup` - https://github.com/esp-rs/espup
-    * `ldproxy` - https://github.com/esp-rs/embuild
     * `cargo-espflash` - https://github.com/esp-rs/espflash
     * `espmonitor` - https://github.com/esp-rs/espmonitor
     * Install Rust ESP toolchain with `espup install`
@@ -45,6 +44,9 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 1. Create a JSON file, refer to [config.json.example](config.json.example) for the format.
 2. Put the board into the download mode, then use `esptool.py` to flash the NVS partition.
     ```bash
+    # Erase the NVS partition
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x9000 zero.bin
+    # Write the configurations
     esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x9000 /path/to/config.json
     ```
 3. Exit the download mode and reset the board, the new configurations should be applied.
@@ -61,9 +63,9 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
     ```
 
 * If there is a RGB LED (WS2812B) on the board, you can use `smartled` feature to enable the LED, and you need to set the environment `SMART_LED_PIN` to the correct pin number, on M5AtomS3/Lite, it's 35, on M5StampS3, it's 21.
-    * E.g. to build and flash the binary for M5StampS3:
+    * E.g. to build and flash the binary for ESP32-S3-DevKitC-1:
         ```bash
-        SMART_LED_PIN=21 cargo run --release --features smartled
+        SMART_LED_PIN=38 cargo run --release --features smartled
         ```
 
 * If there is an ordinary LED on the board, you can use `led` feature to enable it, and you need to set the environment `LED_PIN` to the correct pin number.
@@ -91,6 +93,9 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 
 5. Put the board into the download mode, then flash the binary and config to the board. Note the USB device name may vary, you may need to change it to the correct one. On most Linux systems, the device name is `/dev/ttyACMx`, where `x` is a number, you can find the correct device name by running `ls /dev/ttyACM*`.
     ```bash
+    # Erase the whole flash
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
+    # Write the binary and config
     esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x10000 /path/to/esparrier.bin 0x9000 /path/to/config.json
     ```
 
@@ -109,7 +114,7 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 * Auto-switching doesn't work properly unless you set the screen size correctly, otherwise you may need to configure hotkey on the Barrier server to switch screens manually.
 * Frequently connect/disconnect may cause the board fail to connect to the WiFi and/or Barrier server, you may need to power off the board and wait for a while before trying again.
 * In theory the board should be working with [InputLeap](https://github.com/input-leap/input-leap) server as well but I've never tested it.
-* The USB VID/PID are randomly picked and not registered, so you may need to change the code to use your own VID/PID.
+* The USB VID/PID are randomly picked and not registered, you are not authorized to produce and sell USB devices using these VID/PID, so you may need to change the code to use your own VID/PID if you have any business purpose.
 * The USB remote wakeup may not work because the standard forbids a suspended device consume too much current but this program needs much more than the standard says to keep Wi-Fi connected. I still haven't figured out how to keep the program running with the current <2.5mA. Of course you can choose a board with external power source such as a battery, but it seems to be an overkill.
 * The program can accept inputs only **after** the board successfully connects to the WiFi and Barrier server, it may be too late to use the board as a USB keyboard/mouse in BIOS/EFI, some main board that has always-on USB ports may work, but I haven't tested it, or you can use a USB hub that can supply power even if the host is off.
 * The watchdog will reset the board if it doesn't receive heartbeat from the Barrier server, or the program itself runs out of control and doesn't process the heartbeat, for the number of seconds defined in `WATCHDOG_TIMEOUT` environment variable. The default watchdog timeout is 15 seconds, as the default Barrier heartbeat interval is 5 seconds, you may need to change the watchdog timeout if the Barrier server has a long heartbeat interval.
@@ -130,4 +135,4 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 
 * This project is released under [MIT license](LICENSE).
 * The `esp_hal_smartled.rs` file is taken from [esp-hal-community repo](https://github.com/esp-rs/esp-hal-community), which is licensed under MIT License and Apache License, version 2.0.
-* Some code snippets in the `gentable.c` were taken from [Barrier repo](https://github.com/debauchee/barrier) and licensed under GPLv2. The main project only uses it's output, not the code itself.
+* Some code snippets in the `gentable.c` were taken from [Barrier repo](https://github.com/debauchee/barrier) and licensed under GPLv2. The main project only uses it's output, not the code itself, so it's not bound by the GPL license.

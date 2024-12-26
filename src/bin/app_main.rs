@@ -72,7 +72,7 @@ async fn main(spawner: Spawner) {
         config
     });
 
-    esp_alloc::heap_allocator!(72 * 1024);
+    esp_alloc::heap_allocator!(128 * 1024);
 
     let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();

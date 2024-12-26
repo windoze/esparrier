@@ -4,6 +4,9 @@ on:
   push:
     paths-ignore:
       - "**/README.md"
+      - "**/README.*.md"
+      - "**/*.example"
+      - "/.vscode/**"
   pull_request:
   workflow_dispatch:
 
@@ -21,6 +24,10 @@ jobs:
         action:
           - command: build
             args: --release
+          - command: build
+            args: --release --features=led
+          - command: build
+            args: --release --features=smartled
           - command: fmt
             args: --all -- --check --color always
           - command: clippy
