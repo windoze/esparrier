@@ -1,7 +1,7 @@
 Esparrier
 =========
 
-[![en](https://img.shields.io/badge/lang-en-blue.svg)](https://github.com/windoze/esparrier/blob/master/README.md)
+[![en](https://img.shields.io/badge/lang-en-blue.svg)](https://github.com/windoze/esparrier/blob/main/README.md)
 
 Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/barrier) 客户端。
 
