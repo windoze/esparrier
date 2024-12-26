@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z0-9]+)?"
   workflow_dispatch:
 
 env:
@@ -33,7 +33,7 @@ jobs:
       - name: Install cargo-binstall
         run: cargo install cargo-binstall
       - name: Install espflash
-        run: cargo binstall espflash cargo-espflash
+        run: cargo binstall -y cargo-espflash
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Build binary
