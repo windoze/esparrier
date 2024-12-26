@@ -31,10 +31,12 @@ jobs:
           default: true
           buildtargets: esp32
           ldproxy: false
-      - name: Install cargo-binstall
-        run: cargo install cargo-binstall
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libudev-dev libusb-dev
       - name: Install espflash
-        run: cargo binstall -y cargo-espflash
+        run: cargo install -y cargo-espflash
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Build binary

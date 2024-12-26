@@ -37,6 +37,8 @@
     "igmp",
     "keepalive",
     "ldproxy",
+    "libudev",
+    "libusb",
     "mosi",
     "msos",
     "MSVC",
