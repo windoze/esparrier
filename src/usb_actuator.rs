@@ -2,30 +2,26 @@ use log::{debug, info, warn};
 
 use crate::{
     synergy_hid::{ReportType, SynergyHid},
-    Actuator, BarrierError, IndicatorSender, IndicatorStatus, ReportWriter,
+    Actuator, BarrierError, HidReport, HidReportSender, IndicatorSender, IndicatorStatus,
 };
 
-pub struct UsbActuator<'a, 'b, 'c> {
+pub struct UsbActuator {
     width: u16,
     height: u16,
     x: u16,
     y: u16,
     hid: SynergyHid,
     indicator: IndicatorSender,
-    keyboard_writer: ReportWriter<'a, 8>,
-    mouse_writer: ReportWriter<'b, 7>,
-    consumer_writer: ReportWriter<'c, 2>,
+    hid_writer: HidReportSender,
 }
 
-impl<'a, 'b, 'c> UsbActuator<'a, 'b, 'c> {
+impl UsbActuator {
     pub fn new(
         width: u16,
         height: u16,
         flip_mouse_wheel: bool,
         indicator: IndicatorSender,
-        keyboard_writer: ReportWriter<'a, 8>,
-        mouse_writer: ReportWriter<'b, 7>,
-        consumer_writer: ReportWriter<'c, 2>,
+        hid_writer: HidReportSender,
     ) -> Self {
         Self {
             width,
@@ -34,29 +30,32 @@ impl<'a, 'b, 'c> UsbActuator<'a, 'b, 'c> {
             y: 0,
             hid: SynergyHid::new(flip_mouse_wheel),
             indicator,
-            keyboard_writer,
-            mouse_writer,
-            consumer_writer,
+            hid_writer,
         }
     }
 
     async fn send_report(&mut self, report: (ReportType, &[u8])) {
-        debug!("Sending report: {}, {:?}", report.0 as u8, report.1);
         match report.0 {
             ReportType::Keyboard => {
-                self.keyboard_writer.write(report.1).await.ok();
+                self.hid_writer
+                    .send(HidReport::Keyboard(report.1.try_into().unwrap()))
+                    .await;
             }
             ReportType::Mouse => {
-                self.mouse_writer.write(report.1).await.ok();
+                self.hid_writer
+                    .send(HidReport::Mouse(report.1.try_into().unwrap()))
+                    .await;
             }
             ReportType::Consumer => {
-                self.consumer_writer.write(report.1).await.ok();
+                self.hid_writer
+                    .send(HidReport::Consumer(report.1.try_into().unwrap()))
+                    .await;
             }
         }
     }
 }
 
-impl<'a, 'b, 'c> Actuator for UsbActuator<'a, 'b, 'c> {
+impl Actuator for UsbActuator {
     async fn connected(&mut self) -> Result<(), BarrierError> {
         info!("Connected to Barrier");
         self.indicator.send(IndicatorStatus::ServerConnected).await;

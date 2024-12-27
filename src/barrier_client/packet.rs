@@ -65,6 +65,7 @@ pub enum Packet {
         x: i16,
         y: i16,
     },
+    ServerBusy,
     Unknown([u8; 4]),
 }
 
