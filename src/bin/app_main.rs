@@ -32,12 +32,12 @@ use esp_wifi::{
     },
     EspWifiController,
 };
+use log::{debug, error, info, warn};
 
 use esparrier::{
-    start, start_indicator, AppConfig, IndicatorChannel, IndicatorReceiver, IndicatorSender,
-    IndicatorStatus, SynergyHid, UsbActuator,
+    mk_static, start, start_indicator, AppConfig, IndicatorChannel, IndicatorReceiver,
+    IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
 };
-use log::{debug, error, info, warn};
 
 #[cfg(feature = "led")]
 #[const_env::from_env]
@@ -46,15 +46,6 @@ const LED_PIN: u8 = 21;
 #[cfg(feature = "smartled")]
 #[const_env::from_env]
 const SMART_LED_PIN: u8 = 35;
-
-macro_rules! mk_static {
-    ($t:ty,$val:expr) => {{
-        static STATIC_CELL: static_cell::StaticCell<$t> = static_cell::StaticCell::new();
-        #[deny(unused_attributes)]
-        let x = STATIC_CELL.uninit().write(($val));
-        x
-    }};
-}
 
 #[main]
 async fn main(spawner: Spawner) {

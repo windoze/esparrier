@@ -2,7 +2,7 @@ use embassy_net::{tcp::TcpSocket, IpEndpoint, Ipv4Address, Stack};
 use embedded_io_async::Write;
 use esp_hal::{peripheral::Peripheral, timer::timg::Wdt};
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 
 use super::{
     packet::Packet, packet_io::PacketReader, packet_io::PacketWriter, packet_stream::PacketStream,
@@ -167,6 +167,10 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
             }
             Packet::DeviceInfo { .. } | Packet::ErrorUnknownDevice | Packet::ClientNoOp => {
                 // Server only packets
+            }
+            Packet::ServerDisconnect => {
+                warn!("Server disconnected");
+                break;
             }
             Packet::Unknown(cmd) => {
                 debug!(

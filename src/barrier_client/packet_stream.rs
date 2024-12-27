@@ -189,6 +189,7 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 limit -= 2;
                 Packet::MouseWheel { x_delta, y_delta }
             }
+            b"EBSY" => Packet::ServerDisconnect,
             _ => Packet::Unknown(code),
         };
 

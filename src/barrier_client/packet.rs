@@ -71,6 +71,7 @@ pub enum Packet {
         x: i16,
         y: i16,
     },
+    ServerDisconnect,
     Unknown([u8; 4]),
 }
 
