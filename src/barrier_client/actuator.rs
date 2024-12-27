@@ -63,6 +63,11 @@ pub trait Actuator {
         button: u16,
     ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
+    fn set_clipboard(
+        &mut self,
+        data: heapless::Vec<u8, 1024>,
+    ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
+
     fn enter(&mut self) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
     fn leave(&mut self) -> impl core::future::Future<Output = Result<(), BarrierError>>;

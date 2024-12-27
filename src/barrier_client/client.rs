@@ -9,6 +9,14 @@ use super::{
     Actuator, BarrierError,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClipboardStage {
+    None,
+    Mark1,
+    Mark2(usize),
+    Mark3,
+}
+
 #[allow(unused_assignments)]
 pub async fn start<A: Actuator, Ep: AsRef<str>>(
     endpoint: Ep,
@@ -61,9 +69,10 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
     watchdog.feed();
 
     let mut last_seq_num: u32 = 0;
+    let mut clipboard_stage = ClipboardStage::None;
 
     let mut packet_stream = PacketStream::new(stream);
-    while let Ok(packet) = packet_stream.read().await {
+    while let Ok(packet) = packet_stream.read(&mut clipboard_stage).await {
         match packet {
             Packet::QueryInfo => {
                 match packet_stream
@@ -146,6 +155,15 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
             }
             Packet::GrabClipboard { id, seq_num } => {
                 info!("Grab clipboard: id:{}, seq_num:{}", id, seq_num);
+            }
+            Packet::SetClipboard { id, seq_num, data } => {
+                debug!(
+                    "Set clipboard: id:{}, seq_num:{}, data:{:?}",
+                    id, seq_num, data
+                );
+                if let Some(data) = data {
+                    actor.set_clipboard(data).await?;
+                }
             }
             Packet::DeviceInfo { .. } | Packet::ErrorUnknownDevice | Packet::ClientNoOp => {
                 // Server only packets

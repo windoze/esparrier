@@ -1,5 +1,6 @@
 mod actuator;
 mod client;
+mod clipboard;
 mod error;
 mod packet;
 mod packet_io;

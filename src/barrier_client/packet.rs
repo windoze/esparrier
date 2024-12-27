@@ -4,6 +4,7 @@ use log::{debug, warn};
 use super::{error::PacketError, packet_io::PacketWriter};
 
 #[allow(dead_code)]
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum Packet {
     QueryInfo,
@@ -23,6 +24,11 @@ pub enum Packet {
     GrabClipboard {
         id: u8,
         seq_num: u32,
+    },
+    SetClipboard {
+        id: u8,
+        seq_num: u32,
+        data: Option<heapless::Vec<u8, 1024>>,
     },
     CursorEnter {
         x: u16,

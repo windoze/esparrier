@@ -1,4 +1,4 @@
-use log::{debug, info, warn};
+use log::{debug, info, trace, warn};
 
 use crate::{
     synergy_hid::{ReportType, SynergyHid},
@@ -41,7 +41,7 @@ impl<'a, 'b, 'c> UsbActuator<'a, 'b, 'c> {
     }
 
     async fn send_report(&mut self, report: (ReportType, &[u8])) {
-        debug!("Sending report: {}, {:?}", report.0 as u8, report.1);
+        trace!("Sending report: {}, {:?}", report.0 as u8, report.1);
         match report.0 {
             ReportType::Keyboard => {
                 self.keyboard_writer.write(report.1).await.ok();
@@ -139,6 +139,11 @@ impl<'a, 'b, 'c> Actuator for UsbActuator<'a, 'b, 'c> {
         let mut report = [0; 9];
         let ret = self.hid.key_up(key, mask, button, &mut report);
         self.send_report(ret).await;
+        Ok(())
+    }
+
+    async fn set_clipboard(&mut self, data: heapless::Vec<u8, 1024>) -> Result<(), BarrierError> {
+        debug!("Set clipboard: data:{:?}", data);
         Ok(())
     }
 

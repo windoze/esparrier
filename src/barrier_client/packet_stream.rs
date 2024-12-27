@@ -1,4 +1,7 @@
 use embedded_io_async::Read as AsyncRead;
+use log::{debug, warn};
+
+use crate::barrier_client::{client::ClipboardStage, clipboard::parse_clipboard};
 
 use super::{error::PacketError, packet::Packet, packet_io::PacketReader, packet_io::PacketWriter};
 
@@ -11,7 +14,10 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
         Self { stream }
     }
 
-    pub async fn read(&mut self) -> Result<Packet, PacketError> {
+    pub async fn read(
+        &mut self,
+        clipboard_stage: &mut ClipboardStage,
+    ) -> Result<Packet, PacketError> {
         let size = self.stream.read_packet_size().await?;
         if size < 4 {
             let mut buf = [0; 4];
@@ -21,12 +27,13 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 .map_err(|_| PacketError::PacketTooSmall)?;
             return Err(PacketError::PacketTooSmall);
         }
-        Self::do_read(&mut self.stream, size as usize).await
+        Self::do_read(&mut self.stream, size as usize, clipboard_stage).await
     }
 
     async fn do_read<T: AsyncRead + Unpin>(
         chunk: &mut T,
         mut limit: usize,
+        clipboard_stage: &mut ClipboardStage,
     ) -> Result<Packet, PacketError> {
         let code: [u8; 4] = chunk.read_bytes_fixed().await?;
         limit -= 4;
@@ -73,6 +80,63 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 let seq_num = chunk.read_u32().await?;
                 limit -= 4;
                 Packet::GrabClipboard { id, seq_num }
+            }
+            b"DCLP" => {
+                let id = chunk.read_u8().await?;
+                let seq_num = chunk.read_u32().await?;
+                let mark = chunk.read_u8().await?;
+                limit -= 6;
+                debug!(
+                    "Clipboard id: {}, seq: {}, mark: {}, payload size: {}",
+                    id, seq_num, mark, limit
+                );
+
+                // mark 1 is the total length string in ASCII
+                // mark 2 is the actual data and is split into chunks
+                // mark 3 is an empty chunk
+                debug!("Current Clipboard stage: {:?}", clipboard_stage);
+                *clipboard_stage = match mark {
+                    1 => match clipboard_stage {
+                        ClipboardStage::None => ClipboardStage::Mark1,
+                        ClipboardStage::Mark3 => ClipboardStage::Mark1,
+                        _ => {
+                            warn!("Unexpected clipboard stage: {:?}", clipboard_stage);
+                            ClipboardStage::None
+                        }
+                    },
+                    2 => match clipboard_stage {
+                        // 1st mark 2 chunk
+                        ClipboardStage::Mark1 => ClipboardStage::Mark2(0),
+                        ClipboardStage::Mark2(idx) => ClipboardStage::Mark2(*idx + 1),
+                        _ => {
+                            warn!("Unexpected clipboard stage: {:?}", clipboard_stage);
+                            ClipboardStage::None
+                        }
+                    },
+                    3 => match clipboard_stage {
+                        ClipboardStage::Mark2(_) => ClipboardStage::Mark3,
+                        _ => {
+                            warn!("Unexpected clipboard stage: {:?}", clipboard_stage);
+                            ClipboardStage::None
+                        }
+                    },
+                    _ => {
+                        warn!("Unexpected clipboard mark: {}", mark);
+                        ClipboardStage::None
+                    }
+                };
+                // We only process the 1st mark 2 chunk
+                if *clipboard_stage == ClipboardStage::Mark2(0) {
+                    let (data, consumed) = parse_clipboard(chunk).await?;
+                    limit -= consumed;
+                    Packet::SetClipboard { id, seq_num, data }
+                } else {
+                    Packet::SetClipboard {
+                        id,
+                        seq_num,
+                        data: None,
+                    }
+                }
             }
             b"DMUP" => {
                 let id = chunk.read_i8().await?;
