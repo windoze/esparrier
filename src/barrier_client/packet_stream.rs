@@ -43,6 +43,7 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
             b"CIAK" => Packet::InfoAck,
             b"CALV" => Packet::KeepAlive,
             b"EUNK" => Packet::ErrorUnknownDevice,
+            b"EBSY" => Packet::ServerBusy,
             b"DMMV" => {
                 let x = chunk.read_u16().await?;
                 limit -= 2;
@@ -189,7 +190,6 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 limit -= 2;
                 Packet::MouseWheel { x_delta, y_delta }
             }
-            b"EBSY" => Packet::ServerDisconnect,
             _ => Packet::Unknown(code),
         };
 

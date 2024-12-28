@@ -23,7 +23,7 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
     device_name: heapless::String<64>,
     stack: &'static Stack<WifiDevice<'_, WifiStaDevice>>,
     actor: &mut A,
-    mut watchdog: Wdt<<esp_hal::peripherals::TIMG1 as Peripheral>::P>,
+    watchdog: &mut Wdt<<esp_hal::peripherals::TIMG1 as Peripheral>::P>,
 ) -> Result<(), BarrierError> {
     let screen_size: (u16, u16) = actor.get_screen_size().await?;
 
@@ -97,7 +97,7 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
             Packet::KeepAlive => {
                 match packet_stream.write(Packet::KeepAlive).await {
                     Ok(_) => {
-                        debug!("Feed watchdog on KeepAlive");
+                        info!("Feed watchdog on KeepAlive");
                         watchdog.feed();
                         Ok(())
                     }
@@ -168,8 +168,8 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
             Packet::DeviceInfo { .. } | Packet::ErrorUnknownDevice | Packet::ClientNoOp => {
                 // Server only packets
             }
-            Packet::ServerDisconnect => {
-                warn!("Server disconnected");
+            Packet::ServerBusy => {
+                warn!("Server is busy, disconnecting");
                 break;
             }
             Packet::Unknown(cmd) => {

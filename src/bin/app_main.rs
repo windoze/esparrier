@@ -3,21 +3,14 @@
 
 extern crate alloc;
 
-use core::{
-    future::Future,
-    sync::atomic::{AtomicBool, Ordering},
-};
+use core::sync::atomic::{AtomicBool, Ordering};
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
-use embassy_futures::select::select3;
+use embassy_futures::select::select;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
-use embassy_usb::{
-    class::hid::{HidReaderWriter, HidWriter, ReportId, RequestHandler},
-    control::OutResponse,
-    Builder,
-};
+use embassy_usb::{class::hid::HidReaderWriter, Builder};
 use esp_backtrace as _;
 use esp_hal::{
     otg_fs::Usb,
@@ -35,8 +28,9 @@ use esp_wifi::{
 use log::{debug, error, info, warn};
 
 use esparrier::{
-    mk_static, start, start_indicator, AppConfig, IndicatorChannel, IndicatorReceiver,
-    IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
+    mk_static, start, start_hid_report_writer, start_indicator, AppConfig, HidReportChannel,
+    HidReportSender, IndicatorChannel, IndicatorReceiver, IndicatorSender, IndicatorStatus,
+    SynergyHid, UsbActuator,
 };
 
 #[cfg(feature = "led")]
@@ -156,9 +150,10 @@ async fn main(spawner: Spawner) {
         }
     };
 
-    let (keyboard_writer, keyboard_out_fut) = start_hid_dev(keyboard);
-    let (mouse_writer, mouse_out_fut) = start_hid_dev(mouse);
-    let (consumer_writer, consumer_out_fut) = start_hid_dev(consumer);
+    let hid_channel = mk_static!(HidReportChannel, HidReportChannel::new());
+    let hid_receiver = hid_channel.receiver();
+    let hid_sender = hid_channel.sender();
+    let report_task = start_hid_report_writer(keyboard, mouse, consumer, hid_receiver);
 
     // Initialize WiFi
     let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
@@ -187,14 +182,12 @@ async fn main(spawner: Spawner) {
         )
     );
 
-    spawner
-        .spawn(connection(
-            controller,
-            app_config.ssid.to_owned(),
-            app_config.password.to_owned(),
-        ))
-        .ok();
-    spawner.spawn(net_task(stack)).ok();
+    spawner.must_spawn(connection(
+        controller,
+        app_config.ssid.to_owned(),
+        app_config.password.to_owned(),
+    ));
+    spawner.must_spawn(net_task(stack));
 
     info!("Waiting for WiFi to connect...");
     loop {
@@ -215,35 +208,13 @@ async fn main(spawner: Spawner) {
     }
     wdt1.feed();
 
-    // Actuator task is responsible for connecting to Barrier and sending HID reports
-    let mut actuator = UsbActuator::new(
-        app_config.screen_width,
-        app_config.screen_height,
-        app_config.flip_wheel,
-        sender,
-        keyboard_writer,
-        mouse_writer,
-        consumer_writer,
-    );
-    let actuator_task = async {
-        info!("Connecting to Barrier");
-        start(
-            app_config.server.clone(),
-            app_config.screen_name.clone(),
-            stack,
-            &mut actuator,
-            wdt1,
-        )
-        .await
-        .inspect_err(|e| error!("Failed to connect: {:?}", e))
-        .ok();
-        warn!("Disconnected from Barrier, restarting...");
-    };
+    spawner.must_spawn(barrier_client_task(
+        app_config, stack, sender, hid_sender, wdt1,
+    ));
 
     // Wait for anything to finish, then restart.
     // These are all necessary tasks, none of them should exit prematurely.
-    let hid_reader_fut = select3(keyboard_out_fut, mouse_out_fut, consumer_out_fut);
-    select3(actuator_task, usb_fut, hid_reader_fut).await;
+    select(usb_fut, report_task).await;
     warn!("Critical task exited, restarting...");
 }
 
@@ -288,26 +259,36 @@ async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
     stack.run().await
 }
 
-struct MyRequestHandler {}
-
-impl RequestHandler for MyRequestHandler {
-    fn get_report(&mut self, id: ReportId, _buf: &mut [u8]) -> Option<usize> {
-        info!("Get report for {:?}", id);
-        None
-    }
-
-    fn set_report(&mut self, id: ReportId, data: &[u8]) -> OutResponse {
-        info!("Set report for {:?}: {:?}", id, data);
-        OutResponse::Accepted
-    }
-
-    fn set_idle_ms(&mut self, id: Option<ReportId>, dur: u32) {
-        info!("Set idle rate for {:?} to {:?}", id, dur);
-    }
-
-    fn get_idle_ms(&mut self, id: Option<ReportId>) -> Option<u32> {
-        info!("Get idle rate for {:?}", id);
-        None
+#[embassy_executor::task]
+async fn barrier_client_task(
+    app_config: &'static AppConfig,
+    stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
+    indicator: IndicatorSender,
+    hid_sender: HidReportSender,
+    mut wdt: esp_hal::timer::timg::Wdt<
+        <esp_hal::peripherals::TIMG1 as esp_hal::peripheral::Peripheral>::P,
+    >,
+) {
+    loop {
+        let mut actuator = UsbActuator::new(
+            app_config.screen_width,
+            app_config.screen_height,
+            app_config.flip_wheel,
+            indicator,
+            hid_sender,
+        );
+        start(
+            app_config.server.clone(),
+            app_config.screen_name.clone(),
+            stack,
+            &mut actuator,
+            &mut wdt,
+        )
+        .await
+        .inspect_err(|e| error!("Failed to connect: {:?}", e))
+        .ok();
+        warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
+        Timer::after(Duration::from_millis(5000)).await
     }
 }
 
@@ -406,20 +387,6 @@ fn init_hid_dev<'a, const N: usize>(
     };
 
     HidReaderWriter::<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N>::new(builder, state, config)
-}
-
-fn start_hid_dev<'a, const N: usize>(
-    dev: HidReaderWriter<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N>,
-) -> (
-    HidWriter<'a, esp_hal::otg_fs::asynch::Driver<'a>, N>,
-    impl Future<Output = ()> + use<'a, N>,
-) {
-    let (reader, writer) = dev.split();
-    let out_fut = async {
-        let mut request_handler = MyRequestHandler {};
-        reader.run(false, &mut request_handler).await;
-    };
-    (writer, out_fut)
 }
 
 #[cfg(feature = "led")]

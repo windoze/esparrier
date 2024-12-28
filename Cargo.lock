@@ -773,7 +773,7 @@ dependencies = [
 
 [[package]]
 name = "esparrier"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "const_env",
  "critical-section",
