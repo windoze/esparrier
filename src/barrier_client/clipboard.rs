@@ -12,11 +12,12 @@ pub enum ClipboardFormat {
     Bitmap = 2,
 }
 
-const MAX_SIZE: usize = 1024;
+#[cfg(feature = "clipboard")]
+use crate::MAX_CLIPBOARD_SIZE;
 
 pub async fn parse_clipboard<T: PacketReader>(
     stream: &mut T,
-) -> Result<(Option<Vec<u8, 1024>>, usize), PacketError> {
+) -> Result<(Option<Vec<u8, MAX_CLIPBOARD_SIZE>>, usize), PacketError> {
     let mut consumed: usize = 0;
 
     let _sz = stream.read_u32().await?;
@@ -48,7 +49,7 @@ pub async fn parse_clipboard<T: PacketReader>(
                     .map_err(|_| PacketError::IoError)?;
                 consumed += read_length;
                 length -= read_length;
-                if ret.len() < (MAX_SIZE - read_length) {
+                if ret.len() < (MAX_CLIPBOARD_SIZE - read_length) {
                     ret.extend_from_slice(&buf[0..read_length]).unwrap();
                 }
             }

@@ -16,9 +16,9 @@ pub use hid_report_writer::{
 };
 pub use indicator::*;
 pub use synergy_hid::{ReportType, SynergyHid};
-#[cfg(feature = "clipboard")]
-pub use usb_actuator::send_clipboard;
 pub use usb_actuator::UsbActuator;
+#[cfg(feature = "clipboard")]
+pub use usb_actuator::{send_clipboard, MAX_CLIPBOARD_SIZE};
 
 #[macro_export]
 macro_rules! mk_static {

@@ -1,14 +1,18 @@
+#[cfg(feature = "clipboard")]
+mod ascii_2_hid;
 mod descriptors;
 mod hid;
 mod keycodes;
 
-pub(super) use hid::*;
-pub(crate) use keycodes::{synergy_mouse_button, synergy_to_hid, KeyCode};
-
+#[cfg(feature = "clipboard")]
+pub(super) use ascii_2_hid::ASCII_2_HID;
 pub(super) use descriptors::{
     ABSOLUTE_WHEEL_MOUSE_REPORT_DESCRIPTOR, BOOT_KEYBOARD_REPORT_DESCRIPTOR,
     CONSUMER_CONTROL_REPORT_DESCRIPTOR,
 };
+pub(super) use hid::KeyboardReport;
+pub(super) use hid::*;
+pub(crate) use keycodes::{synergy_mouse_button, synergy_to_hid, KeyCode};
 use log::{debug, warn};
 
 #[repr(u8)]

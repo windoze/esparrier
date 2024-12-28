@@ -40,6 +40,10 @@ const LED_PIN: u8 = 21;
 #[const_env::from_env]
 const SMART_LED_PIN: u8 = 35;
 
+#[cfg(feature = "clipboard")]
+#[const_env::from_env]
+const PASTE_BUTTON_PIN: u8 = 41;
+
 #[main]
 async fn main(spawner: Spawner) {
     esp_println::logger::init_logger_from_env();
@@ -56,7 +60,7 @@ async fn main(spawner: Spawner) {
         config
     });
 
-    esp_alloc::heap_allocator!(128 * 1024);
+    esp_alloc::heap_allocator!(160 * 1024);
 
     let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
@@ -153,6 +157,12 @@ async fn main(spawner: Spawner) {
     let hid_receiver = hid_channel.receiver();
     let hid_sender = hid_channel.sender();
     let report_task = start_hid_report_writer(keyboard, mouse, consumer, hid_receiver);
+
+    #[cfg(feature = "clipboard")]
+    {
+        let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
+        spawner.spawn(button_task(button, hid_sender)).ok();
+    }
 
     // Initialize WiFi
     let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
@@ -404,5 +414,18 @@ async fn indicator_task(
 async fn indicator_task(receiver: IndicatorReceiver) {
     loop {
         receiver.receive().await;
+    }
+}
+
+#[cfg(feature = "clipboard")]
+#[embassy_executor::task]
+async fn button_task(button: esp_hal::gpio::AnyPin, hid_writer: HidReportSender) {
+    use embedded_hal_async::digital::Wait;
+    let input = esp_hal::gpio::Input::new(button, esp_hal::gpio::Pull::Up);
+    let mut debouncer = async_debounce::Debouncer::new(input, Duration::from_millis(50));
+
+    loop {
+        debouncer.wait_for_rising_edge().await.ok();
+        esparrier::send_clipboard(hid_writer).await;
     }
 }

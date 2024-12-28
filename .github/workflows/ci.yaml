@@ -25,17 +25,17 @@ jobs:
           - command: build
             args: --release
           - command: build
-            args: --release --features=led
+            args: --release --features=led,clipboard
           - command: build
-            args: --release --features=smartled
+            args: --release --features=smartled,clipboard
           - command: fmt
             args: --all -- --check --color always
           - command: clippy
             args: --release --workspace -- -D warnings
           - command: clippy
-            args: --release --features=led --workspace -- -D warnings
+            args: --release --features=led,clipboard --workspace -- -D warnings
           - command: clippy
-            args: --release --features=smartled --workspace -- -D warnings
+            args: --release --features=smartled,clipboard --workspace -- -D warnings
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

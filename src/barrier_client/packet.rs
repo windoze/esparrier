@@ -1,6 +1,9 @@
 use embedded_io_async::Write as AsyncWrite;
 use log::{debug, warn};
 
+#[cfg(feature = "clipboard")]
+use crate::MAX_CLIPBOARD_SIZE;
+
 use super::{error::PacketError, packet_io::PacketWriter};
 
 #[allow(dead_code)]
@@ -29,7 +32,7 @@ pub enum Packet {
     SetClipboard {
         id: u8,
         seq_num: u32,
-        data: Option<heapless::Vec<u8, 1024>>,
+        data: Option<heapless::Vec<u8, MAX_CLIPBOARD_SIZE>>,
     },
     CursorEnter {
         x: u16,

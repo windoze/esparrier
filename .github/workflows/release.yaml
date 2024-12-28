@@ -41,9 +41,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build binary
         run: cargo espflash save-image --release --chip esp32s3 esparrier.bin
-      - name: Build M5AtomS3 Lite binary (with `smartled` feature enabled at PIN 35)
-        run: cargo espflash save-image --release --chip esp32s3 --features smartled  esparrier-m5atoms3-lite.bin
-      - name: Build XIAO-ESP32S3 binary (with `led` feature enabled at PIN 21)
+      - name: Build M5AtomS3 Lite binary (with `smartled` and `clipboard` features enabled)
+        run: cargo espflash save-image --release --chip esp32s3 --features smartled,clipboard  esparrier-m5atoms3-lite.bin
+      - name: Build XIAO-ESP32S3 binary (with `led` feature enabled)
         run: cargo espflash save-image --release --chip esp32s3 --features led  esparrier-xiao-esp32s3.bin
       - name: Build archive
         shell: bash

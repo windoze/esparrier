@@ -53,6 +53,22 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
     ```
 3. Exit the download mode and reset the board, the new configurations should be applied.
 
+## Clipboard
+
+The program now has limited support of the clipboard when the feature `clipboard` is enabled. This feature requires your board to have an user button, and the button should be connected to the GPIO pin defined in the environment variable `PASTE_BUTTON_PIN`, on M5AtomS3 Lite, it is PIN 41. The button should be active low, i.e. the pin should be pulled up to high level, and the button should pull down the pin to low level when pressed.
+
+First you need to activate other screen and copy something into the clipboard, then switch to the screen connected to the board.
+
+When the screen is activated, the board receives the clipboard content sent by the Barrier server, **keeps the first 1024 characters of the plain text format and discard everything else**.
+
+Then you can "paste" the text by pressing the button on the board, the board will convert the text into a sequence of keystrokes, and send them to the computer. All characters except the visible ASCII codes will be discarded as they cannot be directly mapped to USB HID key codes, or they may have special meaning that can mess up things.
+
+The program cannot "copy" content to the clipboard.
+
+Better clipboard support is still WIP.
+
+NOTE: When you copied a large amount of text or big image from other screen then moved into the screen connected to the board, the board may stuck for a while, this is because the board is trying to discard the clipboard content. Even it will not parse and hold the whole content, still it needs to receive the whole content from the Barrier server as there is no way to skip a chunk in the middle of a TCP stream without actually reading it. But the board should resume operation after few seconds and it will not repeatedly process the same clipboard content if you move out and move in again.
+
 ## Build for other ESP32S3 boards
 
 * It's recommended to erase the flash before the first time flashing the binary to the board, you can do this with `esptool.py` or `cargo-espflash`:
