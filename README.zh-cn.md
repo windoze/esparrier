@@ -63,7 +63,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 然后，您可以通过按下开发板上的按钮来“粘贴”文本，开发板会将文本转换为一系列按键，并将它们发送到计算机。所有不可见的 ASCII 码字符将被丢弃，因为它们不能直接映射到 USB HID 键码，或者它们可能具有特殊含义，会导致问题。
 
-程序无法将内容“复制”到剪贴板，这时 USB HID 本身的限制，该功能无法实现。
+程序无法将内容“复制”到剪贴板，这是 USB HID 本身的限制，该功能无法实现。
 
 注意：当您从其他屏幕复制大量文本或大图像，然后移动到连接到开发板的屏幕时，开发板可能会卡住一段时间，这是因为开发板正在尝试丢弃不支持的剪贴板内容。即使它不会解析和保存整个剪贴板，它仍然需要从 Barrier 服务器接收全部数据，因为在没有实际读取的情况下，无法在 TCP 流中跳过一段。但是，开发板应在几秒钟后恢复操作，如果您再次移出并移入，它将不会重复处理相同的剪贴板内容。
 
@@ -134,7 +134,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 * USB 远程唤醒可能无法工作，因为USB标准禁止挂起设备消耗过多电流，但此程序需要比标准规定的更多电流来保持 Wi-Fi 连接。我尚未找到在电流 <2.5mA 的情况下保持程序运行的方法。当然，您可以选择带有外部电源（如电池）的开发板，但这似乎有点小题大做。
 * 开发板只有在成功连接到 WiFi 和 Barrier 服务器后才能接受输入，这段延迟可能已经超过了电脑启动时进入 BIOS/EFI 设置的时限，一些主板上带有“始终供电”的USB口也许能避免这个问题，但未经测试，或者您可以使用一个即使主机关闭也能供电的 USB 集线器。
 * 如果在定义的 `WATCHDOG_TIMEOUT` 环境变量中的秒数内没有从 Barrier 服务器接收到心跳，或者程序本身失控且未处理心跳，watchdog 将重置开发板。默认的 watchdog 超时时间为 15 秒，因为默认的 Barrier 心跳间隔为 5 秒，如果 Barrier 服务器设置了较长的心跳间隔，您可能需要更改 watchdog 超时时间。
-* 剪贴板共享功能可以通过 [ClipSync 应用](https://github.com/windoze/clip-sync) 或操作系统内置的剪贴板共享功能实现，例如 [Windows 上的 Clip Sync](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) 或 [macOS 上的通用剪贴板](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac)，但此程序中未实现。
+* 程序内建的剪贴板共享功能并不完整，但完整功能可以通过 [ClipSync 应用](https://github.com/windoze/clip-sync) 或操作系统内置的剪贴板共享功能实现，例如 [Windows 上的 Clip Sync](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) 或 [macOS 上的通用剪贴板](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac)，但此程序中未实现。
 
 ## 待办事项：
 
