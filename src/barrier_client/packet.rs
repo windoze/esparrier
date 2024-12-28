@@ -25,6 +25,7 @@ pub enum Packet {
         id: u8,
         seq_num: u32,
     },
+    #[cfg(feature = "clipboard")]
     SetClipboard {
         id: u8,
         seq_num: u32,

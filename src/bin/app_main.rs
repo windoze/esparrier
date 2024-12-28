@@ -28,9 +28,8 @@ use esp_wifi::{
 use log::{debug, error, info, warn};
 
 use esparrier::{
-    mk_static, start, start_hid_report_writer, start_indicator, AppConfig, HidReportChannel,
-    HidReportSender, IndicatorChannel, IndicatorReceiver, IndicatorSender, IndicatorStatus,
-    SynergyHid, UsbActuator,
+    mk_static, start, start_hid_report_writer, AppConfig, HidReportChannel, HidReportSender,
+    IndicatorChannel, IndicatorReceiver, IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
 };
 
 #[cfg(feature = "led")]
@@ -386,7 +385,7 @@ fn init_hid_dev<'a, const N: usize>(
 #[cfg(feature = "led")]
 #[embassy_executor::task]
 async fn indicator_task(pin: esp_hal::gpio::AnyPin, receiver: IndicatorReceiver) {
-    start_indicator(pin, receiver).await;
+    esparrier::start_indicator(pin, receiver).await;
 }
 
 #[cfg(feature = "smartled")]
@@ -396,7 +395,7 @@ async fn indicator_task(
     pin: esp_hal::gpio::AnyPin,
     receiver: IndicatorReceiver,
 ) {
-    start_indicator(rmt, pin, receiver).await;
+    esparrier::start_indicator(rmt, pin, receiver).await;
 }
 
 // Fallback to dummy indicator, no-op
@@ -404,6 +403,6 @@ async fn indicator_task(
 #[embassy_executor::task]
 async fn indicator_task(receiver: IndicatorReceiver) {
     loop {
-        receiver.receive().await.ok();
+        receiver.receive().await;
     }
 }

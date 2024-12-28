@@ -1,6 +1,3 @@
-use core::cmp::min;
-
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use log::{debug, info, warn};
 
 use crate::{
@@ -8,11 +5,22 @@ use crate::{
     Actuator, BarrierError, HidReport, HidReportSender, IndicatorSender, IndicatorStatus,
 };
 
-static CLIPBOARD_STORAGE: Mutex<CriticalSectionRawMutex, Option<heapless::Vec<u8, 1024>>> =
-    Mutex::new(None);
+#[cfg(feature = "clipboard")]
+static CLIPBOARD_STORAGE: embassy_sync::mutex::Mutex<
+    embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
+    Option<heapless::Vec<u8, 1024>>,
+> = embassy_sync::mutex::Mutex::new(None);
 
-pub async fn get_clipboard_storage() -> Option<heapless::Vec<u8, 1024>> {
-    CLIPBOARD_STORAGE.lock().await.clone()
+#[cfg(feature = "clipboard")]
+pub async fn send_clipboard(hid_writer: HidReportSender) {
+    let data = CLIPBOARD_STORAGE.lock().await.clone();
+    if let Some(data) = data {
+        let data = data.as_slice();
+        debug!(
+            "Send clipboard: {:?}",
+            &data[0..core::cmp::min(data.len(), 16)]
+        );
+    }
 }
 
 pub struct UsbActuator {
@@ -149,11 +157,12 @@ impl Actuator for UsbActuator {
         Ok(())
     }
 
+    #[cfg(feature = "clipboard")]
     async fn set_clipboard(&mut self, data: heapless::Vec<u8, 1024>) -> Result<(), BarrierError> {
         debug!(
             "Set clipboard: length: {}, data: {:?}",
             data.len(),
-            &data[0..min(data.len(), 16)]
+            &data[0..core::cmp::min(data.len(), 16)]
         );
         CLIPBOARD_STORAGE.lock().await.replace(data);
         Ok(())

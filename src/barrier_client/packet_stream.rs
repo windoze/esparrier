@@ -1,6 +1,6 @@
 use embedded_io_async::Read as AsyncRead;
-use log::{debug, warn};
 
+#[cfg(feature = "clipboard")]
 use crate::barrier_client::{client::ClipboardStage, clipboard::parse_clipboard};
 
 use super::{error::PacketError, packet::Packet, packet_io::PacketReader, packet_io::PacketWriter};
@@ -16,7 +16,7 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
 
     pub async fn read(
         &mut self,
-        clipboard_stage: &mut ClipboardStage,
+        #[cfg(feature = "clipboard")] clipboard_stage: &mut ClipboardStage,
     ) -> Result<Packet, PacketError> {
         let size = self.stream.read_packet_size().await?;
         if size < 4 {
@@ -27,13 +27,19 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 .map_err(|_| PacketError::PacketTooSmall)?;
             return Err(PacketError::PacketTooSmall);
         }
-        Self::do_read(&mut self.stream, size as usize, clipboard_stage).await
+        Self::do_read(
+            &mut self.stream,
+            size as usize,
+            #[cfg(feature = "clipboard")]
+            clipboard_stage,
+        )
+        .await
     }
 
     async fn do_read<T: AsyncRead + Unpin>(
         chunk: &mut T,
         mut limit: usize,
-        clipboard_stage: &mut ClipboardStage,
+        #[cfg(feature = "clipboard")] clipboard_stage: &mut ClipboardStage,
     ) -> Result<Packet, PacketError> {
         let code: [u8; 4] = chunk.read_bytes_fixed().await?;
         limit -= 4;
@@ -82,7 +88,9 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 limit -= 4;
                 Packet::GrabClipboard { id, seq_num }
             }
+            #[cfg(feature = "clipboard")]
             b"DCLP" => {
+                use log::{debug, warn};
                 let id = chunk.read_u8().await?;
                 let seq_num = chunk.read_u32().await?;
                 let mark = chunk.read_u8().await?;

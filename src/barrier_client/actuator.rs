@@ -63,6 +63,7 @@ pub trait Actuator {
         button: u16,
     ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
+    #[cfg(feature = "clipboard")]
     fn set_clipboard(
         &mut self,
         data: heapless::Vec<u8, 1024>,

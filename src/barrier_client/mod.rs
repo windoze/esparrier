@@ -1,5 +1,6 @@
 mod actuator;
 mod client;
+#[cfg(feature = "clipboard")]
 mod clipboard;
 mod error;
 mod packet;
