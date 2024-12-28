@@ -31,16 +31,6 @@ pub type IndicatorReceiver = embassy_sync::channel::Receiver<
     3,
 >;
 
-// Fallback indicator, no-op
-#[cfg(all(not(feature = "smartled"), not(feature = "led")))]
-pub async fn start_indicator(receiver: IndicatorReceiver) {
-    loop {
-        embassy_time::with_timeout(embassy_time::Duration::from_millis(100), receiver.receive())
-            .await
-            .ok();
-    }
-}
-
 // LED Indicator
 #[cfg(feature = "led")]
 pub use led_indicator::start_indicator;

@@ -62,27 +62,27 @@ async fn main(spawner: Spawner) {
     let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
 
-    // No indicator
-    #[cfg(all(not(feature = "smartled"), not(feature = "led")))]
-    spawner.spawn(indicator_task(receiver)).ok();
-    // LED indicator
-    #[cfg(feature = "led")]
-    spawner
-        .spawn(indicator_task(
-            // Is there any other way to obtain a pin from pin number?
-            unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
-            receiver,
-        ))
-        .ok();
-    // SmartLED/NeoPixel indicator
-    #[cfg(feature = "smartled")]
-    spawner
-        .spawn(indicator_task(
-            peripherals.RMT,
-            unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
-            receiver,
-        ))
-        .ok();
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "led")] {
+            spawner
+            .spawn(indicator_task(
+                // Is there any other way to obtain a pin from pin number?
+                unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
+                receiver,
+            ))
+            .ok();
+        } else if #[cfg(feature = "smartled")]{
+            spawner
+            .spawn(indicator_task(
+                peripherals.RMT,
+                unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+                receiver,
+            ))
+            .ok();
+        } else {
+            spawner.spawn(indicator_task(receiver)).ok();
+        }
+    }
 
     let sender: IndicatorSender = channel.sender();
     sender.try_send(IndicatorStatus::WifiConnecting).ok();
@@ -405,8 +405,11 @@ async fn indicator_task(
     start_indicator(rmt, pin, receiver).await;
 }
 
-#[cfg(all(not(feature = "smartled"), not(feature = "led")))]
+// Fallback to dummy indicator, no-op
+#[cfg(not(feature = "indicator"))]
 #[embassy_executor::task]
 async fn indicator_task(receiver: IndicatorReceiver) {
-    start_indicator(receiver).await;
+    loop {
+        receiver.receive().await.ok();
+    }
 }

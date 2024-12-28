@@ -1,12 +1,13 @@
 use embassy_time::Duration;
 use esp_hal::{gpio::AnyPin, peripherals::RMT, prelude::*, rmt::Rmt};
+use log::error;
 use smart_leds::{
     brightness, gamma,
     hsv::{hsv2rgb, Hsv},
     SmartLedsWrite,
 };
 
-use crate::{smartLedBuffer, SmartLedsAdapter};
+use crate::{esp_hal_smartled::SmartLedsAdapter, smartLedBuffer};
 
 use super::{IndicatorReceiver, IndicatorStatus};
 
@@ -67,11 +68,17 @@ async fn do_fade_in_out<const N: usize>(
 
         for b in (min_brightness..=max_brightness).step_by(step) {
             led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
+                .inspect_err(|e| {
+                    error!("Error writing to LED: {:?}", e);
+                })
                 .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
         }
         for b in (min_brightness..=max_brightness).rev().step_by(step) {
             led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
+                .inspect_err(|e| {
+                    error!("Error writing to LED: {:?}", e);
+                })
                 .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
         }

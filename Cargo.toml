@@ -74,15 +74,18 @@ embassy-usb = { version = "0.3.0", features = [
 ] }
 usbd-hid = "0.8.2"
 
+cfg-if = "1.0.0"
+
 embassy-sync = "0.6.1"
 smart-leds-trait = { version = "0.3.0", optional = true }
 smart-leds = { version = "0.4.0", optional = true }
 
 [features]
-default = ["usb"]
+default = ["usb", "smartled"]
 usb = []
-led = []
-smartled = ["smart-leds", "smart-leds-trait"]
+indicator = []
+led = ["indicator"]
+smartled = ["indicator", "smart-leds", "smart-leds-trait"]
 
 [profile.dev]
 # Rust debug is too slow.

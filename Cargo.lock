@@ -775,6 +775,7 @@ dependencies = [
 name = "esparrier"
 version = "0.1.6"
 dependencies = [
+ "cfg-if",
  "const_env",
  "critical-section",
  "embassy-executor",

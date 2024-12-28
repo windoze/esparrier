@@ -37,6 +37,7 @@ const SK68XX_T1L_NS: u32 = SK68XX_CODE_PERIOD - SK68XX_T1H_NS;
 
 /// All types of errors that can happen during the conversion and transmission
 /// of LED commands
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum LedAdapterError {
     /// Raised in the event that the provided data container is not large enough
