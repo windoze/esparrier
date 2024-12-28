@@ -5,7 +5,7 @@ Esparrier
 
 Esparrier is a [Barrier](https://github.com/debauchee/barrier) client for ESP32S3.
 
-This is a re-write of the original [Esparrier-IDF project](https://github.com/windoze/esparrier-idf), moving from `esp-idf-hal` to `esp-hal` baremetal infrastructure. Some functions are still missing, e.g. the clipboard support.
+This is a re-write of the original [Esparrier-IDF project](https://github.com/windoze/esparrier-idf), moving from `esp-idf-hal` to `esp-hal` baremetal infrastructure.
 
 ## How to build
 
