@@ -1,9 +1,19 @@
+use core::cmp::min;
+
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use log::{debug, info, warn};
 
 use crate::{
     synergy_hid::{ReportType, SynergyHid},
     Actuator, BarrierError, HidReport, HidReportSender, IndicatorSender, IndicatorStatus,
 };
+
+static CLIPBOARD_STORAGE: Mutex<CriticalSectionRawMutex, Option<heapless::Vec<u8, 1024>>> =
+    Mutex::new(None);
+
+pub async fn get_clipboard_storage() -> Option<heapless::Vec<u8, 1024>> {
+    CLIPBOARD_STORAGE.lock().await.clone()
+}
 
 pub struct UsbActuator {
     width: u16,
@@ -17,18 +27,16 @@ pub struct UsbActuator {
 
 impl UsbActuator {
     pub fn new(
-        width: u16,
-        height: u16,
-        flip_mouse_wheel: bool,
+        app_config: &crate::AppConfig,
         indicator: IndicatorSender,
         hid_writer: HidReportSender,
     ) -> Self {
         Self {
-            width,
-            height,
+            width: app_config.screen_width,
+            height: app_config.screen_height,
             x: 0,
             y: 0,
-            hid: SynergyHid::new(flip_mouse_wheel),
+            hid: SynergyHid::new(app_config.flip_wheel),
             indicator,
             hid_writer,
         }
@@ -142,7 +150,12 @@ impl Actuator for UsbActuator {
     }
 
     async fn set_clipboard(&mut self, data: heapless::Vec<u8, 1024>) -> Result<(), BarrierError> {
-        debug!("Set clipboard: data:{:?}", data);
+        debug!(
+            "Set clipboard: length: {}, data: {:?}",
+            data.len(),
+            &data[0..min(data.len(), 16)]
+        );
+        CLIPBOARD_STORAGE.lock().await.replace(data);
         Ok(())
     }
 

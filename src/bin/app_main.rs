@@ -270,13 +270,7 @@ async fn barrier_client_task(
     >,
 ) {
     loop {
-        let mut actuator = UsbActuator::new(
-            app_config.screen_width,
-            app_config.screen_height,
-            app_config.flip_wheel,
-            indicator,
-            hid_sender,
-        );
+        let mut actuator = UsbActuator::new(app_config, indicator, hid_sender);
         start(
             app_config.server.clone(),
             app_config.screen_name.clone(),

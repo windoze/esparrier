@@ -16,7 +16,7 @@ pub use hid_report_writer::{
 };
 pub use indicator::*;
 pub use synergy_hid::{ReportType, SynergyHid};
-pub use usb_actuator::UsbActuator;
+pub use usb_actuator::{get_clipboard_storage, UsbActuator};
 
 #[macro_export]
 macro_rules! mk_static {
