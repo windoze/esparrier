@@ -157,5 +157,6 @@ NOTE: When you copied a large amount of text or big image from other screen then
 ## Licenses and Copyrights
 
 * This project is released under [MIT license](LICENSE).
-* The `esp_hal_smartled.rs` file is taken from [esp-hal-community repo](https://github.com/esp-rs/esp-hal-community), which is licensed under MIT License and Apache License, version 2.0.
-* Some code snippets in the `gentable.c` were taken from [Barrier repo](https://github.com/debauchee/barrier) and licensed under GPLv2. The main project only uses it's output, not the code itself, so it's not bound by the GPL license.
+* The `esp_hal_smartled.rs` file is taken from [esp-hal-community repo](https://github.com/esp-rs/esp-hal-community), which is licensed under [MIT License](https://github.com/esp-rs/esp-hal-community/blob/main/LICENSE-MIT) and [Apache License, version 2.0](https://github.com/esp-rs/esp-hal-community/blob/main/LICENSE-APACHE).
+* Some code snippets in the `gentable.c` were taken from [Barrier repo](https://github.com/debauchee/barrier) and licensed under [GPLv2](https://github.com/debauchee/barrier/blob/master/LICENSE). The main project only uses it's output, not the code itself, so it's not bound by the GPL license.
+* Animated emoji images are taken from [Google Font Project](https://googlefonts.github.io/noto-emoji-animation/), which is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
