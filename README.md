@@ -69,6 +69,12 @@ NOTE: When you copied a large amount of text or big image from other screen then
 
 ## Build for other ESP32S3 boards
 
+* The release page provides pre-built binaries for some ESP32S3 boards, you can use them directly if your board is listed.
+    * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, and the clipboard feature is disabled as well.
+    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite), the SmartLED feature and the clipboard feature are enabled.
+    * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
+    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, and the clipboard feature is disabled due to the lack of a user button.
+
 * It's recommended to erase the flash before the first time flashing the binary to the board, you can do this with `esptool.py` or `cargo-espflash`:
     ```bash
     # With cargo-espflash
@@ -100,9 +106,10 @@ NOTE: When you copied a large amount of text or big image from other screen then
 
 2. Download the binary from the [releases page](https://github.com/windoze/esparrier/releases).
 
-3. Extract the binary from the archive. There are 3 pre-built binaries in the archive, choose the one that fits your board.
+3. Extract the binary from the archive. There are 4 pre-built binaries in the archive, choose the one that fits your board.
     * `esparrier.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable.
     * `esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite).
+    * `esparrier-m5atoms3.bin` - For [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3).
     * `esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
 
 4. Prepare the `config.json` file as described in the previous section.
@@ -134,7 +141,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
 * The USB remote wakeup may not work because the standard forbids a suspended device consume too much current but this program needs much more than the standard says to keep Wi-Fi connected. I still haven't figured out how to keep the program running with the current <2.5mA. Of course you can choose a board with external power source such as a battery, but it seems to be an overkill.
 * The program can accept inputs only **after** the board successfully connects to the WiFi and Barrier server, it may be too late to use the board as a USB keyboard/mouse in BIOS/EFI, some main board that has always-on USB ports may work, but I haven't tested it, or you can use a USB hub that can supply power even if the host is off.
 * The watchdog will reset the board if it doesn't receive heartbeat from the Barrier server, or the program itself runs out of control and doesn't process the heartbeat, for the number of seconds defined in `WATCHDOG_TIMEOUT` environment variable. The default watchdog timeout is 15 seconds, as the default Barrier heartbeat interval is 5 seconds, you may need to change the watchdog timeout if the Barrier server has a long heartbeat interval.
-* The built-in clipboard sharing function is incomplete, but it can be achieved with a [ClipSync app](https://github.com/windoze/clip-sync), or the OS's built-in clipboard sharing function, such as [Clip Sync on Windows](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) or [Universal Clipboard on macOs](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac), but it's not implemented in this program.
+* The built-in clipboard sharing function is incomplete, but it can be achieved with a [ClipSync app](https://github.com/windoze/clip-sync), or the OS's built-in clipboard sharing function, such as [Clip Sync on Windows](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) or [Universal Clipboard on macOs](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac).
 
 ## TODO:
 

@@ -1,3 +1,5 @@
+#[cfg(feature = "graphics")]
+mod graphical_indicator;
 #[cfg(feature = "led")]
 mod led_indicator;
 #[cfg(feature = "smartled")]
@@ -38,3 +40,7 @@ pub use led_indicator::start_indicator;
 // SmartLED/NeoPixel Indicator
 #[cfg(feature = "smartled")]
 pub use smartled_indicator::start_indicator;
+
+// LCD Graphical Indicator
+#[cfg(feature = "graphics")]
+pub use graphical_indicator::{start_indicator, GraphicalIndicatorConfig};
