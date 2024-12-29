@@ -9,7 +9,11 @@ use esp_hal::{
     prelude::*,
     spi::{master::Spi, AnySpi, SpiMode},
 };
-use mipidsi::{models::ST7789, options::ColorInversion, Builder};
+use mipidsi::{
+    models::ST7789,
+    options::{ColorInversion, ColorOrder},
+    Builder,
+};
 use tinygif::Gif;
 
 use crate::IndicatorStatus;
@@ -26,6 +30,8 @@ pub struct GraphicalIndicatorConfig {
     pub cs: AnyPin,
     pub rst: AnyPin,
     pub backlight: AnyPin,
+    pub color_inversion: ColorInversion,
+    pub color_order: ColorOrder,
 }
 
 type Display<'a> = mipidsi::Display<
@@ -63,13 +69,14 @@ fn init_display<'a>(config: GraphicalIndicatorConfig) -> Display<'a> {
     // Define the display from the display interface and initialize it
     Builder::new(ST7789, di)
         .reset_pin(rst)
-        .display_size(128, 128)
-        .invert_colors(ColorInversion::Inverted)
-        .color_order(mipidsi::options::ColorOrder::Bgr)
+        .display_size(config.width, config.height)
+        .invert_colors(config.color_inversion)
+        .color_order(config.color_order)
         .init(&mut delay)
         .unwrap()
 }
 
+// TODO: These animations take too much Flash space, should use smaller ones.
 const CONNECTING: &[u8] = include_bytes!("assets/connecting.gif");
 const INACTIVE: &[u8] = include_bytes!("assets/inactive.gif");
 const ACTIVE: &[u8] = include_bytes!("assets/active.gif");
@@ -93,6 +100,7 @@ pub async fn start_indicator(config: GraphicalIndicatorConfig, receiver: Indicat
         };
         if status == IndicatorStatus::Active {
             // Don't waste time on animation, just show the first frame and wait for the next status forever
+            // The SPI bus is pretty slow, showing animation in the active state may cause jitter and lag when receiving data and sending HID reports.
             gif.frames().next().unwrap().draw(&mut display).unwrap();
             if let Ok(s) =
                 embassy_time::with_timeout(Duration::from_secs(86400 * 100), receiver.receive())
@@ -102,6 +110,7 @@ pub async fn start_indicator(config: GraphicalIndicatorConfig, receiver: Indicat
                 continue;
             }
         } else {
+            // Show the animation and wait for the next status, we can afford it because there is no user interaction in the connecting and inactive states.
             for frame in gif.frames() {
                 frame.draw(&mut display).unwrap();
                 if let Ok(s) = embassy_time::with_timeout(

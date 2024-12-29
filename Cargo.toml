@@ -98,12 +98,18 @@ led = ["indicator"]
 smartled = ["indicator", "smart-leds", "smart-leds-trait"]
 graphics = [
     "indicator",
+    "clipboard",
     "embedded-hal-bus",
     "embedded-graphics",
     "mipidsi",
     "display-interface-spi",
     "tinygif",
 ]
+
+# Features for the ESP32-S3 boards
+m5atoms3-lite = ["smartled", "clipboard"]
+m5atoms3 = ["graphics", "clipboard"]
+xiao-esp32s3 = ["led"]
 
 [profile.dev]
 # Rust debug is too slow.

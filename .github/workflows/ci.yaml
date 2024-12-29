@@ -27,15 +27,19 @@ jobs:
           - command: build
             args: --release --features=led,clipboard
           - command: build
-            args: --release --features=smartled,clipboard
+            args: --release --features=m5atoms3-lite
+          - command: build
+            args: --release --features=m5atoms3
           - command: fmt
             args: --all -- --check --color always
           - command: clippy
             args: --release --workspace -- -D warnings
           - command: clippy
-            args: --release --features=led,clipboard --workspace -- -D warnings
+            args: --release --features=m5atoms3-lite --workspace -- -D warnings
           - command: clippy
             args: --release --features=smartled,clipboard --workspace -- -D warnings
+          - command: clippy
+            args: --release --features=m5atoms3 --workspace -- -D warnings
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

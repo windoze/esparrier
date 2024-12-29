@@ -100,9 +100,10 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 2. 从 [发布页面](https://github.com/windoze/esparrier/releases) 下载二进制文件。
 
-3. 从压缩包中提取二进制文件。压缩包中有 3 个预构建的二进制文件，选择适合您开发板的那一个。
+3. 从压缩包中提取二进制文件。压缩包中有 4 个预构建的二进制文件，选择适合您开发板的那一个。
     * `esparrier.bin` - 适用于大多数具有原生 USB-OTG 端口的通用 ESP32S3 开发板，但不支持状态指示功能。
     * `esparrier-m5atoms3-lite.bin` - 适用于 [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite)。
+    * `esparrier-m5atoms3.bin` - 适用于 [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3)。
     * `esparrier-xiao-esp32s3.bin` - 适用于 [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)。
 
 4. 按照上一节中的描述准备 `config.json` 文件。

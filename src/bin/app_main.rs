@@ -93,6 +93,7 @@ async fn main(spawner: Spawner) {
         } else if #[cfg(feature = "graphics")]{
             spawner
             .spawn(indicator_task(
+                // TODO: These configs are for M5AtomS3 only
                 esparrier::GraphicalIndicatorConfig {
                     width: 128,
                     height: 128,
@@ -103,6 +104,8 @@ async fn main(spawner: Spawner) {
                     cs: peripherals.GPIO15.into(),
                     rst: peripherals.GPIO34.into(),
                     backlight: peripherals.GPIO16.into(),
+                    color_inversion: mipidsi::options::ColorInversion::Inverted,
+                    color_order: mipidsi::options::ColorOrder::Bgr,
                 },
                 receiver,
             ))
