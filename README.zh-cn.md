@@ -157,3 +157,4 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 * `esp_hal_smartled.rs` 文件取自 [esp-hal-community 仓库](https://github.com/esp-rs/esp-hal-community)，该文件以 [MIT 许可证](https://github.com/esp-rs/esp-hal-community/blob/main/LICENSE-MIT)和 [Apache 许可证 2.0 版本](https://github.com/esp-rs/esp-hal-community/blob/main/LICENSE-APACHE)发布。
 * `gentable.c` 中的一些代码片段取自 [Barrier 仓库](https://github.com/debauchee/barrier) 并以 [GPLv2 许可证](https://github.com/debauchee/barrier/blob/master/LICENSE)发布。主项目仅使用其输出，而不是代码本身，所以不受GPL许可协议的约束。
 * 动画表情图标取自 [Google Font 项目](https://googlefonts.github.io/noto-emoji-animation/)，以 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 许可发布。
+* 本项目中使用的任何其他第三方库或工具均受其各自的许可和版权约束。
