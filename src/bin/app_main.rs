@@ -82,14 +82,6 @@ async fn main(spawner: Spawner) {
                 receiver,
             ))
             .ok();
-        } else if #[cfg(feature = "smartled")]{
-            spawner
-            .spawn(indicator_task(
-                peripherals.RMT,
-                unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
-                receiver,
-            ))
-            .ok();
         } else if #[cfg(feature = "graphics")]{
             spawner
             .spawn(indicator_task(
