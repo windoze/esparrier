@@ -98,7 +98,6 @@ led = ["indicator"]
 smartled = ["indicator", "smart-leds", "smart-leds-trait"]
 graphics = [
     "indicator",
-    "clipboard",
     "embedded-hal-bus",
     "embedded-graphics",
     "mipidsi",
