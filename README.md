@@ -150,11 +150,12 @@ NOTE: When you copied a large amount of text or big image from other screen then
 - [x] Support media keys
 - [x] Re-configure without rebuilding
 - [x] Support other ESP32S3 boards
+- [x] Partially support clipboard, now plain ASCII text can be pasted.
 - [ ] Support Mac special keys
 - [ ] Support TLS
 - [ ] NVS encryption
 - [ ] OTA update
-- [ ] Support clipboard, maybe with a separate app running on the host to handle the clipboard data
+- [ ] BLE HID support, and then support ESP32 and ESP32C3/C6
 
 ## Licenses and Copyrights
 

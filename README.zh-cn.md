@@ -144,11 +144,12 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 - [x] 支持媒体键
 - [x] 无需重建即可更新配置
 - [x] 支持其他 ESP32S3 开发板
+- [x] 支持部分剪贴板功能，现在可以粘贴ASCII纯文本格式
 - [ ] 支持 Mac 特殊键
 - [ ] 支持 TLS
 - [ ] NVS 加密
 - [ ] OTA 更新
-- [ ] 支持剪贴板，也许可以通过在主机上运行的单独应用程序来处理剪贴板数据
+- [ ] 支持 BLE HID，进而支持 ESP32 和 ESP32C3/C6
 
 ## 许可证和版权
 
