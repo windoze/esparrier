@@ -82,6 +82,31 @@ async fn main(spawner: Spawner) {
                 receiver,
             ))
             .ok();
+        } else if #[cfg(feature = "smartled")]{
+            spawner
+            .spawn(indicator_task(
+                peripherals.RMT,
+                unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+                receiver,
+            ))
+            .ok();
+        } else if #[cfg(feature = "graphics")]{
+            spawner
+            .spawn(indicator_task(
+                esparrier::GraphicalIndicatorConfig {
+                    width: 128,
+                    height: 128,
+                    spi: peripherals.SPI3.into(),
+                    mosi: peripherals.GPIO21.into(),
+                    sck: peripherals.GPIO17.into(),
+                    dc: peripherals.GPIO33.into(),
+                    cs: peripherals.GPIO15.into(),
+                    rst: peripherals.GPIO34.into(),
+                    backlight: peripherals.GPIO16.into(),
+                },
+                receiver,
+            ))
+            .ok();
         } else {
             spawner.spawn(indicator_task(receiver)).ok();
         }
@@ -415,6 +440,12 @@ async fn indicator_task(receiver: IndicatorReceiver) {
     loop {
         receiver.receive().await;
     }
+}
+
+#[cfg(feature = "graphics")]
+#[embassy_executor::task]
+async fn indicator_task(config: esparrier::GraphicalIndicatorConfig, receiver: IndicatorReceiver) {
+    esparrier::start_indicator(config, receiver).await;
 }
 
 #[cfg(feature = "clipboard")]
