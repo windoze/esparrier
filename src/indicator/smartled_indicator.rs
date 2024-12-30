@@ -74,7 +74,7 @@ async fn do_fade_in_out<const N: usize>(
                 .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
         }
-        for b in (min_brightness..=max_brightness).rev().step_by(step) {
+        for b in (min_brightness..=max_brightness).step_by(step).rev() {
             led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
                 .inspect_err(|e| {
                     error!("Error writing to LED: {:?}", e);

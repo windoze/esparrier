@@ -144,18 +144,14 @@ impl AppConfig {
     }
 }
 
-fn is_valid_json_byte(b: u8) -> bool {
-    // CR, LF, tab, space, visible ASCII characters, and UTF-8 sequences
-    // Not a strict JSON check, but should be good enough for our use case
-    b == 0x0D || b == 0x0A || b == 0x09 || (0x20..=0xF7).contains(&b)
-}
-
 fn json_range(buf: &[u8]) -> &[u8] {
+    // HACK: Naive JSON range finder, looking for the first '{' and '}' pair
+    // It only works in this case, where the JSON doesn't contain any '{' or '}' in the string,
+    // and the JSON doesn't contain any nested object.
     let start = buf.iter().position(|&b| b == b'{').unwrap_or_default();
-    // Find the first invalid JSON byte
     let end = buf[start..]
         .iter()
-        .position(|&b| !is_valid_json_byte(b))
+        .position(|&b| b == b'}')
         .unwrap_or_default();
     if end > 0 {
         &buf[start..start + end]
