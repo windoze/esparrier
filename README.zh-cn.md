@@ -115,10 +115,15 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
     # 擦除全部闪存
     esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
     # 写入二进制文件和配置
-    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x10000 /path/to/esparrier.bin 0x9000 /path/to/config.json
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x8000 /path/to/the/repo/esparrier/partition_table.bin 0x10000 /path/to/esparrier.bin 0x9000 /path/to/config.json
     ```
 
-6. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。
+6. `partition_table.bin` 文件由 ESP-IDF 开发包中的 `gen_esp32part.py` 生成，如果你已经安装了 ESP-IDF ，你可以使用下列命令自行生成这个文件：
+    ```bash
+    /path/to/esp-idf/components/partition_table/gen_esp32part.py partitions_single_app.csv partition_table.bin
+    ```
+
+7. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。
 
 ## 注意事项：
 
