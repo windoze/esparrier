@@ -154,7 +154,7 @@ fn json_range(buf: &[u8]) -> &[u8] {
         .position(|&b| b == b'}')
         .unwrap_or_default();
     if end > 0 {
-        &buf[start..start + end]
+        &buf[start..start + end + 1]
     } else {
         &buf[start..]
     }
