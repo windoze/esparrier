@@ -6,10 +6,7 @@ mod keycodes;
 
 #[cfg(feature = "clipboard")]
 pub(super) use ascii_2_hid::ASCII_2_HID;
-pub(super) use descriptors::{
-    ABSOLUTE_WHEEL_MOUSE_REPORT_DESCRIPTOR, BOOT_KEYBOARD_REPORT_DESCRIPTOR,
-    CONSUMER_CONTROL_REPORT_DESCRIPTOR,
-};
+use descriptors::COMPOSITE_REPORT_DESCRIPTOR;
 pub(super) use hid::KeyboardReport;
 pub(super) use hid::*;
 pub(crate) use keycodes::{synergy_mouse_button, synergy_to_hid, KeyCode};
@@ -26,18 +23,13 @@ pub enum ReportType {
 impl ReportType {
     pub const fn get_report_size(&self) -> usize {
         match self {
-            Self::Keyboard => 8,
-            Self::Mouse => 7,
-            Self::Consumer => 2,
+            Self::Keyboard => 9,
+            Self::Mouse => 8,
+            Self::Consumer => 3,
         }
     }
-
-    pub const fn get_report_descriptor(&self) -> &'static [u8] {
-        match *self {
-            ReportType::Keyboard => BOOT_KEYBOARD_REPORT_DESCRIPTOR,
-            ReportType::Mouse => ABSOLUTE_WHEEL_MOUSE_REPORT_DESCRIPTOR,
-            ReportType::Consumer => CONSUMER_CONTROL_REPORT_DESCRIPTOR,
-        }
+    pub const fn get_max_report_size() -> usize {
+        9
     }
 }
 
@@ -69,10 +61,10 @@ impl SynergyHid {
         }
     }
 
-    pub const fn get_report_descriptor(report_type: ReportType) -> (u8, &'static [u8]) {
+    pub const fn get_report_descriptor() -> (u8, &'static [u8]) {
         (
-            report_type.get_report_size() as u8,
-            report_type.get_report_descriptor(),
+            ReportType::get_max_report_size() as u8,
+            COMPOSITE_REPORT_DESCRIPTOR,
         )
     }
 
@@ -90,16 +82,19 @@ impl SynergyHid {
         match hid {
             KeyCode::None => {
                 warn!("Keycode not found");
-                report[..8].copy_from_slice(&self.keyboard_report.clear());
-                (ReportType::Keyboard, &report[0..8])
+                report[0] = ReportType::Keyboard as u8;
+                report[1..9].copy_from_slice(&self.keyboard_report.clear());
+                (ReportType::Keyboard, &report[0..9])
             }
             KeyCode::Key(key) => {
-                report[..8].copy_from_slice(&self.keyboard_report.press(key));
-                (ReportType::Keyboard, &report[0..8])
+                report[0] = ReportType::Keyboard as u8;
+                report[1..9].copy_from_slice(&self.keyboard_report.press(key));
+                (ReportType::Keyboard, &report[0..9])
             }
             KeyCode::Consumer(key) => {
-                report[..2].copy_from_slice(&self.consumer_report.press(key));
-                (ReportType::Consumer, &report[0..2])
+                report[0] = ReportType::Consumer as u8;
+                report[1..3].copy_from_slice(&self.consumer_report.press(key));
+                (ReportType::Consumer, &report[0..3])
             }
         }
     }
@@ -128,16 +123,19 @@ impl SynergyHid {
         match hid {
             KeyCode::None => {
                 warn!("Keycode not found");
-                report[..8].copy_from_slice(&self.keyboard_report.clear());
-                (ReportType::Keyboard, &report[0..8])
+                report[0] = ReportType::Keyboard as u8;
+                report[1..9].copy_from_slice(&self.keyboard_report.clear());
+                (ReportType::Keyboard, &report[0..9])
             }
             KeyCode::Key(key) => {
-                report[..8].copy_from_slice(&self.keyboard_report.release(key));
-                (ReportType::Keyboard, &report[0..8])
+                report[0] = ReportType::Keyboard as u8;
+                report[1..9].copy_from_slice(&self.keyboard_report.release(key));
+                (ReportType::Keyboard, &report[0..9])
             }
             KeyCode::Consumer(_key) => {
-                report[..2].copy_from_slice(&self.consumer_report.release());
-                (ReportType::Consumer, &report[0..2])
+                report[0] = ReportType::Consumer as u8;
+                report[1..3].copy_from_slice(&self.consumer_report.release());
+                (ReportType::Consumer, &report[0..3])
             }
         }
     }
@@ -149,18 +147,21 @@ impl SynergyHid {
         report: &'a mut [u8],
     ) -> (ReportType, &'a [u8]) {
         (self.x, self.y) = (x, y);
-        report[..7].copy_from_slice(&self.mouse_report.move_to(x, y));
-        (ReportType::Mouse, &report[..7])
+        report[0] = ReportType::Mouse as u8;
+        report[1..8].copy_from_slice(&self.mouse_report.move_to(x, y));
+        (ReportType::Mouse, &report[..8])
     }
 
     pub fn mouse_down<'a>(&mut self, button: i8, report: &'a mut [u8]) -> (ReportType, &'a [u8]) {
-        report[..7].copy_from_slice(&self.mouse_report.mouse_down(synergy_mouse_button(button)));
-        (ReportType::Mouse, &report[..7])
+        report[0] = ReportType::Mouse as u8;
+        report[1..8].copy_from_slice(&self.mouse_report.mouse_down(synergy_mouse_button(button)));
+        (ReportType::Mouse, &report[..8])
     }
 
     pub fn mouse_up<'a>(&mut self, button: i8, report: &'a mut [u8]) -> (ReportType, &'a [u8]) {
-        report[..7].copy_from_slice(&self.mouse_report.mouse_up(synergy_mouse_button(button)));
-        (ReportType::Mouse, &report[..7])
+        report[0] = ReportType::Mouse as u8;
+        report[1..8].copy_from_slice(&self.mouse_report.mouse_up(synergy_mouse_button(button)));
+        (ReportType::Mouse, &report[..8])
     }
 
     pub fn mouse_scroll<'a>(
@@ -177,8 +178,9 @@ impl SynergyHid {
             x = -x;
             y = -y;
         }
-        report[..7].copy_from_slice(&self.mouse_report.mouse_wheel(y, x));
-        (ReportType::Mouse, &report[..7])
+        report[0] = ReportType::Mouse as u8;
+        report[1..8].copy_from_slice(&self.mouse_report.mouse_wheel(y, x));
+        (ReportType::Mouse, &report[..8])
     }
 
     pub fn clear<'a>(
@@ -188,16 +190,19 @@ impl SynergyHid {
     ) -> (ReportType, &'a [u8]) {
         match report_type {
             ReportType::Keyboard => {
-                report[..8].copy_from_slice(&self.keyboard_report.clear());
-                (ReportType::Keyboard, &report[..8])
+                report[0] = ReportType::Keyboard as u8;
+                report[1..9].copy_from_slice(&self.keyboard_report.clear());
+                (ReportType::Keyboard, &report[0..9])
             }
             ReportType::Mouse => {
-                report[..7].copy_from_slice(&self.mouse_report.clear());
-                (ReportType::Mouse, &report[..7])
+                report[0] = ReportType::Mouse as u8;
+                report[1..8].copy_from_slice(&self.mouse_report.clear());
+                (ReportType::Mouse, &report[..8])
             }
             ReportType::Consumer => {
-                report[..2].copy_from_slice(&self.consumer_report.clear());
-                (ReportType::Consumer, &report[..2])
+                report[0] = ReportType::Consumer as u8;
+                report[1..3].copy_from_slice(&self.consumer_report.clear());
+                (ReportType::Consumer, &report[0..3])
             }
         }
     }

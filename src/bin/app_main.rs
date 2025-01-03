@@ -7,10 +7,9 @@ use core::sync::atomic::{AtomicBool, Ordering};
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
-use embassy_futures::select::select;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
-use embassy_usb::{class::hid::HidReaderWriter, Builder};
+use embassy_usb::{class::hid::HidWriter, Builder};
 use esp_backtrace as _;
 use esp_hal::{
     otg_fs::Usb,
@@ -131,9 +130,10 @@ async fn main(spawner: Spawner) {
     wdt1.feed();
 
     // Initialize the USB peripheral
-    let mut keyboard_state = embassy_usb::class::hid::State::new();
-    let mut mouse_state = embassy_usb::class::hid::State::new();
-    let mut consumer_state = embassy_usb::class::hid::State::new();
+    let hid_dev_state = mk_static!(
+        embassy_usb::class::hid::State<'static>,
+        embassy_usb::class::hid::State::new()
+    );
 
     let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
     let mut builder = init_hid(
@@ -145,16 +145,18 @@ async fn main(spawner: Spawner) {
         app_config.serial_number.as_str(),
     );
 
-    let keyboard = init_hid_dev(
+    // Create classes on the builder.
+    let config = embassy_usb::class::hid::Config {
+        report_descriptor: SynergyHid::get_report_descriptor().1,
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: 64,
+    };
+
+    let hid_dev = HidWriter::<'_, esp_hal::otg_fs::asynch::Driver<'_>, 9>::new(
         &mut builder,
-        &mut keyboard_state,
-        esparrier::ReportType::Keyboard,
-    );
-    let mouse = init_hid_dev(&mut builder, &mut mouse_state, esparrier::ReportType::Mouse);
-    let consumer = init_hid_dev(
-        &mut builder,
-        &mut consumer_state,
-        esparrier::ReportType::Consumer,
+        hid_dev_state,
+        config,
     );
 
     // Build the builder.
@@ -176,7 +178,7 @@ async fn main(spawner: Spawner) {
     let hid_channel = mk_static!(HidReportChannel, HidReportChannel::new());
     let hid_receiver = hid_channel.receiver();
     let hid_sender = hid_channel.sender();
-    let report_task = start_hid_report_writer(keyboard, mouse, consumer, hid_receiver);
+    spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
 
     #[cfg(feature = "clipboard")]
     {
@@ -241,10 +243,8 @@ async fn main(spawner: Spawner) {
         app_config, stack, sender, hid_sender, wdt1,
     ));
 
-    // Wait for anything to finish, then restart.
-    // These are all necessary tasks, none of them should exit prematurely.
-    select(usb_fut, report_task).await;
-    warn!("Critical task exited, restarting...");
+    // TODO: How can I start it earlier? Now we have to wait until the WiFi is connected
+    usb_fut.await;
 }
 
 #[embassy_executor::task]
@@ -370,46 +370,32 @@ fn init_hid<'a>(
     let mut config = embassy_usb::Config::new(vid, pid);
     config.manufacturer = Some(manufacturer);
     config.product = Some(product);
+    config.device_class = 0x03; // HID
+    config.device_sub_class = 0x01; // Boot Interface Subclass
+    config.device_protocol = 0x01; // Keyboard
     config.serial_number = Some(serial_number);
-    config.max_power = 150;
-    config.max_packet_size_0 = 64;
+    config.max_power = 100;
+    config.supports_remote_wakeup = true;
+    config.max_packet_size_0 = 16;
 
     // Create embassy-usb DeviceBuilder using the driver and config.
-    // It needs some buffers for building the descriptors.
-    let config_descriptor = mk_static!([u8; 256], [0u8; 256]);
-    let bos_descriptor = mk_static!([u8; 256], [0u8; 256]);
-    // You can also add a Microsoft OS descriptor.
-    let msos_descriptor = mk_static!([u8; 256], [0u8; 256]);
+    let config_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
+    let bos_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
+    let msos_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
     let control_buf = mk_static!([u8; 256], [0u8; 256]);
     let device_handler = mk_static!(MyDeviceHandler, MyDeviceHandler::new());
 
     let mut builder = embassy_usb::Builder::new(
         driver,
         config,
-        config_descriptor,
-        bos_descriptor,
-        msos_descriptor,
+        config_descriptor_buf,
+        bos_descriptor_buf,
+        msos_descriptor_buf,
         control_buf,
     );
 
     builder.handler(device_handler);
     builder
-}
-
-fn init_hid_dev<'a, const N: usize>(
-    builder: &mut Builder<'a, esp_hal::otg_fs::asynch::Driver<'a>>,
-    state: &'a mut embassy_usb::class::hid::State<'a>,
-    report_type: esparrier::ReportType,
-) -> HidReaderWriter<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N> {
-    // Create classes on the builder.
-    let config = embassy_usb::class::hid::Config {
-        report_descriptor: SynergyHid::get_report_descriptor(report_type).1,
-        request_handler: None,
-        poll_ms: 1,
-        max_packet_size: 64,
-    };
-
-    HidReaderWriter::<'a, esp_hal::otg_fs::asynch::Driver<'a>, 1, N>::new(builder, state, config)
 }
 
 #[cfg(feature = "led")]
