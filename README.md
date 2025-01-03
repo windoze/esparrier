@@ -139,7 +139,6 @@ NOTE: When you copied a large amount of text or big image from other screen then
 * A board with external antenna is strongly recommended, the ESP32S3 supports 2.4G WiFi only and this band is really crowded, you may experience jittering and lagging if the wireless connection is not stable.
 * The code doesn't work on ESP8266/ESP32/ESP32C3 because they don't have required USB features, ESP32S2 may work with adaptation but it's not tested.
 * It doesn't support TLS, so you must run Barrier server without TLS.
-* The mouse is configured to the absolute mode, you must set the correct screen resolution before building, otherwise the mouse may not work properly.
 * Clipboard, file transfer, and cross-screen drag and drop are not supported due to the technical limitation, there is no way a standard USB HID device can do that, maybe an auxiliary app running on the host can help but I still don't have clear idea.
 * The mouse function doesn't work properly unless you set the screen size correctly, it may move too fast/slow or even jumpy. Usually the screen size should be the same as the host screen resolution.
 * Frequently connect/disconnect may cause the board fail to connect to the WiFi and/or Barrier server, you may need to power off the board and wait for a while before trying again.
