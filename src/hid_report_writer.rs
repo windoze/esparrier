@@ -87,6 +87,7 @@ impl MyDeviceHandler {
     }
 }
 
+// TODO: Make remote wakeup work.
 impl embassy_usb::Handler for MyDeviceHandler {
     fn enabled(&mut self, enabled: bool) {
         self.configured.store(false, Ordering::Relaxed);
@@ -161,31 +162,36 @@ pub fn init_hid(spawner: Spawner, app_config: &'static AppConfig) -> HidReportSe
         embassy_usb::class::hid::State::new()
     );
 
-    let hid_dev: HidWriter<'_, esp_hal::otg_fs::asynch::Driver<'_>, 9> =
-        HidWriter::<'_, esp_hal::otg_fs::asynch::Driver<'_>, 9>::new(
-            &mut builder,
-            hid_dev_state,
-            embassy_usb::class::hid::Config {
-                report_descriptor: SynergyHid::get_report_descriptor().1,
-                request_handler: None,
-                poll_ms: 1,
-                max_packet_size: 64,
-            },
-        );
+    let hid_dev = HidWriter::<'_, esp_hal::otg_fs::asynch::Driver<'_>, 9>::new(
+        &mut builder,
+        hid_dev_state,
+        embassy_usb::class::hid::Config {
+            report_descriptor: SynergyHid::get_report_descriptor().1,
+            request_handler: None,
+            poll_ms: 1, // As fast as possible, we already have a long latency from WiFi.
+            max_packet_size: 16,
+        },
+    );
 
     // Build the builder.
     cfg_if::cfg_if! {
         if #[cfg(feature = "usb")] {
-            let usb = builder.build();
-            spawner.must_spawn(usb_task(usb));
+            // Start the USB stack.
+            spawner.must_spawn(usb_task(builder.build()));
         } else {
             info!("USB is disabled");
         }
     }
+
+    // Create the HID report channel.
     let hid_channel = mk_static!(HidReportChannel, HidReportChannel::new());
     let hid_receiver = hid_channel.receiver();
     let hid_sender = hid_channel.sender();
+
+    // Start the HID report writer task.
     spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
+
+    // Return the HID report sender.
     hid_sender
 }
 
