@@ -195,7 +195,7 @@ async fn main(spawner: Spawner) {
         let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
         start(
             app_config.get_server_endpoint(),
-            app_config.screen_name.clone(),
+            &app_config.screen_name,
             stack,
             &mut actuator,
             &mut wdt1,

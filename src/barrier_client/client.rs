@@ -21,7 +21,7 @@ pub enum ClipboardStage {
 #[allow(unused_assignments)]
 pub async fn start<A: Actuator>(
     endpoint: IpEndpoint,
-    device_name: heapless::String<64>,
+    device_name: &'static str,
     stack: &'static Stack<WifiDevice<'_, WifiStaDevice>>,
     actor: &mut A,
     watchdog: &mut Wdt<<esp_hal::peripherals::TIMG1 as Peripheral>::P>,
@@ -64,7 +64,7 @@ pub async fn start<A: Actuator>(
         .map_err(|_| BarrierError::ProtocolError(super::error::PacketError::IoError))?;
     stream.write_u16(1).await?;
     stream.write_u16(6).await?;
-    stream.write_str(device_name.as_ref()).await?;
+    stream.write_str(device_name).await?;
 
     actor.connected().await?;
     watchdog.feed();
