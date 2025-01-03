@@ -11,8 +11,6 @@ static CLIPBOARD_STORAGE: embassy_sync::mutex::Mutex<
     Option<heapless::Vec<u8, MAX_CLIPBOARD_SIZE>>,
 > = embassy_sync::mutex::Mutex::new(None);
 
-const KEY_PRESS_INTERVAL: Duration = Duration::from_millis(5);
-
 async fn send_clipboard(hid_writer: HidReportSender) {
     let data = CLIPBOARD_STORAGE.lock().await.clone();
     if let Some(data) = data {
@@ -34,30 +32,30 @@ async fn send_clipboard(hid_writer: HidReportSender) {
                 // A key with a modifier
                 // Press modifier key
                 hid_writer.send(HidReport::keyboard(report.press(m))).await;
-                embassy_time::Timer::after(KEY_PRESS_INTERVAL).await;
+                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Press key
                 hid_writer.send(HidReport::keyboard(report.press(k))).await;
-                embassy_time::Timer::after(KEY_PRESS_INTERVAL).await;
+                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Release key
                 hid_writer
                     .send(HidReport::keyboard(report.release(k)))
                     .await;
-                embassy_time::Timer::after(KEY_PRESS_INTERVAL).await;
+                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Release modifier key
                 hid_writer
                     .send(HidReport::keyboard(report.release(m)))
                     .await;
-                embassy_time::Timer::after(KEY_PRESS_INTERVAL).await;
+                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
             } else {
                 // A key without a modifier
                 // Press key
                 hid_writer.send(HidReport::keyboard(report.press(k))).await;
-                embassy_time::Timer::after(KEY_PRESS_INTERVAL).await;
+                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Release key
                 hid_writer
                     .send(HidReport::keyboard(report.release(k)))
                     .await;
-                embassy_time::Timer::after(KEY_PRESS_INTERVAL).await;
+                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
             }
         }
     }
