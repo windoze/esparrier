@@ -7,6 +7,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
+use embassy_futures::select::{select, Either};
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
 use embassy_usb::{class::hid::HidWriter, Builder};
@@ -29,6 +30,7 @@ use log::{debug, error, info, warn};
 use esparrier::{
     mk_static, start, start_hid_report_writer, AppConfig, HidReportChannel, HidReportSender,
     IndicatorChannel, IndicatorReceiver, IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
+    REMOTE_WAKEUP_SIGNAL, SUSPENDED,
 };
 
 #[cfg(feature = "led")]
@@ -167,7 +169,18 @@ async fn main(spawner: Spawner) {
 
     // // Run the USB device.
     #[cfg(feature = "usb")]
-    let usb_fut = usb.run();
+    let usb_fut = async {
+        loop {
+            usb.run_until_suspend().await;
+            match select(usb.wait_resume(), REMOTE_WAKEUP_SIGNAL.wait()).await {
+                Either::First(_) => (),
+                Either::Second(_) => {
+                    debug!("Remote wakeup signal received, triggering host to remote wakeup");
+                    usb.remote_wakeup().await.ok();
+                }
+            }
+        }
+    };
     #[cfg(not(feature = "usb"))]
     let usb_fut = async {
         loop {
@@ -330,7 +343,12 @@ impl MyDeviceHandler {
 impl embassy_usb::Handler for MyDeviceHandler {
     fn enabled(&mut self, enabled: bool) {
         self.configured.store(false, Ordering::Relaxed);
-        info!("Device {}", if enabled { "enabled" } else { "disabled" });
+        SUSPENDED.store(false, Ordering::Release);
+        if enabled {
+            info!("Device enabled");
+        } else {
+            info!("Device disabled");
+        }
     }
 
     fn reset(&mut self) {
@@ -351,6 +369,22 @@ impl embassy_usb::Handler for MyDeviceHandler {
             )
         } else {
             info!("Device is no longer configured, the Vbus current limit is 100mA.");
+        }
+    }
+
+    fn suspended(&mut self, suspended: bool) {
+        if suspended {
+            info!("Device suspended, the Vbus current limit is 500µA (or 2.5mA for high-power devices with remote wakeup enabled).");
+            SUSPENDED.store(true, Ordering::Release);
+        } else {
+            SUSPENDED.store(false, Ordering::Release);
+            if self.configured.load(Ordering::Relaxed) {
+                info!(
+                    "Device resumed, it may now draw up to the configured current limit from Vbus"
+                );
+            } else {
+                info!("Device resumed, the Vbus current limit is 100mA");
+            }
         }
     }
 }

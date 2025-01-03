@@ -13,6 +13,7 @@ pub use barrier_client::*;
 pub use config::AppConfig;
 pub use hid_report_writer::{
     start_hid_report_writer, HidReport, HidReportChannel, HidReportReceiver, HidReportSender,
+    REMOTE_WAKEUP_SIGNAL, SUSPENDED,
 };
 pub use indicator::*;
 pub use synergy_hid::{ReportType, SynergyHid};

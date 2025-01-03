@@ -1,14 +1,21 @@
-use core::future::Future;
+use core::{
+    future::Future,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use embassy_sync::{
-    blocking_mutex::raw::NoopRawMutex,
+    blocking_mutex::raw::{CriticalSectionRawMutex, NoopRawMutex},
     channel::{Channel, Receiver, Sender},
+    signal::Signal,
 };
 use embassy_usb::class::hid::HidWriter;
 use esp_hal::otg_fs::asynch::Driver;
 use log::debug;
 
 type ReportWriter<'a, const N: usize> = HidWriter<'a, Driver<'a>, N>;
+
+pub static SUSPENDED: AtomicBool = AtomicBool::new(false);
+pub static REMOTE_WAKEUP_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new();
 
 #[derive(Debug)]
 pub enum HidReport {
@@ -57,13 +64,18 @@ impl<'a> UsbHidReportWriter<'a> {
 
 impl<'a> HidReportWriter for UsbHidReportWriter<'a> {
     async fn write_report(&mut self, report: HidReport) {
-        debug!("Sending report: {:?}", report);
-        let data: &[u8] = match &report {
-            HidReport::Keyboard(data) => data,
-            HidReport::Mouse(data) => data,
-            HidReport::Consumer(data) => data,
-        };
-        self.hid_report_writer.write(data).await.ok();
+        if SUSPENDED.load(Ordering::Acquire) {
+            debug!("Triggering remote wakeup");
+            REMOTE_WAKEUP_SIGNAL.signal(());
+        } else {
+            debug!("Sending report: {:?}", report);
+            let data: &[u8] = match &report {
+                HidReport::Keyboard(data) => data,
+                HidReport::Mouse(data) => data,
+                HidReport::Consumer(data) => data,
+            };
+            self.hid_report_writer.write(data).await.ok();
+        }
     }
 }
 
