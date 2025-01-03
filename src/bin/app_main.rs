@@ -3,16 +3,12 @@
 
 extern crate alloc;
 
-use core::sync::atomic::{AtomicBool, Ordering};
-
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
-use embassy_usb::{class::hid::HidWriter, Builder};
 use esp_backtrace as _;
 use esp_hal::{
-    otg_fs::Usb,
     prelude::*,
     timer::timg::{MwdtStage, MwdtStageAction, TimerGroup},
 };
@@ -28,8 +24,8 @@ use heapless::Vec;
 use log::{debug, error, info, warn};
 
 use esparrier::{
-    indicator_task, mk_static, start, start_hid_report_writer, AppConfig, HidReportChannel,
-    HidReportSender, IndicatorChannel, IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
+    indicator_task, init_hid, mk_static, start, AppConfig, IndicatorChannel, IndicatorSender,
+    IndicatorStatus, UsbActuator,
 };
 
 #[cfg(feature = "led")]
@@ -97,8 +93,10 @@ async fn main(spawner: Spawner) {
         .spawn(indicator_task(indicator_config, receiver))
         .ok();
 
-    let sender: IndicatorSender = channel.sender();
-    sender.try_send(IndicatorStatus::WifiConnecting).ok();
+    let indicator_sender: IndicatorSender = channel.sender();
+    indicator_sender
+        .try_send(IndicatorStatus::WifiConnecting)
+        .ok();
 
     let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER)
         .split::<esp_hal::timer::systimer::Target>();
@@ -120,59 +118,12 @@ async fn main(spawner: Spawner) {
     wdt1.enable();
     wdt1.feed();
 
-    // Initialize the USB peripheral
-    let hid_dev_state = mk_static!(
-        embassy_usb::class::hid::State<'static>,
-        embassy_usb::class::hid::State::new()
-    );
-
-    let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
-    let mut builder = init_hid(
-        usb,
-        app_config.vid,
-        app_config.pid,
-        app_config.manufacturer.as_str(),
-        app_config.product.as_str(),
-        app_config.serial_number.as_str(),
-    );
-
-    // Create classes on the builder.
-    let config = embassy_usb::class::hid::Config {
-        report_descriptor: SynergyHid::get_report_descriptor().1,
-        request_handler: None,
-        poll_ms: 1,
-        max_packet_size: 64,
-    };
-
-    let hid_dev = HidWriter::<'_, esp_hal::otg_fs::asynch::Driver<'_>, 9>::new(
-        &mut builder,
-        hid_dev_state,
-        config,
-    );
-
-    // Build the builder.
-    #[cfg(feature = "usb")]
-    let mut usb = builder.build();
-    #[cfg(not(feature = "usb"))]
-    let _usb = builder.build();
-
-    // // Run the USB device.
-    #[cfg(feature = "usb")]
-    let usb_fut = usb.run();
-    #[cfg(not(feature = "usb"))]
-    let usb_fut = async {
-        loop {
-            Timer::after(Duration::from_secs(1)).await;
-        }
-    };
-
-    let hid_channel = mk_static!(HidReportChannel, HidReportChannel::new());
-    let hid_receiver = hid_channel.receiver();
-    let hid_sender = hid_channel.sender();
-    spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
+    // Set up the HID report sender
+    let hid_sender = init_hid(spawner, app_config);
 
     #[cfg(feature = "clipboard")]
     {
+        // Start the paste button task
         let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
         spawner
             .spawn(esparrier::button_task(button, hid_sender))
@@ -213,6 +164,7 @@ async fn main(spawner: Spawner) {
         )
     );
 
+    // Start the WiFi connection tasks
     spawner.must_spawn(connection(
         controller,
         app_config.ssid.to_owned(),
@@ -239,12 +191,21 @@ async fn main(spawner: Spawner) {
     }
     wdt1.feed();
 
-    spawner.must_spawn(barrier_client_task(
-        app_config, stack, sender, hid_sender, wdt1,
-    ));
-
-    // TODO: How can I start it earlier? Now we have to wait until the WiFi is connected
-    usb_fut.await;
+    loop {
+        let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
+        start(
+            app_config.get_server_endpoint(),
+            app_config.screen_name.clone(),
+            stack,
+            &mut actuator,
+            &mut wdt1,
+        )
+        .await
+        .inspect_err(|e| error!("Failed to connect: {:?}", e))
+        .ok();
+        warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
+        Timer::after(Duration::from_millis(5000)).await
+    }
 }
 
 #[embassy_executor::task]
@@ -286,114 +247,4 @@ async fn connection(
 #[embassy_executor::task]
 async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
     stack.run().await
-}
-
-#[embassy_executor::task]
-async fn barrier_client_task(
-    app_config: &'static AppConfig,
-    stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
-    indicator: IndicatorSender,
-    hid_sender: HidReportSender,
-    mut wdt: esp_hal::timer::timg::Wdt<
-        <esp_hal::peripherals::TIMG1 as esp_hal::peripheral::Peripheral>::P,
-    >,
-) {
-    loop {
-        let mut actuator = UsbActuator::new(app_config, indicator, hid_sender);
-        start(
-            app_config.get_server_endpoint(),
-            app_config.screen_name.clone(),
-            stack,
-            &mut actuator,
-            &mut wdt,
-        )
-        .await
-        .inspect_err(|e| error!("Failed to connect: {:?}", e))
-        .ok();
-        warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
-        Timer::after(Duration::from_millis(5000)).await
-    }
-}
-
-struct MyDeviceHandler {
-    configured: AtomicBool,
-}
-
-impl MyDeviceHandler {
-    fn new() -> Self {
-        MyDeviceHandler {
-            configured: AtomicBool::new(false),
-        }
-    }
-}
-
-impl embassy_usb::Handler for MyDeviceHandler {
-    fn enabled(&mut self, enabled: bool) {
-        self.configured.store(false, Ordering::Relaxed);
-        info!("Device {}", if enabled { "enabled" } else { "disabled" });
-    }
-
-    fn reset(&mut self) {
-        self.configured.store(false, Ordering::Relaxed);
-        info!("Bus reset, the Vbus current limit is 100mA");
-    }
-
-    fn addressed(&mut self, addr: u8) {
-        self.configured.store(false, Ordering::Relaxed);
-        info!("USB address set to: {}", addr);
-    }
-
-    fn configured(&mut self, configured: bool) {
-        self.configured.store(configured, Ordering::Relaxed);
-        if configured {
-            info!(
-                "Device configured, it may now draw up to the configured current limit from Vbus."
-            )
-        } else {
-            info!("Device is no longer configured, the Vbus current limit is 100mA.");
-        }
-    }
-}
-
-fn init_hid<'a>(
-    usb: Usb<'a>,
-    vid: u16,
-    pid: u16,
-    manufacturer: &'static str,
-    product: &'static str,
-    serial_number: &'static str,
-) -> Builder<'a, esp_hal::otg_fs::asynch::Driver<'a>> {
-    // Create the driver, from the HAL.
-    let ep_out_buffer = mk_static!([u8; 1024], [0u8; 1024]);
-    let config = esp_hal::otg_fs::asynch::Config::default();
-    let driver = esp_hal::otg_fs::asynch::Driver::new(usb, ep_out_buffer, config);
-    let mut config = embassy_usb::Config::new(vid, pid);
-    config.manufacturer = Some(manufacturer);
-    config.product = Some(product);
-    config.device_class = 0x03; // HID
-    config.device_sub_class = 0x01; // Boot Interface Subclass
-    config.device_protocol = 0x01; // Keyboard
-    config.serial_number = Some(serial_number);
-    config.max_power = 100;
-    config.supports_remote_wakeup = true;
-    config.max_packet_size_0 = 16;
-
-    // Create embassy-usb DeviceBuilder using the driver and config.
-    let config_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
-    let bos_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
-    let msos_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
-    let control_buf = mk_static!([u8; 256], [0u8; 256]);
-    let device_handler = mk_static!(MyDeviceHandler, MyDeviceHandler::new());
-
-    let mut builder = embassy_usb::Builder::new(
-        driver,
-        config,
-        config_descriptor_buf,
-        bos_descriptor_buf,
-        msos_descriptor_buf,
-        control_buf,
-    );
-
-    builder.handler(device_handler);
-    builder
 }
