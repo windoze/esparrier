@@ -17,6 +17,24 @@ pub enum HidReport {
     Consumer([u8; 3]),
 }
 
+impl HidReport {
+    pub fn keyboard(data: [u8; 8]) -> Self {
+        Self::Keyboard([
+            1, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+        ])
+    }
+
+    pub fn mouse(data: [u8; 7]) -> Self {
+        Self::Mouse([
+            2, data[0], data[1], data[2], data[3], data[4], data[5], data[6],
+        ])
+    }
+
+    pub fn consumer(data: [u8; 2]) -> Self {
+        Self::Consumer([3, data[0], data[1]])
+    }
+}
+
 pub type HidReportChannel = Channel<NoopRawMutex, HidReport, 3>;
 
 pub type HidReportSender = Sender<'static, NoopRawMutex, HidReport, 3>;

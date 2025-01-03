@@ -36,29 +36,29 @@ pub async fn send_clipboard(hid_writer: HidReportSender) {
             if m != 0 {
                 // A key with a modifier
                 // Press modifier key
-                hid_writer.send(HidReport::Keyboard(report.press(m))).await;
+                hid_writer.send(HidReport::keyboard(report.press(m))).await;
                 embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Press key
-                hid_writer.send(HidReport::Keyboard(report.press(k))).await;
+                hid_writer.send(HidReport::keyboard(report.press(k))).await;
                 embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Release key
                 hid_writer
-                    .send(HidReport::Keyboard(report.release(k)))
+                    .send(HidReport::keyboard(report.release(k)))
                     .await;
                 embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Release modifier key
                 hid_writer
-                    .send(HidReport::Keyboard(report.release(m)))
+                    .send(HidReport::keyboard(report.release(m)))
                     .await;
                 embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
             } else {
                 // A key without a modifier
                 // Press key
-                hid_writer.send(HidReport::Keyboard(report.press(k))).await;
+                hid_writer.send(HidReport::keyboard(report.press(k))).await;
                 embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
                 // Release key
                 hid_writer
-                    .send(HidReport::Keyboard(report.release(k)))
+                    .send(HidReport::keyboard(report.release(k)))
                     .await;
                 embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
             }
