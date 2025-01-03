@@ -20,7 +20,7 @@ use crate::IndicatorStatus;
 
 use super::IndicatorReceiver;
 
-pub struct GraphicalIndicatorConfig {
+pub struct IndicatorConfig {
     pub width: u16,
     pub height: u16,
     pub spi: AnySpi,
@@ -43,7 +43,7 @@ type Display<'a> = mipidsi::Display<
     Output<'a>,
 >;
 
-fn init_display<'a>(config: GraphicalIndicatorConfig) -> Display<'a> {
+fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     // Turn on the backlight
     let _backlight = Output::new(config.backlight, Level::High);
 
@@ -81,7 +81,7 @@ const CONNECTING: &[u8] = include_bytes!("assets/connecting.gif");
 const INACTIVE: &[u8] = include_bytes!("assets/inactive.gif");
 const ACTIVE: &[u8] = include_bytes!("assets/active.gif");
 
-pub async fn start_indicator(config: GraphicalIndicatorConfig, receiver: IndicatorReceiver) {
+pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
     let mut display = init_display(config);
     display.clear(Rgb565::BLACK).unwrap();
 

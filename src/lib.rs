@@ -1,6 +1,8 @@
 #![no_std]
 
 mod barrier_client;
+#[cfg(feature = "clipboard")]
+mod clipboard;
 mod config;
 #[cfg(feature = "smartled")]
 mod esp_hal_smartled;
@@ -10,6 +12,8 @@ mod synergy_hid;
 mod usb_actuator;
 
 pub use barrier_client::*;
+#[cfg(feature = "clipboard")]
+pub use clipboard::{button_task, set_clipboard};
 pub use config::AppConfig;
 pub use hid_report_writer::{
     start_hid_report_writer, HidReport, HidReportChannel, HidReportReceiver, HidReportSender,
@@ -17,8 +21,6 @@ pub use hid_report_writer::{
 pub use indicator::*;
 pub use synergy_hid::{ReportType, SynergyHid};
 pub use usb_actuator::UsbActuator;
-#[cfg(feature = "clipboard")]
-pub use usb_actuator::{send_clipboard, MAX_CLIPBOARD_SIZE};
 
 #[macro_export]
 macro_rules! mk_static {

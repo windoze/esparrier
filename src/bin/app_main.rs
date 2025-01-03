@@ -27,8 +27,8 @@ use esp_wifi::{
 use log::{debug, error, info, warn};
 
 use esparrier::{
-    mk_static, start, start_hid_report_writer, AppConfig, HidReportChannel, HidReportSender,
-    IndicatorChannel, IndicatorReceiver, IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
+    indicator_task, mk_static, start, start_hid_report_writer, AppConfig, HidReportChannel,
+    HidReportSender, IndicatorChannel, IndicatorSender, IndicatorStatus, SynergyHid, UsbActuator,
 };
 
 #[cfg(feature = "led")]
@@ -66,45 +66,35 @@ async fn main(spawner: Spawner) {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "led")] {
-            spawner
-            .spawn(indicator_task(
-                // Is there any other way to obtain a pin from pin number?
-                unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
-                receiver,
-            ))
-            .ok();
+            let indicator_config = esparrier::IndicatorConfig {
+                pin: unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
+            };
         } else if #[cfg(feature = "smartled")]{
-            spawner
-            .spawn(indicator_task(
-                peripherals.RMT,
-                unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
-                receiver,
-            ))
-            .ok();
+            let indicator_config = esparrier::IndicatorConfig {
+                rmt: peripherals.RMT,
+                pin: unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+            };
         } else if #[cfg(feature = "graphics")]{
-            spawner
-            .spawn(indicator_task(
-                // TODO: These configs are for M5AtomS3 only
-                esparrier::GraphicalIndicatorConfig {
-                    width: 128,
-                    height: 128,
-                    spi: peripherals.SPI3.into(),
-                    mosi: peripherals.GPIO21.into(),
-                    sck: peripherals.GPIO17.into(),
-                    dc: peripherals.GPIO33.into(),
-                    cs: peripherals.GPIO15.into(),
-                    rst: peripherals.GPIO34.into(),
-                    backlight: peripherals.GPIO16.into(),
-                    color_inversion: mipidsi::options::ColorInversion::Inverted,
-                    color_order: mipidsi::options::ColorOrder::Bgr,
-                },
-                receiver,
-            ))
-            .ok();
+            let indicator_config = esparrier::IndicatorConfig {
+                width: 128,
+                height: 128,
+                spi: peripherals.SPI3.into(),
+                mosi: peripherals.GPIO21.into(),
+                sck: peripherals.GPIO17.into(),
+                dc: peripherals.GPIO33.into(),
+                cs: peripherals.GPIO15.into(),
+                rst: peripherals.GPIO34.into(),
+                backlight: peripherals.GPIO16.into(),
+                color_inversion: mipidsi::options::ColorInversion::Inverted,
+                color_order: mipidsi::options::ColorOrder::Bgr,
+            };
         } else {
-            spawner.spawn(indicator_task(receiver)).ok();
+            let indicator_config = esparrier::IndicatorConfig;
         }
-    }
+    };
+    spawner
+        .spawn(indicator_task(indicator_config, receiver))
+        .ok();
 
     let sender: IndicatorSender = channel.sender();
     sender.try_send(IndicatorStatus::WifiConnecting).ok();
@@ -183,7 +173,9 @@ async fn main(spawner: Spawner) {
     #[cfg(feature = "clipboard")]
     {
         let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
-        spawner.spawn(button_task(button, hid_sender)).ok();
+        spawner
+            .spawn(esparrier::button_task(button, hid_sender))
+            .ok();
     }
 
     // Initialize WiFi
@@ -396,48 +388,4 @@ fn init_hid<'a>(
 
     builder.handler(device_handler);
     builder
-}
-
-#[cfg(feature = "led")]
-#[embassy_executor::task]
-async fn indicator_task(pin: esp_hal::gpio::AnyPin, receiver: IndicatorReceiver) {
-    esparrier::start_indicator(pin, receiver).await;
-}
-
-#[cfg(feature = "smartled")]
-#[embassy_executor::task]
-async fn indicator_task(
-    rmt: esp_hal::peripherals::RMT,
-    pin: esp_hal::gpio::AnyPin,
-    receiver: IndicatorReceiver,
-) {
-    esparrier::start_indicator(rmt, pin, receiver).await;
-}
-
-// Fallback to dummy indicator, no-op
-#[cfg(not(feature = "indicator"))]
-#[embassy_executor::task]
-async fn indicator_task(receiver: IndicatorReceiver) {
-    loop {
-        receiver.receive().await;
-    }
-}
-
-#[cfg(feature = "graphics")]
-#[embassy_executor::task]
-async fn indicator_task(config: esparrier::GraphicalIndicatorConfig, receiver: IndicatorReceiver) {
-    esparrier::start_indicator(config, receiver).await;
-}
-
-#[cfg(feature = "clipboard")]
-#[embassy_executor::task]
-async fn button_task(button: esp_hal::gpio::AnyPin, hid_writer: HidReportSender) {
-    use embedded_hal_async::digital::Wait;
-    let input = esp_hal::gpio::Input::new(button, esp_hal::gpio::Pull::Up);
-    let mut debouncer = async_debounce::Debouncer::new(input, Duration::from_millis(50));
-
-    loop {
-        debouncer.wait_for_rising_edge().await.ok();
-        esparrier::send_clipboard(hid_writer).await;
-    }
 }

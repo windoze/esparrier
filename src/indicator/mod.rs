@@ -1,3 +1,5 @@
+#[cfg(not(feature = "indicator"))]
+mod dummy_indicator;
 #[cfg(feature = "graphics")]
 mod graphical_indicator;
 #[cfg(feature = "led")]
@@ -35,12 +37,20 @@ pub type IndicatorReceiver = embassy_sync::channel::Receiver<
 
 // LED Indicator
 #[cfg(feature = "led")]
-pub use led_indicator::start_indicator;
+pub use led_indicator::{start_indicator, IndicatorConfig};
 
 // SmartLED/NeoPixel Indicator
 #[cfg(feature = "smartled")]
-pub use smartled_indicator::start_indicator;
+pub use smartled_indicator::{start_indicator, IndicatorConfig};
 
 // LCD Graphical Indicator
 #[cfg(feature = "graphics")]
-pub use graphical_indicator::{start_indicator, GraphicalIndicatorConfig};
+pub use graphical_indicator::{start_indicator, IndicatorConfig};
+
+#[cfg(not(feature = "indicator"))]
+pub use dummy_indicator::{start_indicator, IndicatorConfig};
+
+#[embassy_executor::task]
+pub async fn indicator_task(config: IndicatorConfig, receiver: IndicatorReceiver) {
+    start_indicator(config, receiver).await;
+}
