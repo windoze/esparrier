@@ -5,67 +5,6 @@ use crate::{
     Actuator, BarrierError, HidReport, HidReportSender, IndicatorSender, IndicatorStatus,
 };
 
-#[cfg(feature = "clipboard")]
-#[const_env::from_env]
-pub const MAX_CLIPBOARD_SIZE: usize = 1024;
-
-#[cfg(feature = "clipboard")]
-static CLIPBOARD_STORAGE: embassy_sync::mutex::Mutex<
-    embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
-    Option<heapless::Vec<u8, MAX_CLIPBOARD_SIZE>>,
-> = embassy_sync::mutex::Mutex::new(None);
-
-#[cfg(feature = "clipboard")]
-pub async fn send_clipboard(hid_writer: HidReportSender) {
-    let data = CLIPBOARD_STORAGE.lock().await.clone();
-    if let Some(data) = data {
-        debug!(
-            "Send clipboard: {:?}",
-            &data.as_slice()[0..core::cmp::min(data.len(), 16)]
-        );
-        for byte in data {
-            // Ignore non-ASCII characters
-            if byte > 0x7F {
-                continue;
-            }
-            let [k, m] = crate::synergy_hid::ASCII_2_HID[byte as usize];
-            if k == 0 {
-                continue;
-            }
-            let mut report = crate::synergy_hid::KeyboardReport::default();
-            if m != 0 {
-                // A key with a modifier
-                // Press modifier key
-                hid_writer.send(HidReport::keyboard(report.press(m))).await;
-                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
-                // Press key
-                hid_writer.send(HidReport::keyboard(report.press(k))).await;
-                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
-                // Release key
-                hid_writer
-                    .send(HidReport::keyboard(report.release(k)))
-                    .await;
-                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
-                // Release modifier key
-                hid_writer
-                    .send(HidReport::keyboard(report.release(m)))
-                    .await;
-                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
-            } else {
-                // A key without a modifier
-                // Press key
-                hid_writer.send(HidReport::keyboard(report.press(k))).await;
-                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
-                // Release key
-                hid_writer
-                    .send(HidReport::keyboard(report.release(k)))
-                    .await;
-                embassy_time::Timer::after(embassy_time::Duration::from_millis(10)).await;
-            }
-        }
-    }
-}
-
 pub struct UsbActuator {
     width: u16,
     height: u16,
@@ -203,14 +142,9 @@ impl Actuator for UsbActuator {
     #[cfg(feature = "clipboard")]
     async fn set_clipboard(
         &mut self,
-        data: heapless::Vec<u8, MAX_CLIPBOARD_SIZE>,
+        data: heapless::Vec<u8, { crate::clipboard::MAX_CLIPBOARD_SIZE }>,
     ) -> Result<(), BarrierError> {
-        debug!(
-            "Set clipboard: length: {}, data: {:?}",
-            data.len(),
-            &data[0..core::cmp::min(data.len(), 16)]
-        );
-        CLIPBOARD_STORAGE.lock().await.replace(data);
+        crate::clipboard::set_clipboard(data).await;
         Ok(())
     }
 

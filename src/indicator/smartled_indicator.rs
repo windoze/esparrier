@@ -102,10 +102,15 @@ async fn fade_in_out<const N: usize>(
     }
 }
 
-pub async fn start_indicator(rmt: RMT, pin: AnyPin, receiver: IndicatorReceiver) {
-    let rmt = Rmt::new(rmt, 80.MHz()).unwrap();
+pub struct IndicatorConfig {
+    pub rmt: RMT,
+    pub pin: AnyPin,
+}
+
+pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
+    let rmt = Rmt::new(config.rmt, 80.MHz()).unwrap();
     let rmt_buffer = smartLedBuffer!(1);
-    let mut led = SmartLedsAdapter::new(rmt.channel0, pin, rmt_buffer);
+    let mut led = SmartLedsAdapter::new(rmt.channel0, config.pin, rmt_buffer);
 
     let mut status = IndicatorStatus::WifiConnecting;
 

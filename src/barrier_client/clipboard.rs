@@ -12,8 +12,7 @@ pub enum ClipboardFormat {
     Bitmap = 2,
 }
 
-#[cfg(feature = "clipboard")]
-use crate::MAX_CLIPBOARD_SIZE;
+use crate::clipboard::MAX_CLIPBOARD_SIZE;
 
 pub async fn parse_clipboard<T: PacketReader>(
     stream: &mut T,

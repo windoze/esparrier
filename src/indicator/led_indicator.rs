@@ -28,8 +28,12 @@ fn get_led_config(status: IndicatorStatus) -> LedConfig {
     }
 }
 
-pub async fn start_indicator(pin: AnyPin, receiver: IndicatorReceiver) {
-    let mut p = Output::new(pin, Level::Low);
+pub struct IndicatorConfig {
+    pub pin: AnyPin,
+}
+
+pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
+    let mut p = Output::new(config.pin, Level::Low);
     let mut status = IndicatorStatus::WifiConnecting;
 
     loop {
