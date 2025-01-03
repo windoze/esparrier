@@ -1,4 +1,4 @@
-use embassy_net::{tcp::TcpSocket, IpEndpoint, Ipv4Address, Stack};
+use embassy_net::{tcp::TcpSocket, IpEndpoint, Stack};
 use embedded_io_async::Write;
 use esp_hal::{peripheral::Peripheral, timer::timg::Wdt};
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
@@ -19,8 +19,8 @@ pub enum ClipboardStage {
 }
 
 #[allow(unused_assignments)]
-pub async fn start<A: Actuator, Ep: AsRef<str>>(
-    endpoint: Ep,
+pub async fn start<A: Actuator>(
+    endpoint: IpEndpoint,
     device_name: heapless::String<64>,
     stack: &'static Stack<WifiDevice<'_, WifiStaDevice>>,
     actor: &mut A,
@@ -31,12 +31,12 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
 
-    debug!("Connecting to {}", endpoint.as_ref());
+    debug!("Connecting to {}", endpoint);
     let mut stream = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
     stream.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
     stream
-        .connect(parse_endpoint(endpoint))
+        .connect(endpoint)
         .await
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .map_err(|_| BarrierError::Disconnected)?;
@@ -191,27 +191,4 @@ pub async fn start<A: Actuator, Ep: AsRef<str>>(
     }
     actor.disconnected().await?;
     Err(BarrierError::Disconnected)
-}
-
-fn parse_addr(s: &str) -> Ipv4Address {
-    let mut parts = s.split('.');
-    let a = parts.next().expect("invalid ip address");
-    let b = parts.next().expect("invalid ip address");
-    let c = parts.next().expect("invalid ip address");
-    let d = parts.next().expect("invalid ip address");
-    let a = a.parse().expect("invalid ip address");
-    let b = b.parse().expect("invalid ip address");
-    let c = c.parse().expect("invalid ip address");
-    let d = d.parse().expect("invalid ip address");
-    Ipv4Address::new(a, b, c, d)
-}
-
-fn parse_endpoint<Ep: AsRef<str>>(s: Ep) -> IpEndpoint {
-    let s = s.as_ref();
-    let mut parts = s.split(':');
-    let ip = parts.next().expect("invalid ip endpoint");
-    let port = parts.next().expect("invalid ip endpoint");
-    let ip = parse_addr(ip);
-    let port = port.parse().expect("invalid port");
-    IpEndpoint::from((ip, port))
 }

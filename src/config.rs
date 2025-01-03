@@ -1,6 +1,7 @@
 use core::{cmp::min, str::FromStr};
 
 use const_env::from_env;
+use embassy_net::{IpEndpoint, Ipv4Address, Ipv4Cidr};
 use embedded_storage::ReadStorage;
 use esp_storage::FlashStorage;
 use heapless::String;
@@ -49,6 +50,15 @@ pub struct AppConfig {
     pub screen_height: u16,
     #[serde(default)]
     pub flip_wheel: bool,
+
+    // Network configuration
+
+    // Static IP configuration, CIDR notation, optional
+    #[serde(default)]
+    ip_addr: Option<String<20>>,
+    // Gateway IP address, optional
+    #[serde(default)]
+    gateway: Option<String<16>>,
 
     // USB HID configuration
     #[serde(default = "get_default_vid")]
@@ -110,6 +120,8 @@ impl Default for AppConfig {
             screen_width: SCREEN_WIDTH,
             screen_height: SCREEN_HEIGHT,
             flip_wheel: REVERSED_WHEEL,
+            ip_addr: None,
+            gateway: None,
             vid: USB_VID,
             pid: USB_PID,
             manufacturer: String::from_str(USB_MANUFACTURER).unwrap(),
@@ -142,6 +154,18 @@ impl AppConfig {
             })
             .unwrap_or_default()
     }
+
+    pub fn get_server_endpoint(&self) -> IpEndpoint {
+        parse_endpoint(&self.server)
+    }
+
+    pub fn get_ip_addr(&self) -> Option<Ipv4Cidr> {
+        self.ip_addr.as_ref().map(|s| parse_cidr(s))
+    }
+
+    pub fn get_gateway(&self) -> Option<Ipv4Address> {
+        self.gateway.as_ref().map(|s| parse_addr(s))
+    }
 }
 
 fn json_range(buf: &[u8]) -> &[u8] {
@@ -158,4 +182,36 @@ fn json_range(buf: &[u8]) -> &[u8] {
     } else {
         &buf[start..]
     }
+}
+
+fn parse_addr(s: &str) -> Ipv4Address {
+    let mut parts = s.split('.');
+    let a = parts.next().expect("invalid ip address");
+    let b = parts.next().expect("invalid ip address");
+    let c = parts.next().expect("invalid ip address");
+    let d = parts.next().expect("invalid ip address");
+    let a = a.parse().expect("invalid ip address");
+    let b = b.parse().expect("invalid ip address");
+    let c = c.parse().expect("invalid ip address");
+    let d = d.parse().expect("invalid ip address");
+    Ipv4Address::new(a, b, c, d)
+}
+
+fn parse_cidr(s: &str) -> Ipv4Cidr {
+    let mut parts = s.split('/');
+    let ip = parts.next().expect("invalid cidr address");
+    let port = parts.next().expect("invalid cidr address");
+    let ip = parse_addr(ip);
+    let prefix_len = port.parse().expect("invalid prefix length");
+    Ipv4Cidr::new(ip, prefix_len)
+}
+
+fn parse_endpoint<Ep: AsRef<str>>(s: Ep) -> IpEndpoint {
+    let s = s.as_ref();
+    let mut parts = s.split(':');
+    let ip = parts.next().expect("invalid ip endpoint");
+    let port = parts.next().expect("invalid ip endpoint");
+    let ip = parse_addr(ip);
+    let port = port.parse().expect("invalid port");
+    IpEndpoint::from((ip, port))
 }

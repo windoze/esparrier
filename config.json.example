@@ -17,6 +17,11 @@
     // Set to `true` to reverse the direction of the mouse wheels, optional, default value is false
     "flip_wheel": false,
 
+    // Static IP address, optional, omit to use DHCP, default value is null or omitted
+    "ip_addr": "192.168.100.201/24",
+    // Gateway IP address, optional, can be omitted if use DHCP or the server is in the same subnet
+    "gateway": "192.168.100.1",
+
     // Below are internal configurations, usually you don't need to change them and can be omitted
 
     // USB VID, optional, default value is 3338(0x0d0a)

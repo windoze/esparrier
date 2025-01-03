@@ -24,6 +24,7 @@ use esp_wifi::{
     },
     EspWifiController,
 };
+use heapless::Vec;
 use log::{debug, error, info, warn};
 
 use esparrier::{
@@ -188,7 +189,14 @@ async fn main(spawner: Spawner) {
         esp_wifi::init(timg0.timer0, rng, peripherals.RADIO_CLK,).unwrap()
     );
 
-    let config = embassy_net::Config::dhcpv4(Default::default());
+    let config = match app_config.get_ip_addr() {
+        Some(addr) => embassy_net::Config::ipv4_static(embassy_net::StaticConfigV4 {
+            address: addr,
+            dns_servers: Vec::new(),           // We don't really need DNS
+            gateway: app_config.get_gateway(), // Gateway is optional if server is on the same subnet
+        }),
+        None => embassy_net::Config::dhcpv4(Default::default()),
+    };
 
     let wifi = peripherals.WIFI;
     let (wifi_interface, controller) =
@@ -293,7 +301,7 @@ async fn barrier_client_task(
     loop {
         let mut actuator = UsbActuator::new(app_config, indicator, hid_sender);
         start(
-            app_config.server.clone(),
+            app_config.get_server_endpoint(),
             app_config.screen_name.clone(),
             stack,
             &mut actuator,
