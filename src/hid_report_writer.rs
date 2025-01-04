@@ -203,7 +203,7 @@ pub fn init_hid(
     let usb_fut = async {
         let _usb = builder.build();
         loop {
-            Timer::after(Duration::from_secs(1)).await;
+            embassy_time::Timer::after(embassy_time::Duration::from_secs(3600)).await;
         }
     };
 
