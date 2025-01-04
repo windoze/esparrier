@@ -61,6 +61,8 @@ async fn main(spawner: Spawner) {
     let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
 
+    // TODO: We can read pin number from the config after the [PR](https://github.com/esp-rs/esp-hal/pull/2854) is released, then we can enable `smartled` and `led` at the same time, and the indicator cat be selected by the config at runtime.
+    // But the graphics indicator is totally another story.
     cfg_if::cfg_if! {
         if #[cfg(feature = "led")] {
             let indicator_config = esparrier::IndicatorConfig {
@@ -116,7 +118,7 @@ async fn main(spawner: Spawner) {
     wdt1.enable();
     wdt1.feed();
 
-    let (hid_sender, usb_fut) = init_hid(spawner, app_config);
+    let (hid_sender, hid_fut) = init_hid(spawner, app_config);
 
     #[cfg(feature = "clipboard")]
     {
@@ -146,8 +148,13 @@ async fn main(spawner: Spawner) {
     };
 
     let wifi = peripherals.WIFI;
-    let (wifi_interface, controller) =
+    let (wifi_interface, mut controller) =
         esp_wifi::wifi::new_with_mode(init, wifi, WifiStaDevice).unwrap();
+
+    // Disable power saving for maximum performance
+    controller
+        .set_power_saving(esp_wifi::config::PowerSaveMode::None)
+        .ok();
 
     // Init network stack
     let stack = &*mk_static!(
@@ -191,7 +198,7 @@ async fn main(spawner: Spawner) {
     ));
 
     // TODO: How can I start it earlier? Now we have to wait until the WiFi is connected
-    usb_fut.await;
+    hid_fut.await;
 }
 
 #[embassy_executor::task]
