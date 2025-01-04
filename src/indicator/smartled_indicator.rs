@@ -7,9 +7,12 @@ use smart_leds::{
     SmartLedsWrite,
 };
 
-use crate::{esp_hal_smartled::SmartLedsAdapter, smartLedBuffer};
+use crate::esp_hal_smartled::SmartLedsAdapter;
 
 use super::{IndicatorReceiver, IndicatorStatus};
+
+#[const_env::from_env]
+const SMART_LED_COUNT: usize = 1;
 
 const RED: Hsv = Hsv {
     hue: 0,
@@ -54,7 +57,7 @@ async fn do_fade_in_out<const N: usize>(
     step: usize,
 ) -> Result<(), IndicatorStatus> {
     led.write(brightness(
-        gamma([hsv2rgb(color)].into_iter()),
+        gamma([hsv2rgb(color); SMART_LED_COUNT].into_iter()),
         min_brightness,
     ))
     .unwrap();
@@ -67,19 +70,25 @@ async fn do_fade_in_out<const N: usize>(
         }
 
         for b in (min_brightness..=max_brightness).step_by(step) {
-            led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
-                .inspect_err(|e| {
-                    error!("Error writing to LED: {:?}", e);
-                })
-                .unwrap();
+            led.write(brightness(
+                gamma([hsv2rgb(color); SMART_LED_COUNT].into_iter()),
+                b,
+            ))
+            .inspect_err(|e| {
+                error!("Error writing to LED: {:?}", e);
+            })
+            .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
         }
         for b in (min_brightness..=max_brightness).step_by(step).rev() {
-            led.write(brightness(gamma([hsv2rgb(color)].into_iter()), b))
-                .inspect_err(|e| {
-                    error!("Error writing to LED: {:?}", e);
-                })
-                .unwrap();
+            led.write(brightness(
+                gamma([hsv2rgb(color); SMART_LED_COUNT].into_iter()),
+                b,
+            ))
+            .inspect_err(|e| {
+                error!("Error writing to LED: {:?}", e);
+            })
+            .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
         }
     }
@@ -109,7 +118,7 @@ pub struct IndicatorConfig {
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
     let rmt = Rmt::new(config.rmt, 80.MHz()).unwrap();
-    let rmt_buffer = smartLedBuffer!(1);
+    let rmt_buffer = [0u32; SMART_LED_COUNT * 24 + 1];
     let mut led = SmartLedsAdapter::new(rmt.channel0, config.pin, rmt_buffer);
 
     let mut status = IndicatorStatus::WifiConnecting;

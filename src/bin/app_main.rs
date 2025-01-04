@@ -302,7 +302,7 @@ async fn barrier_client_task(
         let mut actuator = UsbActuator::new(app_config, indicator, hid_sender);
         start(
             app_config.get_server_endpoint(),
-            app_config.screen_name.clone(),
+            &app_config.screen_name,
             stack,
             &mut actuator,
             &mut wdt,
