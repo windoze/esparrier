@@ -125,10 +125,7 @@ impl embassy_usb::Handler for MyDeviceHandler {
     }
 }
 
-pub fn init_hid(
-    spawner: Spawner,
-    app_config: &'static AppConfig,
-) -> (HidReportSender, impl Future<Output = ()>) {
+pub fn init_hid(spawner: Spawner, app_config: &'static AppConfig) -> HidReportSender {
     // Create the driver, from the HAL.
     let usb = Usb::new(
         unsafe { USB0::steal() },
@@ -193,27 +190,32 @@ pub fn init_hid(
     );
 
     // // Run the USB device.
-    #[cfg(feature = "usb")]
-    let usb_fut = async {
-        // I highly doubt there are some kind of race conditions inside of the OTG_FS driver.
-        // M5Atom S3 cannot start the USB peripheral without a delay, but S3 Lite can.
-        embassy_time::Timer::after(embassy_time::Duration::from_millis(200)).await;
-        // Build the builder.
-        let mut usb = builder.build();
-        usb.run().await;
-    };
-    #[cfg(not(feature = "usb"))]
-    let usb_fut = async {
-        let _usb = builder.build();
-        loop {
-            embassy_time::Timer::after(embassy_time::Duration::from_secs(3600)).await;
-        }
-    };
+    spawner.must_spawn(usb_task(builder));
 
     let hid_channel = mk_static!(HidReportChannel, HidReportChannel::new());
     let hid_receiver = hid_channel.receiver();
     let hid_sender = hid_channel.sender();
     spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
 
-    (hid_sender, usb_fut)
+    hid_sender
+}
+
+#[embassy_executor::task]
+async fn usb_task(builder: embassy_usb::Builder<'static, Driver<'static>>) {
+    // I highly doubt there are some kind of race conditions inside of the OTG_FS driver.
+    // M5Atom S3 cannot start the USB peripheral without a delay, but S3 Lite can.
+    embassy_time::Timer::after(embassy_time::Duration::from_millis(200)).await;
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "usb")] {
+            // Build the builder.
+            let mut usb = builder.build();
+            usb.run().await;
+        } else {
+            let _builder = builder;
+            log::warn!("USB feature is disabled.");
+            loop {
+                embassy_time::Timer::after(embassy_time::Duration::from_secs(3600)).await;
+            }
+        }
+    }
 }

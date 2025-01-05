@@ -5,7 +5,6 @@ extern crate alloc;
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
-use embassy_futures::select::select;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
@@ -100,7 +99,7 @@ async fn main(spawner: Spawner) {
         .split::<esp_hal::timer::systimer::Target>();
     esp_hal_embassy::init(systimer.alarm0);
 
-    info!("Embassy initialized!");
+    debug!("Embassy initialized.");
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
@@ -113,7 +112,7 @@ async fn main(spawner: Spawner) {
     wdt1.enable();
     wdt1.feed();
 
-    let (hid_sender, hid_fut) = init_hid(spawner, app_config);
+    let hid_sender = init_hid(spawner, app_config);
 
     #[cfg(feature = "clipboard")]
     {
@@ -171,45 +170,40 @@ async fn main(spawner: Spawner) {
     // Start network stack task
     spawner.must_spawn(net_task(stack));
 
-    let barrier_fut = async {
-        info!("Waiting for WiFi to connect...");
-        loop {
-            if stack.is_link_up() {
-                break;
-            }
-            Timer::after(Duration::from_millis(500)).await;
+    info!("Waiting for WiFi to connect...");
+    loop {
+        if stack.is_link_up() {
+            break;
         }
-        wdt1.feed();
+        Timer::after(Duration::from_millis(500)).await;
+    }
+    wdt1.feed();
 
-        info!("Waiting to get IP address...");
-        loop {
-            if let Some(config) = stack.config_v4() {
-                info!("Got IP: {}", config.address);
-                break;
-            }
-            Timer::after(Duration::from_millis(500)).await;
+    info!("Waiting to get IP address...");
+    loop {
+        if let Some(config) = stack.config_v4() {
+            info!("Got IP: {}", config.address);
+            break;
         }
-        wdt1.feed();
+        Timer::after(Duration::from_millis(500)).await;
+    }
+    wdt1.feed();
 
-        loop {
-            let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
-            start_barrier_client(
-                app_config.get_server_endpoint(),
-                &app_config.screen_name,
-                stack,
-                &mut actuator,
-                &mut wdt1,
-            )
-            .await
-            .inspect_err(|e| error!("Failed to connect: {:?}", e))
-            .ok();
-            warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
-            Timer::after(Duration::from_millis(5000)).await
-        }
-    };
-
-    select(hid_fut, barrier_fut).await;
-    error!("Critical task exited, restarting...");
+    loop {
+        let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
+        start_barrier_client(
+            app_config.get_server_endpoint(),
+            &app_config.screen_name,
+            stack,
+            &mut actuator,
+            &mut wdt1,
+        )
+        .await
+        .inspect_err(|e| error!("Failed to connect: {:?}", e))
+        .ok();
+        warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
+        Timer::after(Duration::from_millis(5000)).await
+    }
 }
 
 #[embassy_executor::task]
