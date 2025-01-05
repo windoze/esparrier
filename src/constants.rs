@@ -14,6 +14,10 @@ pub const SMART_LED_PIN: u8 = 35;
 #[from_env]
 pub const SMART_LED_COUNT: usize = 1;
 
+#[cfg(feature = "graphics")]
+#[from_env]
+pub const BRIGHTNESS: u8 = 50;
+
 // Pin 41 is for M5Atom S3 and M5Atom S3 Lite
 #[cfg(feature = "clipboard")]
 #[from_env]

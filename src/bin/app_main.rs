@@ -42,6 +42,10 @@ async fn main(spawner: Spawner) {
         env!("CARGO_PKG_VERSION")
     );
 
+    // Load the configuration
+    let app_config = mk_static!(AppConfig, AppConfig::load());
+    println!("Config: {:?}", app_config);
+
     let peripherals = esp_hal::init({
         let mut config = esp_hal::Config::default();
         config.cpu_clock = CpuClock::max();
@@ -97,9 +101,6 @@ async fn main(spawner: Spawner) {
     esp_hal_embassy::init(systimer.alarm0);
 
     info!("Embassy initialized!");
-
-    // Load the configuration
-    let app_config = mk_static!(AppConfig, AppConfig::load());
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
@@ -164,8 +165,8 @@ async fn main(spawner: Spawner) {
     // Start WiFi connection task
     spawner.must_spawn(connection(
         controller,
-        app_config.ssid.to_owned(),
-        app_config.password.to_owned(),
+        app_config.ssid.to_owned().into(),
+        app_config.password.to_owned().into(),
     ));
     // Start network stack task
     spawner.must_spawn(net_task(stack));

@@ -6,6 +6,8 @@ use embedded_graphics::{
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     gpio::{AnyPin, Level, Output},
+    ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
+    peripherals::LEDC,
     prelude::*,
     spi::{master::Spi, AnySpi, SpiMode},
 };
@@ -45,7 +47,24 @@ type Display<'a> = mipidsi::Display<
 
 fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     // Turn on the backlight
-    let _backlight = Output::new(config.backlight, Level::High);
+    let mut ledc = Ledc::new(unsafe { LEDC::steal() });
+    ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);
+    let mut lstimer0 = ledc.timer::<LowSpeed>(timer::Number::Timer0);
+    lstimer0
+        .configure(timer::config::Config {
+            duty: timer::config::Duty::Duty5Bit,
+            clock_source: timer::LSClockSource::APBClk,
+            frequency: 500.Hz(),
+        })
+        .unwrap();
+    let mut channel0 = ledc.channel(channel::Number::Channel0, config.backlight);
+    channel0
+        .configure(channel::config::Config {
+            timer: &lstimer0,
+            duty_pct: crate::constants::BRIGHTNESS,
+            pin_config: channel::config::PinConfig::PushPull,
+        })
+        .unwrap();
 
     let mut delay = esp_hal::delay::Delay::new();
     let spi = Spi::new_with_config(

@@ -1,4 +1,4 @@
-use core::{cmp::min, str::FromStr};
+use core::{cmp::min, fmt, str::FromStr};
 
 use embassy_net::{IpEndpoint, Ipv4Address, Ipv4Cidr};
 use embedded_storage::ReadStorage;
@@ -9,11 +9,40 @@ use serde::Deserialize;
 
 use crate::constants::*;
 
+#[derive(Clone, Deserialize)]
+pub struct Secret<const N: usize>(pub String<N>);
+
+impl<const N: usize> fmt::Debug for Secret<N> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<Redacted>")
+    }
+}
+
+impl<const N: usize> From<Secret<N>> for String<N> {
+    fn from(s: Secret<N>) -> Self {
+        s.0
+    }
+}
+
+impl<const N: usize> FromStr for Secret<N> {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(String::from_str(s)?))
+    }
+}
+
+impl<const N: usize> AsRef<str> for Secret<N> {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     // These fields must be set
-    pub ssid: String<32>,
-    pub password: String<64>,
+    pub ssid: Secret<32>,
+    pub password: Secret<64>,
     pub server: String<64>,
     pub screen_name: String<64>,
 
@@ -87,8 +116,8 @@ fn get_default_watchdog_timeout() -> u32 {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            ssid: String::from_str(WIFI_SSID).unwrap(),
-            password: String::from_str(WIFI_PASSWORD).unwrap(),
+            ssid: Secret::from_str(WIFI_SSID).unwrap(),
+            password: Secret::from_str(WIFI_PASSWORD).unwrap(),
             server: String::from_str(BARRIER_SERVER).unwrap(),
             screen_name: String::from_str(SCREEN_NAME).unwrap(),
             screen_width: SCREEN_WIDTH,
