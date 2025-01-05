@@ -2,7 +2,7 @@ use embassy_net::{tcp::TcpSocket, IpEndpoint, Stack};
 use embedded_io_async::Write;
 use esp_hal::{peripheral::Peripheral, timer::timg::Wdt};
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 
 use super::{
     packet::Packet, packet_io::PacketReader, packet_io::PacketWriter, packet_stream::PacketStream,
@@ -69,7 +69,6 @@ pub async fn start_barrier_client<A: Actuator>(
     actor.connected().await?;
     watchdog.feed();
 
-    let mut last_seq_num: u32 = 0;
     #[cfg(feature = "clipboard")]
     let mut clipboard_stage = ClipboardStage::None;
 
@@ -153,15 +152,14 @@ pub async fn start_barrier_client<A: Actuator>(
             }
             Packet::InfoAck => { //Ignore
             }
-            Packet::CursorEnter { seq_num, .. } => {
-                last_seq_num = seq_num;
+            Packet::CursorEnter { .. } => {
                 actor.enter().await?;
             }
             Packet::CursorLeave => {
                 actor.leave().await?;
             }
             Packet::GrabClipboard { id, seq_num } => {
-                info!("Grab clipboard: id:{}, seq_num:{}", id, seq_num);
+                debug!("Grab clipboard: id:{}, seq_num:{}", id, seq_num);
             }
             #[cfg(feature = "clipboard")]
             Packet::SetClipboard { id, seq_num, data } => {
