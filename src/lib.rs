@@ -11,6 +11,7 @@ mod indicator;
 mod synergy_hid;
 mod usb_actuator;
 
+pub mod constants;
 pub use barrier_client::*;
 #[cfg(feature = "clipboard")]
 pub use clipboard::{button_task, set_clipboard};

@@ -7,12 +7,10 @@ use smart_leds::{
     SmartLedsWrite,
 };
 
+use crate::constants::*;
 use crate::esp_hal_smartled::SmartLedsAdapter;
 
 use super::{IndicatorReceiver, IndicatorStatus};
-
-#[const_env::from_env]
-const SMART_LED_COUNT: usize = 1;
 
 const RED: Hsv = Hsv {
     hue: 0,

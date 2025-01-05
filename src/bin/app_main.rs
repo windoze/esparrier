@@ -24,22 +24,13 @@ use esp_wifi::{
 use heapless::Vec;
 use log::{debug, error, info, warn};
 
+#[allow(unused_imports)]
+use esparrier::constants::*;
+
 use esparrier::{
     indicator_task, init_hid, mk_static, start, AppConfig, IndicatorChannel, IndicatorSender,
     IndicatorStatus, UsbActuator,
 };
-
-#[cfg(feature = "led")]
-#[const_env::from_env]
-const LED_PIN: u8 = 21;
-
-#[cfg(feature = "smartled")]
-#[const_env::from_env]
-const SMART_LED_PIN: u8 = 35;
-
-#[cfg(feature = "clipboard")]
-#[const_env::from_env]
-const PASTE_BUTTON_PIN: u8 = 41;
 
 #[main]
 async fn main(spawner: Spawner) {

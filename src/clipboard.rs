@@ -1,10 +1,7 @@
 use embassy_time::Duration;
 use log::debug;
 
-use crate::{HidReport, HidReportSender};
-
-#[const_env::from_env]
-pub(crate) const MAX_CLIPBOARD_SIZE: usize = 1024;
+use crate::{constants::*, HidReport, HidReportSender};
 
 static CLIPBOARD_STORAGE: embassy_sync::mutex::Mutex<
     embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,

@@ -29,7 +29,7 @@ pub enum Packet {
     SetClipboard {
         id: u8,
         seq_num: u32,
-        data: Option<heapless::Vec<u8, { crate::clipboard::MAX_CLIPBOARD_SIZE }>>,
+        data: Option<heapless::Vec<u8, { crate::constants::MAX_CLIPBOARD_SIZE }>>,
     },
     CursorEnter {
         x: u16,
