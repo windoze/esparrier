@@ -197,7 +197,7 @@ pub fn init_hid(
     let usb_fut = async {
         // I highly doubt there are some kind of race conditions inside of the OTG_FS driver.
         // M5Atom S3 cannot start the USB peripheral without a delay, but S3 Lite can.
-        embassy_time::Timer::after(embassy_time::Duration::from_secs(1)).await;
+        embassy_time::Timer::after(embassy_time::Duration::from_millis(200)).await;
         // Build the builder.
         let mut usb = builder.build();
         usb.run().await;
