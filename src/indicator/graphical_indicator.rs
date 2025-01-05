@@ -76,7 +76,6 @@ fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
         .unwrap()
 }
 
-// TODO: These animations take too much Flash space, should use smaller ones.
 const CONNECTING: &[u8] = include_bytes!("assets/connecting.gif");
 const INACTIVE: &[u8] = include_bytes!("assets/inactive.gif");
 const ACTIVE: &[u8] = include_bytes!("assets/active.gif");

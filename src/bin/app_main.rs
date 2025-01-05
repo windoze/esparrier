@@ -28,8 +28,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    indicator_task, init_hid, mk_static, start, AppConfig, IndicatorChannel, IndicatorSender,
-    IndicatorStatus, UsbActuator,
+    indicator_task, init_hid, mk_static, start_barrier_client, AppConfig, IndicatorChannel,
+    IndicatorSender, IndicatorStatus, UsbActuator,
 };
 
 #[main]
@@ -192,7 +192,7 @@ async fn main(spawner: Spawner) {
 
         loop {
             let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
-            start(
+            start_barrier_client(
                 app_config.get_server_endpoint(),
                 &app_config.screen_name,
                 stack,

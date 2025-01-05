@@ -8,5 +8,5 @@ mod packet_io;
 mod packet_stream;
 
 pub use actuator::Actuator;
-pub use client::start;
+pub use client::start_barrier_client;
 pub use error::BarrierError;

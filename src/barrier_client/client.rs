@@ -19,7 +19,7 @@ pub enum ClipboardStage {
 }
 
 #[allow(unused_assignments)]
-pub async fn start<A: Actuator>(
+pub async fn start_barrier_client<A: Actuator>(
     endpoint: IpEndpoint,
     device_name: &'static str,
     stack: &'static Stack<WifiDevice<'_, WifiStaDevice>>,
