@@ -5,6 +5,7 @@ extern crate alloc;
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
+use embassy_futures::select::select;
 use embassy_net::{Stack, StackResources};
 use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
@@ -24,8 +25,8 @@ use heapless::Vec;
 use log::{debug, error, info, warn};
 
 use esparrier::{
-    indicator_task, init_hid, mk_static, start, AppConfig, HidReportSender, IndicatorChannel,
-    IndicatorSender, IndicatorStatus, UsbActuator,
+    indicator_task, init_hid, mk_static, start, AppConfig, IndicatorChannel, IndicatorSender,
+    IndicatorStatus, UsbActuator,
 };
 
 #[cfg(feature = "led")]
@@ -61,7 +62,7 @@ async fn main(spawner: Spawner) {
     let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
 
-    // TODO: We can read pin number from the config after the [PR](https://github.com/esp-rs/esp-hal/pull/2854) is released, then we can enable `smartled` and `led` at the same time, and the indicator cat be selected by the config at runtime.
+    // TODO: We can read pin number from the config after the [#2854](https://github.com/esp-rs/esp-hal/pull/2854) is released, then we can enable `smartled` and `led` at the same time, and the indicator cat be selected by the config at runtime.
     // But the graphics indicator is totally another story.
     cfg_if::cfg_if! {
         if #[cfg(feature = "led")] {
@@ -95,8 +96,10 @@ async fn main(spawner: Spawner) {
         .spawn(indicator_task(indicator_config, receiver))
         .ok();
 
-    let sender: IndicatorSender = channel.sender();
-    sender.try_send(IndicatorStatus::WifiConnecting).ok();
+    let indicator_sender: IndicatorSender = channel.sender();
+    indicator_sender
+        .try_send(IndicatorStatus::WifiConnecting)
+        .ok();
 
     let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER)
         .split::<esp_hal::timer::systimer::Target>();
@@ -167,38 +170,54 @@ async fn main(spawner: Spawner) {
         )
     );
 
+    // Start WiFi connection task
     spawner.must_spawn(connection(
         controller,
         app_config.ssid.to_owned(),
         app_config.password.to_owned(),
     ));
+    // Start network stack task
     spawner.must_spawn(net_task(stack));
 
-    info!("Waiting for WiFi to connect...");
-    loop {
-        if stack.is_link_up() {
-            break;
+    let barrier_fut = async {
+        info!("Waiting for WiFi to connect...");
+        loop {
+            if stack.is_link_up() {
+                break;
+            }
+            Timer::after(Duration::from_millis(500)).await;
         }
-        Timer::after(Duration::from_millis(500)).await;
-    }
-    wdt1.feed();
+        wdt1.feed();
 
-    info!("Waiting to get IP address...");
-    loop {
-        if let Some(config) = stack.config_v4() {
-            info!("Got IP: {}", config.address);
-            break;
+        info!("Waiting to get IP address...");
+        loop {
+            if let Some(config) = stack.config_v4() {
+                info!("Got IP: {}", config.address);
+                break;
+            }
+            Timer::after(Duration::from_millis(500)).await;
         }
-        Timer::after(Duration::from_millis(500)).await;
-    }
-    wdt1.feed();
+        wdt1.feed();
 
-    spawner.must_spawn(barrier_client_task(
-        app_config, stack, sender, hid_sender, wdt1,
-    ));
+        loop {
+            let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
+            start(
+                app_config.get_server_endpoint(),
+                &app_config.screen_name,
+                stack,
+                &mut actuator,
+                &mut wdt1,
+            )
+            .await
+            .inspect_err(|e| error!("Failed to connect: {:?}", e))
+            .ok();
+            warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
+            Timer::after(Duration::from_millis(5000)).await
+        }
+    };
 
-    // TODO: How can I start it earlier? Now we have to wait until the WiFi is connected
-    hid_fut.await;
+    select(hid_fut, barrier_fut).await;
+    error!("Critical task exited, restarting...");
 }
 
 #[embassy_executor::task]
@@ -240,31 +259,4 @@ async fn connection(
 #[embassy_executor::task]
 async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
     stack.run().await
-}
-
-#[embassy_executor::task]
-async fn barrier_client_task(
-    app_config: &'static AppConfig,
-    stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>,
-    indicator: IndicatorSender,
-    hid_sender: HidReportSender,
-    mut wdt: esp_hal::timer::timg::Wdt<
-        <esp_hal::peripherals::TIMG1 as esp_hal::peripheral::Peripheral>::P,
-    >,
-) {
-    loop {
-        let mut actuator = UsbActuator::new(app_config, indicator, hid_sender);
-        start(
-            app_config.get_server_endpoint(),
-            &app_config.screen_name,
-            stack,
-            &mut actuator,
-            &mut wdt,
-        )
-        .await
-        .inspect_err(|e| error!("Failed to connect: {:?}", e))
-        .ok();
-        warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
-        Timer::after(Duration::from_millis(5000)).await
-    }
 }

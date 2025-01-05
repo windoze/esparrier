@@ -45,11 +45,10 @@ impl HidReport {
     }
 }
 
-pub type HidReportChannel = Channel<NoopRawMutex, HidReport, 3>;
-
 pub type HidReportSender = Sender<'static, NoopRawMutex, HidReport, 3>;
 
-pub type HidReportReceiver = Receiver<'static, NoopRawMutex, HidReport, 3>;
+type HidReportChannel = Channel<NoopRawMutex, HidReport, 3>;
+type HidReportReceiver = Receiver<'static, NoopRawMutex, HidReport, 3>;
 
 trait HidReportWriter {
     fn write_report(&mut self, report: HidReport) -> impl Future<Output = ()>;
@@ -78,10 +77,7 @@ impl<'a> HidReportWriter for UsbHidReportWriter<'a> {
 }
 
 #[embassy_executor::task]
-pub async fn start_hid_report_writer(
-    writer: ReportWriter<'static, 9>,
-    receiver: HidReportReceiver,
-) {
+async fn start_hid_report_writer(writer: ReportWriter<'static, 9>, receiver: HidReportReceiver) {
     let mut writer = UsbHidReportWriter::new(writer);
     loop {
         let report = receiver.receive().await;
@@ -146,13 +142,17 @@ pub fn init_hid(
     let mut config = embassy_usb::Config::new(app_config.vid, app_config.pid);
     config.manufacturer = Some(&app_config.manufacturer);
     config.product = Some(&app_config.product);
-    config.device_class = 0x03; // HID
-    config.device_sub_class = 0x01; // Boot Interface Subclass
-    config.device_protocol = 0x01; // Keyboard
+    // TODO: MacOs doesn't like these settings, why? Not sure about the last 2 but the 1st one is definitely the issue.
+    // config.device_class = 0x03; // HID
+    // config.device_sub_class = 0x01; // Boot Interface Subclass
+    // config.device_protocol = 0x01; // Keyboard
+    config.device_class = 0xEF; // Miscellaneous Device
+    config.device_sub_class = 0x02; // Common Class
+    config.device_protocol = 0x01; // Interface Association Descriptor
+    config.composite_with_iads = true;
     config.serial_number = Some(&app_config.serial_number);
     config.max_power = 100;
-    config.supports_remote_wakeup = true;
-    config.max_packet_size_0 = 16;
+    config.max_packet_size_0 = 64;
 
     // Create embassy-usb DeviceBuilder using the driver and config.
     let config_descriptor_buf = mk_static!([u8; 256], [0u8; 256]);
