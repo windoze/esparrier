@@ -105,7 +105,7 @@ pub async fn start_barrier_client<A: Actuator>(
             Packet::KeepAlive => {
                 match packet_stream.write(Packet::KeepAlive).await {
                     Ok(_) => {
-                        info!("Feed watchdog on KeepAlive");
+                        debug!("Feed watchdog on KeepAlive");
                         watchdog.feed();
                         Ok(())
                     }
@@ -155,7 +155,6 @@ pub async fn start_barrier_client<A: Actuator>(
             }
             Packet::CursorEnter { seq_num, .. } => {
                 last_seq_num = seq_num;
-                info!("Cursor enter: seq_num:{}", last_seq_num);
                 actor.enter().await?;
             }
             Packet::CursorLeave => {
