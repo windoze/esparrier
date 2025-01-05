@@ -125,7 +125,7 @@ impl embassy_usb::Handler for MyDeviceHandler {
     }
 }
 
-pub fn init_hid(spawner: Spawner, app_config: &'static AppConfig) -> HidReportSender {
+pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidReportSender {
     // Create the driver, from the HAL.
     let usb = Usb::new(
         unsafe { USB0::steal() },
@@ -204,7 +204,7 @@ pub fn init_hid(spawner: Spawner, app_config: &'static AppConfig) -> HidReportSe
 async fn usb_task(builder: embassy_usb::Builder<'static, Driver<'static>>) {
     // I highly doubt there are some kind of race conditions inside of the OTG_FS driver.
     // M5Atom S3 cannot start the USB peripheral without a delay, but S3 Lite can.
-    embassy_time::Timer::after(embassy_time::Duration::from_millis(200)).await;
+    embassy_time::Timer::after(embassy_time::Duration::from_secs(1)).await;
     cfg_if::cfg_if! {
         if #[cfg(feature = "usb")] {
             // Build the builder.

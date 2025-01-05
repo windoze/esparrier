@@ -114,6 +114,15 @@ pub struct IndicatorConfig {
     pub pin: AnyPin,
 }
 
+impl Default for IndicatorConfig {
+    fn default() -> Self {
+        Self {
+            rmt: unsafe { RMT::steal() },
+            pin: unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+        }
+    }
+}
+
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
     let rmt = Rmt::new(config.rmt, 80.MHz()).unwrap();
     let rmt_buffer = [0u32; SMART_LED_COUNT * 24 + 1];

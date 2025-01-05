@@ -5,9 +5,9 @@ use embedded_graphics::{
 };
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
-    gpio::{AnyPin, Level, Output},
+    gpio::{AnyPin, GpioPin, Level, Output},
     ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
-    peripherals::LEDC,
+    peripherals::{LEDC, SPI3},
     prelude::*,
     spi::{master::Spi, AnySpi, SpiMode},
 };
@@ -25,6 +25,8 @@ use super::IndicatorReceiver;
 pub struct IndicatorConfig {
     pub width: u16,
     pub height: u16,
+    pub offset_x: u16,
+    pub offset_y: u16,
     pub spi: AnySpi,
     pub mosi: AnyPin,
     pub sck: AnyPin,
@@ -34,6 +36,27 @@ pub struct IndicatorConfig {
     pub backlight: AnyPin,
     pub color_inversion: ColorInversion,
     pub color_order: ColorOrder,
+}
+
+impl Default for IndicatorConfig {
+    fn default() -> Self {
+        // TODO: The default configuration is for M5Atom S3 only
+        Self {
+            width: 128,
+            height: 128,
+            offset_x: 1, // M5Atom S3 has 1px offset on both x and y axis
+            offset_y: 1,
+            spi: unsafe { SPI3::steal() }.into(),
+            mosi: unsafe { GpioPin::<21>::steal() }.into(),
+            sck: unsafe { GpioPin::<17>::steal() }.into(),
+            dc: unsafe { GpioPin::<33>::steal() }.into(),
+            cs: unsafe { GpioPin::<15>::steal() }.into(),
+            rst: unsafe { GpioPin::<34>::steal() }.into(),
+            backlight: unsafe { GpioPin::<16>::steal() }.into(),
+            color_inversion: ColorInversion::Inverted,
+            color_order: ColorOrder::Bgr,
+        }
+    }
 }
 
 type Display<'a> = mipidsi::Display<
@@ -89,6 +112,7 @@ fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     Builder::new(ST7789, di)
         .reset_pin(rst)
         .display_size(config.width, config.height)
+        .display_offset(config.offset_x, config.offset_y)
         .invert_colors(config.color_inversion)
         .color_order(config.color_order)
         .init(&mut delay)

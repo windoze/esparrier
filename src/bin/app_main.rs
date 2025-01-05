@@ -27,8 +27,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    indicator_task, init_hid, mk_static, start_barrier_client, AppConfig, IndicatorChannel,
-    IndicatorSender, IndicatorStatus, UsbActuator,
+    mk_static, start_barrier_client, start_hid_task, start_indicator_task, AppConfig,
+    IndicatorStatus, UsbActuator,
 };
 
 #[main]
@@ -53,53 +53,16 @@ async fn main(spawner: Spawner) {
 
     esp_alloc::heap_allocator!(160 * 1024);
 
-    let channel = mk_static!(IndicatorChannel, IndicatorChannel::new());
-    let receiver = channel.receiver();
-
-    // TODO: We can read pin number from the config after the [#2854](https://github.com/esp-rs/esp-hal/pull/2854) is released, then we can enable `smartled` and `led` at the same time, and the indicator cat be selected by the config at runtime.
-    // But the graphics indicator is totally another story.
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "led")] {
-            let indicator_config = esparrier::IndicatorConfig {
-                pin: unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
-            };
-        } else if #[cfg(feature = "smartled")]{
-            let indicator_config = esparrier::IndicatorConfig {
-                rmt: peripherals.RMT,
-                pin: unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
-            };
-        } else if #[cfg(feature = "graphics")]{
-            let indicator_config = esparrier::IndicatorConfig {
-                width: 128,
-                height: 128,
-                spi: peripherals.SPI3.into(),
-                mosi: peripherals.GPIO21.into(),
-                sck: peripherals.GPIO17.into(),
-                dc: peripherals.GPIO33.into(),
-                cs: peripherals.GPIO15.into(),
-                rst: peripherals.GPIO34.into(),
-                backlight: peripherals.GPIO16.into(),
-                color_inversion: mipidsi::options::ColorInversion::Inverted,
-                color_order: mipidsi::options::ColorOrder::Bgr,
-            };
-        } else {
-            let indicator_config = esparrier::IndicatorConfig;
-        }
-    };
-    spawner
-        .spawn(indicator_task(indicator_config, receiver))
-        .ok();
-
-    let indicator_sender: IndicatorSender = channel.sender();
-    indicator_sender
-        .try_send(IndicatorStatus::WifiConnecting)
-        .ok();
-
+    // Setup Embassy
     let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER)
         .split::<esp_hal::timer::systimer::Target>();
     esp_hal_embassy::init(systimer.alarm0);
 
-    debug!("Embassy initialized.");
+    // Setup indicator
+    let indicator_sender = start_indicator_task(spawner);
+    indicator_sender
+        .try_send(IndicatorStatus::WifiConnecting)
+        .ok();
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
@@ -112,10 +75,12 @@ async fn main(spawner: Spawner) {
     wdt1.enable();
     wdt1.feed();
 
-    let hid_sender = init_hid(spawner, app_config);
+    // Setup HID task
+    let hid_sender = start_hid_task(spawner, app_config);
 
     #[cfg(feature = "clipboard")]
     {
+        // Setup paste button task
         let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
         spawner
             .spawn(esparrier::button_task(button, hid_sender))
@@ -190,6 +155,7 @@ async fn main(spawner: Spawner) {
     wdt1.feed();
 
     loop {
+        // Start the Barrier client
         let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
         start_barrier_client(
             app_config.get_server_endpoint(),
