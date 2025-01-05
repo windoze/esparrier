@@ -1,6 +1,5 @@
 use core::{cmp::min, str::FromStr};
 
-use const_env::from_env;
 use embassy_net::{IpEndpoint, Ipv4Address, Ipv4Cidr};
 use embedded_storage::ReadStorage;
 use esp_storage::FlashStorage;
@@ -8,32 +7,7 @@ use heapless::String;
 use log::{debug, warn};
 use serde::Deserialize;
 
-#[from_env]
-pub const WIFI_SSID: &str = "my-ssid";
-#[from_env]
-pub const WIFI_PASSWORD: &str = "my-password";
-#[from_env]
-pub const BARRIER_SERVER: &str = "192.168.100.200:24800";
-#[from_env]
-pub const SCREEN_NAME: &str = "my-screen";
-#[from_env]
-pub const SCREEN_WIDTH: u16 = 1920;
-#[from_env]
-pub const SCREEN_HEIGHT: u16 = 1080;
-#[from_env]
-pub const REVERSED_WHEEL: bool = false;
-#[from_env]
-pub const USB_VID: u16 = 0x0d0a;
-#[from_env]
-pub const USB_PID: u16 = 0xc0de;
-#[from_env]
-pub const USB_MANUFACTURER: &str = "0d0a.com";
-#[from_env]
-pub const USB_PRODUCT: &str = "Esparrier KVM";
-#[from_env]
-pub const USB_SERIAL_NUMBER: &str = "88888888";
-#[from_env]
-pub const WATCHDOG_TIMEOUT: u32 = 15;
+use crate::constants::*;
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {

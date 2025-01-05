@@ -2,6 +2,8 @@ use core::cmp::min;
 
 use heapless::Vec;
 
+use crate::constants::MAX_CLIPBOARD_SIZE;
+
 use super::{error::PacketError, packet_io::PacketReader};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -11,8 +13,6 @@ pub enum ClipboardFormat {
     Html = 1,
     Bitmap = 2,
 }
-
-use crate::clipboard::MAX_CLIPBOARD_SIZE;
 
 pub async fn parse_clipboard<T: PacketReader>(
     stream: &mut T,

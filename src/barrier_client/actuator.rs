@@ -66,7 +66,7 @@ pub trait Actuator {
     #[cfg(feature = "clipboard")]
     fn set_clipboard(
         &mut self,
-        data: heapless::Vec<u8, { crate::clipboard::MAX_CLIPBOARD_SIZE }>,
+        data: heapless::Vec<u8, { crate::constants::MAX_CLIPBOARD_SIZE }>,
     ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
     fn enter(&mut self) -> impl core::future::Future<Output = Result<(), BarrierError>>;
