@@ -37,6 +37,7 @@
     "espup",
     "EUNK",
     "gentable",
+    "GUIDS",
     "heapless",
     "iads",
     "igmp",
@@ -73,6 +74,7 @@
     "usbd",
     "Vbus",
     "wakeup",
+    "WINUSB",
     "XIAO",
     "xtensa"
   ]

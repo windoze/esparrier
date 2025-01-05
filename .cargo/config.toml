@@ -2,10 +2,10 @@
 runner = "espflash flash --monitor --partition-table partitions_single_app.csv"
 
 [env]
-ESP_WIFI_RX_QUEUE_SIZE = "16"
-ESP_WIFI_TX_QUEUE_SIZE = "16"
+ESP_WIFI_RX_QUEUE_SIZE = "24"
+ESP_WIFI_TX_QUEUE_SIZE = "3"
 ESP_WIFI_TICK_RATE_HZ = "10000"
-ESP_LOG = "WARN"
+ESP_LOG = "info"
 
 [build]
 rustflags = ["-C", "link-arg=-nostartfiles"]
