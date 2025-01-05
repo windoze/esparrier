@@ -1,5 +1,5 @@
 use embassy_time::Duration;
-use log::debug;
+use log::{debug, info};
 
 use crate::{constants::*, HidReport, HidReportSender};
 
@@ -11,10 +11,11 @@ static CLIPBOARD_STORAGE: embassy_sync::mutex::Mutex<
 const KEY_PRESS_INTERVAL: Duration = Duration::from_millis(5);
 
 async fn send_clipboard(hid_writer: HidReportSender) {
+    info!("Paste button pressed, sending clipboard...");
     let data = CLIPBOARD_STORAGE.lock().await.clone();
     if let Some(data) = data {
         debug!(
-            "Send clipboard: {:?}",
+            "Clipboard (first 16 bytes): {:?}",
             &data.as_slice()[0..core::cmp::min(data.len(), 16)]
         );
         for byte in data {
