@@ -1,12 +1,3 @@
-#[cfg(not(feature = "indicator"))]
-mod dummy_indicator;
-#[cfg(feature = "graphics")]
-mod graphical_indicator;
-#[cfg(feature = "led")]
-mod led_indicator;
-#[cfg(feature = "smartled")]
-mod smartled_indicator;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndicatorStatus {
     WifiConnecting,
@@ -35,20 +26,28 @@ type IndicatorReceiver = embassy_sync::channel::Receiver<
     3,
 >;
 
-// LED Indicator
-#[cfg(feature = "led")]
-use led_indicator::{start_indicator, IndicatorConfig};
-
-// SmartLED/NeoPixel Indicator
-#[cfg(feature = "smartled")]
-use smartled_indicator::{start_indicator, IndicatorConfig};
-
-// LCD Graphical Indicator
-#[cfg(feature = "graphics")]
-use graphical_indicator::{start_indicator, IndicatorConfig};
-
-#[cfg(not(feature = "indicator"))]
-use dummy_indicator::{start_indicator, IndicatorConfig};
+cfg_if::cfg_if! {
+    if #[cfg(feature = "led")] {
+        // LED Indicator
+        mod led_indicator;
+        use led_indicator::{start_indicator, IndicatorConfig};
+    }
+    else if #[cfg(feature = "smartled")] {
+        // SmartLED/NeoPixel Indicator
+        mod smartled_indicator;
+        use smartled_indicator::{start_indicator, IndicatorConfig};
+    }
+    else if #[cfg(feature = "graphics")] {
+        // LCD Graphical Indicator
+        mod graphical_indicator;
+        use graphical_indicator::{start_indicator, IndicatorConfig};
+    }
+    else {
+        // Dummy Indicator
+        mod dummy_indicator;
+        use dummy_indicator::{start_indicator, IndicatorConfig};
+    }
+}
 
 #[embassy_executor::task]
 async fn indicator_task(config: IndicatorConfig, receiver: IndicatorReceiver) {
