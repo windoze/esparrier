@@ -47,6 +47,10 @@ jobs:
         run: cargo espflash save-image --release --chip esp32s3 --features m5atoms3 --partition-table partitions_single_app.csv esparrier-m5atoms3.bin
       - name: Build XIAO-ESP32S3 binary (with `led` feature enabled)
         run: cargo espflash save-image --release --chip esp32s3 --features xiao-esp32s3 esparrier-xiao-esp32s3.bin
+      - name: Build ESP32-S3-DevKitC-1 v1.0 binary (with `smartled` feature enabled)
+        run: SMART_LED_PIN=48 cargo espflash save-image --release --chip esp32s3 --features smartled esparrier-esp32s3-devkitc-1-v1_0.bin
+      - name: Build ESP32-S3-DevKitC-1 v1.1 binary (with `smartled` feature enabled)
+        run: SMART_LED_PIN=38 cargo espflash save-image --release --chip esp32s3 --features smartled esparrier-esp32s3-devkitc-1-v1_1.bin
       - name: Build archive
         shell: bash
         run: |
@@ -57,6 +61,8 @@ jobs:
           mv "esparrier-m5atoms3-lite.bin" "$dirname"
           mv "esparrier-m5atoms3.bin" "$dirname"
           mv "esparrier-xiao-esp32s3.bin" "$dirname"
+          mv "esparrier-esp32s3-devkitc-1-v1_0.bin" "$dirname"
+          mv "esparrier-esp32s3-devkitc-1-v1_1.bin" "$dirname"
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Release

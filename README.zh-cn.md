@@ -81,7 +81,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
     ```
 
 * 如果开发板上有 RGB LED（WS2812B），可以使用 `smartled` 功能启用 LED，并且需要将环境变量 `SMART_LED_PIN` 设置为正确的引脚编号，在 M5AtomS3/Lite 上是 35，在 M5StampS3 上是 21。
-    * 例如，为 ESP32-S3-DevKitC-1 构建和烧录二进制文件 (该开发板的RGB LED在IO38)：
+    * 例如，为 ESP32-S3-DevKitC-1 v1.0 构建和烧录二进制文件 (该开发板的RGB LED在IO38)：
         ```bash
         SMART_LED_PIN=38 cargo run --release --features smartled
         ```
@@ -91,6 +91,12 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 * 不要同时启用上述多个功能，程序将无法编译。
 
 * 如果未启用上述任何功能，状态指示功能将被禁用。
+
+* 如果开发板上有一个用户自定义按钮，可以使用 `clipboard` 功能启用剪贴板支持，并且需要将环境变量 `PASTE_BUTTON_PIN` 设置为正确的引脚编号。
+    * 例如，为 [M5StampS3](https://docs.m5stack.com/zh_CN/core/StampS3) 构建和烧录二进制文件：
+    ```bash
+    SMART_LED_PIN=21 PASTE_BUTTON_PIN=0 cargo run --release --features smartled,clipboard
+    ```
 
 * 程序将默认输出日志到 UART0，可以使用 `espmonitor` 监控日志。如果开发板没有独立的 UART0 端口，可以禁用默认功能，这将禁用 USB HID 功能，并且您将能够从 USB OTG/J-TAG 端口查看日志。这对于调试与 USB HID 无关的代码非常有用。
 
@@ -102,11 +108,13 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 2. 从 [发布页面](https://github.com/windoze/esparrier/releases) 下载二进制文件。
 
-3. 从压缩包中提取二进制文件。压缩包中有 4 个预构建的二进制文件，选择适合您开发板的那一个。
+3. 从压缩包中提取二进制文件。压缩包中有 6 个预构建的二进制文件，选择适合您开发板的那一个。
     * `esparrier.bin` - 适用于大多数具有原生 USB-OTG 端口的通用 ESP32S3 开发板，但不支持状态指示功能。
     * `esparrier-m5atoms3-lite.bin` - 适用于 [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite)。
     * `esparrier-m5atoms3.bin` - 适用于 [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3)。
     * `esparrier-xiao-esp32s3.bin` - 适用于 [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)。
+    * `espaesparrier-esp32s3-devkitc-1-v1_0.bin` - 适用于 [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
+    * `espaesparrier-esp32s3-devkitc-1-v1_1.bin` - 适用于 [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).
 
 4. 按照上一节中的描述准备 `config.json` 文件。
 
