@@ -131,6 +131,14 @@ NOTE: When you copied a large amount of text or big image from other screen then
 
 7. Exit the download mode and reset the board, you should see the new USB HID device on your host.
 
+## Troubleshooting
+
+If the board stops working after flashing and/or upgrading the program, you may need to:
+
+1. Erase the flash with `esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash`.
+2. Flash the binary and config again.
+3. Windows has a USB device driver cache and it may not recognize the board after flashing, you may need to uninstall the driver in the device manager and re-plug the board. Or you can change the USB VID/PID in the config file and re-flash it, then Windows will recognize it as a new device.
+
 ## NOTES:
 
 **WARNING**: This program is only for testing purpose. It is not a complete implementation of Barrier client. There could be a lot of bugs and missing features. It has no concept of security, neither on the WiFi nor on the USB. It is not recommended to use it in anywhere but a private environment.

@@ -125,6 +125,14 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 7. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。
 
+## 故障排除
+
+如果在刷入新的固件之后出现问题，可以尝试：
+
+1. 擦除全部闪存 `esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash`
+2. 重新烧录二进制文件和配置。
+3. Windows会缓存USB设备的信息，可以尝试在设备管理器中卸载设备驱动，然后重新插拔开发板。或者在配置文件中更改USB VID/PID，这样Windows会将其视为新设备。
+
 ## 注意事项：
 
 **警告**：此程序仅用于测试目的。它不是 Barrier 客户端的完整实现。可能存在许多错误和缺失的功能。它没有任何安全保障，无论是在 WiFi 还是 USB 上。所以建议仅在私有的安全环境中使用。
