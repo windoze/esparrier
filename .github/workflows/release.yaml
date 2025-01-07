@@ -57,6 +57,8 @@ jobs:
           package_name="esparrier"
           dirname="$package_name-${{ env.VERSION }}"
           mkdir -p "$dirname"
+          cp "partition_table.bin" "$dirname"
+          cp "zero.bin" "$dirname"
           mv "esparrier.bin" "$dirname"
           mv "esparrier-m5atoms3-lite.bin" "$dirname"
           mv "esparrier-m5atoms3.bin" "$dirname"
