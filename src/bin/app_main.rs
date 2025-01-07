@@ -42,8 +42,7 @@ async fn main(spawner: Spawner) {
     );
 
     // Load the configuration
-    let app_config = mk_static!(AppConfig, AppConfig::load());
-    println!("Config: {:?}", app_config);
+    println!("Config: {:?}", AppConfig::get());
 
     let peripherals = esp_hal::init({
         let mut config = esp_hal::Config::default();
@@ -69,14 +68,14 @@ async fn main(spawner: Spawner) {
     let mut wdt1 = timg1.wdt;
     wdt1.set_timeout(
         MwdtStage::Stage0,
-        fugit::MicrosDurationU64::secs(app_config.watchdog_timeout as u64),
+        fugit::MicrosDurationU64::secs(AppConfig::get().watchdog_timeout as u64),
     );
     wdt1.set_stage_action(MwdtStage::Stage0, MwdtStageAction::ResetSystem);
     wdt1.enable();
     wdt1.feed();
 
     // Setup HID task
-    let hid_sender = start_hid_task(spawner, app_config);
+    let hid_sender = start_hid_task(spawner, AppConfig::get());
 
     #[cfg(feature = "clipboard")]
     {
@@ -97,11 +96,11 @@ async fn main(spawner: Spawner) {
         esp_wifi::init(timg0.timer0, rng, peripherals.RADIO_CLK,).unwrap()
     );
 
-    let config = match app_config.get_ip_addr() {
+    let config = match AppConfig::get().get_ip_addr() {
         Some(addr) => embassy_net::Config::ipv4_static(embassy_net::StaticConfigV4 {
             address: addr,
-            dns_servers: Vec::new(),           // We don't really need DNS
-            gateway: app_config.get_gateway(), // Gateway is optional if server is on the same subnet
+            dns_servers: Vec::new(), // We don't really need DNS
+            gateway: AppConfig::get().get_gateway(), // Gateway is optional if server is on the same subnet
         }),
         None => embassy_net::Config::dhcpv4(Default::default()),
     };
@@ -129,8 +128,8 @@ async fn main(spawner: Spawner) {
     // Start WiFi connection task
     spawner.must_spawn(connection(
         controller,
-        app_config.ssid.to_owned().into(),
-        app_config.password.to_owned().into(),
+        AppConfig::get().ssid.to_owned().into(),
+        AppConfig::get().password.to_owned().into(),
     ));
     // Start network stack task
     spawner.must_spawn(net_task(stack));
@@ -156,10 +155,10 @@ async fn main(spawner: Spawner) {
 
     loop {
         // Start the Barrier client
-        let mut actuator = UsbActuator::new(app_config, indicator_sender, hid_sender);
+        let mut actuator = UsbActuator::new(AppConfig::get(), indicator_sender, hid_sender);
         start_barrier_client(
-            app_config.get_server_endpoint(),
-            &app_config.screen_name,
+            AppConfig::get().get_server_endpoint(),
+            &AppConfig::get().screen_name,
             stack,
             &mut actuator,
             &mut wdt1,

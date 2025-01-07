@@ -1,6 +1,7 @@
 use core::{cmp::min, fmt, str::FromStr};
 
 use embassy_net::{IpEndpoint, Ipv4Address, Ipv4Cidr};
+use embassy_sync::once_lock::OnceLock;
 use embedded_storage::ReadStorage;
 use esp_storage::FlashStorage;
 use heapless::String;
@@ -38,6 +39,7 @@ impl<const N: usize> AsRef<str> for Secret<N> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     // These fields must be set
@@ -53,6 +55,10 @@ pub struct AppConfig {
     pub screen_height: u16,
     #[serde(default)]
     pub flip_wheel: bool,
+
+    // Indicator brightness, used by both SmartLED and graphical indicators
+    #[serde(default = "get_default_brightness")]
+    pub brightness: u8,
 
     // Network configuration
 
@@ -89,6 +95,10 @@ fn get_default_screen_height() -> u16 {
     SCREEN_HEIGHT
 }
 
+fn get_default_brightness() -> u8 {
+    BRIGHTNESS
+}
+
 fn get_default_vid() -> u16 {
     USB_VID
 }
@@ -123,6 +133,7 @@ impl Default for AppConfig {
             screen_width: SCREEN_WIDTH,
             screen_height: SCREEN_HEIGHT,
             flip_wheel: REVERSED_WHEEL,
+            brightness: BRIGHTNESS,
             ip_addr: None,
             gateway: None,
             vid: USB_VID,
@@ -135,8 +146,14 @@ impl Default for AppConfig {
     }
 }
 
+static CONFIG: OnceLock<AppConfig> = OnceLock::new();
+
 impl AppConfig {
-    pub fn load() -> Self {
+    pub fn get() -> &'static Self {
+        CONFIG.get_or_init(Self::load)
+    }
+
+    fn load() -> Self {
         // TODO: Use proper way to read the config
         let mut bytes = [0u8; 4096];
         let mut flash = FlashStorage::new();

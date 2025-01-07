@@ -13,6 +13,7 @@ pub struct IndicatorConfig {
     pub backlight: AnyPin,
     pub color_inversion: ColorInversion,
     pub color_order: ColorOrder,
+    pub max_brightness: u8,
 }
 
 impl Default for IndicatorConfig {
@@ -22,7 +23,7 @@ impl Default for IndicatorConfig {
         Self {
             width: 128,
             height: 128,
-            offset_x: 1, // M5Atom S3 has 1px offset on both x and y axis
+            offset_x: 2, // M5Atom S3 has 1px offset on both x and y axis
             offset_y: 1,
             spi: unsafe { SPI3::steal() }.into(),
             mosi: unsafe { GpioPin::<21>::steal() }.into(),
@@ -33,6 +34,7 @@ impl Default for IndicatorConfig {
             backlight: unsafe { GpioPin::<16>::steal() }.into(),
             color_inversion: ColorInversion::Inverted,
             color_order: ColorOrder::Bgr,
+            max_brightness: crate::AppConfig::get().brightness,
         }
     }
 }
@@ -62,7 +64,7 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     channel0
         .configure(channel::config::Config {
             timer: &lstimer0,
-            duty_pct: crate::constants::BRIGHTNESS,
+            duty_pct: config.max_brightness,
             pin_config: channel::config::PinConfig::PushPull,
         })
         .unwrap();

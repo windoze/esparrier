@@ -112,6 +112,7 @@ async fn fade_in_out<const N: usize>(
 pub struct IndicatorConfig {
     pub rmt: RMT,
     pub pin: AnyPin,
+    pub max_brightness: u8,
 }
 
 impl Default for IndicatorConfig {
@@ -119,6 +120,7 @@ impl Default for IndicatorConfig {
         Self {
             rmt: unsafe { RMT::steal() },
             pin: unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+            max_brightness: crate::AppConfig::get().brightness,
         }
     }
 }
@@ -133,16 +135,24 @@ pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceive
     loop {
         match status {
             IndicatorStatus::WifiConnecting => {
-                status = fade_in_out(&mut led, RED, receiver, 0, 5, 1).await;
+                status = fade_in_out(&mut led, RED, receiver, 0, config.max_brightness, 1).await;
             }
             IndicatorStatus::WifiConnected => {
-                status = fade_in_out(&mut led, BLUE, receiver, 0, 5, 1).await;
+                status = fade_in_out(&mut led, BLUE, receiver, 0, config.max_brightness, 1).await;
             }
             IndicatorStatus::ServerConnected => {
-                status = fade_in_out(&mut led, YELLOW, receiver, 0, 5, 1).await;
+                status = fade_in_out(&mut led, YELLOW, receiver, 0, config.max_brightness, 1).await;
             }
             IndicatorStatus::Active => {
-                status = fade_in_out(&mut led, GREEN, receiver, 5, 5, 1).await;
+                status = fade_in_out(
+                    &mut led,
+                    GREEN,
+                    receiver,
+                    config.max_brightness,
+                    config.max_brightness,
+                    1,
+                )
+                .await;
             }
         }
     }
