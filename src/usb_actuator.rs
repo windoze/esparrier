@@ -1,8 +1,9 @@
 use log::{debug, info, warn};
 
 use crate::{
+    set_indicator_status,
     synergy_hid::{ReportType, SynergyHid},
-    Actuator, BarrierError, HidReport, HidReportSender, IndicatorSender, IndicatorStatus,
+    Actuator, BarrierError, HidReport, HidReportSender, IndicatorStatus,
 };
 
 pub struct UsbActuator {
@@ -11,23 +12,17 @@ pub struct UsbActuator {
     x: u16,
     y: u16,
     hid: SynergyHid,
-    indicator: IndicatorSender,
     hid_writer: HidReportSender,
 }
 
 impl UsbActuator {
-    pub fn new(
-        app_config: &crate::AppConfig,
-        indicator: IndicatorSender,
-        hid_writer: HidReportSender,
-    ) -> Self {
+    pub fn new(app_config: &crate::AppConfig, hid_writer: HidReportSender) -> Self {
         Self {
             width: app_config.screen_width,
             height: app_config.screen_height,
             x: 0,
             y: 0,
             hid: SynergyHid::new(app_config.flip_wheel),
-            indicator,
             hid_writer,
         }
     }
@@ -56,13 +51,13 @@ impl UsbActuator {
 impl Actuator for UsbActuator {
     async fn connected(&mut self) -> Result<(), BarrierError> {
         info!("Connected to Barrier");
-        self.indicator.send(IndicatorStatus::ServerConnected).await;
+        set_indicator_status(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 
     async fn disconnected(&mut self) -> Result<(), BarrierError> {
         warn!("Disconnected from Barrier");
-        self.indicator.send(IndicatorStatus::WifiConnected).await;
+        set_indicator_status(IndicatorStatus::WifiConnected).await;
         Ok(())
     }
 
@@ -150,7 +145,7 @@ impl Actuator for UsbActuator {
 
     async fn enter(&mut self) -> Result<(), BarrierError> {
         info!("Entering");
-        self.indicator.send(IndicatorStatus::Active).await;
+        set_indicator_status(IndicatorStatus::Active).await;
         Ok(())
     }
 
@@ -163,7 +158,7 @@ impl Actuator for UsbActuator {
         self.send_report(ret).await;
         let ret = self.hid.clear(ReportType::Consumer, &mut report);
         self.send_report(ret).await;
-        self.indicator.send(IndicatorStatus::ServerConnected).await;
+        set_indicator_status(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 }

@@ -8,7 +8,11 @@ use embassy_sync::{
     blocking_mutex::raw::NoopRawMutex,
     channel::{Channel, Receiver, Sender},
 };
-use embassy_usb::class::hid::HidWriter;
+use embassy_usb::{
+    class::hid::HidWriter,
+    msos::{self, windows_version},
+};
+use embassy_usb_driver::{Endpoint, EndpointIn, EndpointOut};
 use esp_hal::{
     gpio::GpioPin,
     otg_fs::{asynch::Driver, Usb},
@@ -16,7 +20,7 @@ use esp_hal::{
 };
 use log::{debug, info};
 
-use crate::{mk_static, AppConfig, SynergyHid};
+use crate::{constants::DEVICE_INTERFACE_GUIDS, mk_static, AppConfig, SynergyHid};
 
 type ReportWriter<'a, const N: usize> = HidWriter<'a, Driver<'a>, N>;
 
@@ -168,6 +172,7 @@ pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidRe
     );
 
     builder.handler(device_handler);
+    builder.msos_descriptor(windows_version::WIN8_1, 0);
 
     // Initialize the USB peripheral
     let hid_dev_state = mk_static!(
@@ -189,6 +194,21 @@ pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidRe
         config,
     );
 
+    // Add a vendor-specific function (class 0xFF), and corresponding interface,
+    // that uses our custom handler.
+    let mut function = builder.function(0xFF, 0, 0);
+    function.msos_feature(msos::CompatibleIdFeatureDescriptor::new("WINUSB", ""));
+    function.msos_feature(msos::RegistryPropertyFeatureDescriptor::new(
+        "DeviceInterfaceGUIDs",
+        msos::PropertyData::RegMultiSz(DEVICE_INTERFACE_GUIDS),
+    ));
+    let mut interface = function.interface();
+    let mut alt = interface.alt_setting(0xFF, 0, 0, None);
+    let read_ep = alt.endpoint_bulk_out(64);
+    let write_ep = alt.endpoint_bulk_in(64);
+    drop(function);
+    spawner.must_spawn(control_task(read_ep, write_ep));
+
     // // Run the USB device.
     spawner.must_spawn(usb_task(builder));
 
@@ -198,6 +218,39 @@ pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidRe
     spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
 
     hid_sender
+}
+
+#[embassy_executor::task]
+async fn control_task(
+    mut read_ep: <esp_hal::otg_fs::asynch::Driver<'static> as embassy_usb_driver::Driver<
+        'static,
+    >>::EndpointOut,
+    mut write_ep: <esp_hal::otg_fs::asynch::Driver<'static> as embassy_usb_driver::Driver<
+        'static,
+    >>::EndpointIn,
+) {
+    loop {
+        read_ep.wait_enabled().await;
+        info!("Connected");
+        loop {
+            let mut data = [0; 64];
+            match read_ep.read(&mut data).await {
+                Ok(n) => {
+                    info!("Got bulk: {:?}", &data[..n]);
+                    // Echo back to the host:
+                    write_ep
+                        .write(&data[..n])
+                        .await
+                        .inspect_err(|e| {
+                            info!("Error writing: {:?}", e);
+                        })
+                        .ok();
+                }
+                Err(_) => break,
+            }
+        }
+        info!("Disconnected");
+    }
 }
 
 #[embassy_executor::task]

@@ -1,20 +1,29 @@
-use core::{cmp::min, fmt, str::FromStr};
+use core::{
+    cmp::{max, min},
+    str::FromStr,
+};
 
 use embassy_net::{IpEndpoint, Ipv4Address, Ipv4Cidr};
 use embassy_sync::once_lock::OnceLock;
-use embedded_storage::ReadStorage;
+use embedded_storage::{ReadStorage, Storage};
 use esp_storage::FlashStorage;
 use heapless::String;
 use log::{debug, warn};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::constants::*;
 
-#[derive(Clone, Deserialize)]
+// Flash has a sector size of 4KB
+const MAX_CONFIG_SIZE: usize = 4096;
+// Default NVS partition address, must be the same as the one in the partition table
+// @see partition_single_app.csv
+const NVS_PARTITION_ADDRESS: u32 = 0x9000;
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Secret<const N: usize>(pub String<N>);
 
-impl<const N: usize> fmt::Debug for Secret<N> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<const N: usize> core::fmt::Debug for Secret<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "<Redacted>")
     }
 }
@@ -40,7 +49,7 @@ impl<const N: usize> AsRef<str> for Secret<N> {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AppConfig {
     // These fields must be set
     pub ssid: Secret<32>,
@@ -155,11 +164,11 @@ impl AppConfig {
 
     fn load() -> Self {
         // TODO: Use proper way to read the config
-        let mut bytes = [0u8; 4096];
+        let mut bytes = [0u8; MAX_CONFIG_SIZE];
         let mut flash = FlashStorage::new();
         // Default NVS partition address
         // @see partition_single_app.csv
-        let flash_addr = 0x9000;
+        let flash_addr = NVS_PARTITION_ADDRESS;
         flash.read(flash_addr, &mut bytes).unwrap();
         // Find the valid JSON range
         let bytes = json_range(&bytes);
@@ -189,19 +198,11 @@ impl AppConfig {
 }
 
 fn json_range(buf: &[u8]) -> &[u8] {
-    // HACK: Naive JSON range finder, looking for the first '{' and '}' pair
-    // It only works in this case, where the JSON doesn't contain any '{' or '}' in the string,
-    // and the JSON doesn't contain any nested object.
-    let start = buf.iter().position(|&b| b == b'{').unwrap_or_default();
-    let end = buf[start..]
+    let end = buf
         .iter()
-        .position(|&b| b == b'}')
-        .unwrap_or_default();
-    if end > 0 {
-        &buf[start..start + end + 1]
-    } else {
-        &buf[start..]
-    }
+        .position(|&c| c == 0 || c > 0xF4)
+        .unwrap_or(buf.len());
+    &buf[..end]
 }
 
 fn parse_addr(s: &str) -> Ipv4Address {
@@ -234,4 +235,108 @@ fn parse_endpoint<Ep: AsRef<str>>(s: Ep) -> IpEndpoint {
     let ip = parse_addr(ip);
     let port = port.parse().expect("invalid port");
     IpEndpoint::from((ip, port))
+}
+
+pub struct ConfigStore {
+    data: [u8; MAX_CONFIG_SIZE],
+    size: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ConfigStoreError {
+    FlashStorageError,
+    RangeTooLarge,
+    SerdeError,
+    UnknownCommand,
+}
+
+impl From<serde_json_core::de::Error> for ConfigStoreError {
+    fn from(_: serde_json_core::de::Error) -> Self {
+        Self::SerdeError
+    }
+}
+
+impl From<serde_json_core::ser::Error> for ConfigStoreError {
+    fn from(_: serde_json_core::ser::Error) -> Self {
+        Self::SerdeError
+    }
+}
+
+impl From<esp_storage::FlashStorageError> for ConfigStoreError {
+    fn from(_: esp_storage::FlashStorageError) -> Self {
+        Self::FlashStorageError
+    }
+}
+
+impl ConfigStore {
+    pub fn new() -> Self {
+        Self {
+            data: [0; MAX_CONFIG_SIZE],
+            size: 0,
+        }
+    }
+
+    pub fn current() -> Self {
+        Self::from(AppConfig::get())
+    }
+
+    pub fn len(&self) -> usize {
+        self.size
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn write_block(&mut self, offset: usize, buf: &[u8]) {
+        let len = buf.len();
+        self.data[offset..offset + len].copy_from_slice(buf);
+        self.size = max(self.size, offset + len);
+    }
+
+    pub fn read_block<'a>(&self, offset: usize, buf: &'a mut [u8]) -> &'a [u8] {
+        let end = min(offset + buf.len(), self.size);
+        buf.copy_from_slice(&self.data[offset..end]);
+        &buf[0..end - offset]
+    }
+
+    pub fn commit(&mut self) -> Result<(), ConfigStoreError> {
+        // Pre-flight check and get the actual bound size
+        let (_, size) = serde_json_core::from_slice::<AppConfig>(&self.data[..self.size])?;
+        self.size = size;
+        // Fill the rest with 0
+        for i in size..self.data.len() {
+            self.data[i] = 0;
+        }
+        // Write to flash
+        let mut flash = FlashStorage::new();
+        // Default NVS partition address
+        // @see partition_single_app.csv
+        let flash_addr = NVS_PARTITION_ADDRESS;
+        flash.write(flash_addr, &self.data)?;
+        Ok(())
+    }
+}
+
+impl Default for ConfigStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<&AppConfig> for ConfigStore {
+    fn from(config: &AppConfig) -> Self {
+        let mut ret = Self {
+            data: [0; MAX_CONFIG_SIZE],
+            size: 0,
+        };
+        let size = serde_json_core::to_slice(config, &mut ret.data).unwrap();
+        ret.size = size;
+        // Fill the rest with 0
+        for i in size..MAX_CONFIG_SIZE {
+            ret.data[i] = 0;
+        }
+        ret
+    }
 }

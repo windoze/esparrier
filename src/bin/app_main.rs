@@ -27,8 +27,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    mk_static, start_barrier_client, start_hid_task, start_indicator_task, AppConfig,
-    IndicatorStatus, UsbActuator,
+    mk_static, set_indicator_status, start_barrier_client, start_hid_task, start_indicator_task,
+    AppConfig, IndicatorStatus, UsbActuator,
 };
 
 #[main]
@@ -58,10 +58,8 @@ async fn main(spawner: Spawner) {
     esp_hal_embassy::init(systimer.alarm0);
 
     // Setup indicator
-    let indicator_sender = start_indicator_task(spawner);
-    indicator_sender
-        .try_send(IndicatorStatus::WifiConnecting)
-        .ok();
+    start_indicator_task(spawner);
+    set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
@@ -155,7 +153,7 @@ async fn main(spawner: Spawner) {
 
     loop {
         // Start the Barrier client
-        let mut actuator = UsbActuator::new(AppConfig::get(), indicator_sender, hid_sender);
+        let mut actuator = UsbActuator::new(AppConfig::get(), hid_sender);
         start_barrier_client(
             AppConfig::get().get_server_endpoint(),
             &AppConfig::get().screen_name,

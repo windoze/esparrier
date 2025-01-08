@@ -38,7 +38,7 @@ esp-wifi = { version = "0.11.0", default-features = false, features = [
     "esp-alloc",
     "log",
 ] }
-heapless = { version = "0.8.0", default-features = false }
+heapless = { version = "0.8.0", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.11.0", default-features = false, features = [
     "medium-ethernet",
     "proto-dhcpv4",
@@ -72,6 +72,7 @@ embassy-usb = { version = "0.3.0", features = [
     "max-handler-count-4",
     "max-interface-count-4",
 ] }
+embassy-usb-driver = "0.1.0"
 usbd-hid = "0.8.2"
 
 cfg-if = "1.0.0"
