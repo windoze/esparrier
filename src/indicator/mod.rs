@@ -112,6 +112,7 @@ pub struct RunningState {
     pub version_major: u8,
     pub version_minor: u8,
     pub version_patch: u8,
+    pub feature_flags: u8,
     pub ip_address: Option<Ipv4Cidr>,
     pub server_connected: bool,
     pub active: bool,
@@ -123,6 +124,7 @@ impl RunningState {
             version_major: VERSION_MAJOR,
             version_minor: VERSION_MINOR,
             version_patch: VERSION_PATCH,
+            feature_flags: FEATURE_FLAGS,
             ip_address: None,
             server_connected: false,
             active: false,
@@ -154,3 +156,29 @@ const VERSION_SEGMENTS: [&str; 3] = const_str::split!(env!("CARGO_PKG_VERSION"),
 const VERSION_MAJOR: u8 = const_str::parse!(VERSION_SEGMENTS[0], u8);
 const VERSION_MINOR: u8 = const_str::parse!(VERSION_SEGMENTS[1], u8);
 const VERSION_PATCH: u8 = const_str::parse!(VERSION_SEGMENTS[2], u8);
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "led")] {
+        const INDICATOR_FLAGS: u8 = 0b0000_0001;
+    }
+    else if #[cfg(feature = "smartled")] {
+        const INDICATOR_FLAGS: u8 = 0b0000_0010;
+    }
+    else if #[cfg(feature = "graphics")] {
+        const INDICATOR_FLAGS: u8 = 0b0000_0100;
+    }
+    else {
+        const INDICATOR_FLAGS: u8 = 0b0000_0000;
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "clipboard")] {
+        const CLIPBOARD_FLAG: u8 = 0b1000_0000;
+    }
+    else {
+        const CLIPBOARD_FLAG: u8 = 0b0000_0000;
+    }
+}
+
+const FEATURE_FLAGS: u8 = INDICATOR_FLAGS | CLIPBOARD_FLAG;

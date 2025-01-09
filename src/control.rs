@@ -74,20 +74,21 @@ impl ControlCommandResponse {
                 bytes[1] = state.version_major;
                 bytes[2] = state.version_minor;
                 bytes[3] = state.version_patch;
+                bytes[4] = state.feature_flags;
                 let octets = state.ip_address.map_or([0, 0, 0, 0], |ip| ip.address().0);
-                bytes[4] = octets[0];
-                bytes[5] = octets[1];
-                bytes[6] = octets[2];
-                bytes[7] = octets[3];
-                bytes[8] = state.ip_address.map_or(0, |ip| ip.prefix_len());
-                bytes[9] = state.server_connected as u8;
-                bytes[10] = state.active as u8;
-                &bytes[..11]
+                bytes[5] = octets[0];
+                bytes[6] = octets[1];
+                bytes[7] = octets[2];
+                bytes[8] = octets[3];
+                bytes[9] = state.ip_address.map_or(0, |ip| ip.prefix_len());
+                bytes[10] = state.server_connected as u8;
+                bytes[11] = state.active as u8;
+                &bytes[..12]
             }
             Self::Config(value) => {
                 bytes[0] = b'r';
                 bytes[1] = *value;
-                &bytes[..3]
+                &bytes[..2]
             }
             Self::Ok => {
                 bytes[0] = b'o';
