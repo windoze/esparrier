@@ -59,7 +59,6 @@ async fn main(spawner: Spawner) {
 
     // Setup indicator
     start_indicator_task(spawner).await;
-    set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
@@ -81,6 +80,8 @@ async fn main(spawner: Spawner) {
         let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
         spawner.spawn(esparrier::button_task(button)).ok();
     }
+
+    set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Initialize WiFi
     let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
@@ -125,11 +126,7 @@ async fn main(spawner: Spawner) {
     spawner.must_spawn(connection(
         controller,
         AppConfig::get().ssid.to_owned(),
-        AppConfig::get()
-            .password
-            .to_owned()
-            .unwrap_or_default()
-            .into(),
+        AppConfig::get().password.to_owned().into(),
     ));
     // Start network stack task
     spawner.must_spawn(net_task(stack));
@@ -140,8 +137,8 @@ async fn main(spawner: Spawner) {
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
+        wdt1.feed();
     }
-    wdt1.feed();
 
     info!("Waiting to get IP address...");
     loop {
@@ -151,8 +148,8 @@ async fn main(spawner: Spawner) {
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
+        wdt1.feed();
     }
-    wdt1.feed();
 
     loop {
         // Start the Barrier client
@@ -168,7 +165,8 @@ async fn main(spawner: Spawner) {
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .ok();
         warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
-        Timer::after(Duration::from_millis(5000)).await
+        Timer::after(Duration::from_millis(5000)).await;
+        wdt1.feed();
     }
 }
 

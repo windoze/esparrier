@@ -77,7 +77,7 @@ impl SynergyHid {
         // debug!("Key Down {:#04x} -> Keycode: {:?}", key, hid);
         match hid {
             KeyCode::None => {
-                warn!("Keycode not found");
+                warn!("Keycode {} not found", key);
                 report[0] = ReportType::Keyboard as u8;
                 report[1..9].copy_from_slice(&self.keyboard_report.clear());
                 (ReportType::Keyboard, &report[0..9])
@@ -118,7 +118,7 @@ impl SynergyHid {
         // debug!("Key Down {:#04x} -> Keycode: {:?}", key, hid);
         match hid {
             KeyCode::None => {
-                warn!("Keycode not found");
+                warn!("Keycode {} not found", key);
                 report[0] = ReportType::Keyboard as u8;
                 report[1..9].copy_from_slice(&self.keyboard_report.clear());
                 (ReportType::Keyboard, &report[0..9])

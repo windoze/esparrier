@@ -59,8 +59,7 @@ impl<const N: usize> AsRef<str> for Secret<N> {
 pub struct AppConfig {
     // These fields must be set
     pub ssid: String<32>,
-    #[serde(default)]
-    pub password: Option<Secret<64>>,
+    pub password: Secret<64>,
     pub server: String<64>,
     pub screen_name: String<64>,
 
@@ -143,7 +142,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             ssid: String::from_str(WIFI_SSID).unwrap(),
-            password: Secret::from_str(WIFI_PASSWORD).ok(),
+            password: Secret::from_str(WIFI_PASSWORD).unwrap(),
             server: String::from_str(BARRIER_SERVER).unwrap(),
             screen_name: String::from_str(SCREEN_NAME).unwrap(),
             screen_width: SCREEN_WIDTH,
@@ -245,8 +244,8 @@ fn parse_endpoint<Ep: AsRef<str>>(s: Ep) -> IpEndpoint {
 }
 
 pub struct ConfigStore {
-    data: [u8; MAX_CONFIG_SIZE],
-    size: usize,
+    pub data: [u8; MAX_CONFIG_SIZE],
+    pub size: usize,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -308,20 +307,25 @@ impl ConfigStore {
         &buf[0..(end - offset)]
     }
 
+    pub fn validate(&self) -> Result<(), ConfigStoreError> {
+        serde_json_core::from_slice::<AppConfig>(json_range(&self.data))?;
+        Ok(())
+    }
+
     pub fn commit(&mut self) -> Result<(), ConfigStoreError> {
-        // Pre-flight check and get the actual bound size
-        let (_, size) = serde_json_core::from_slice::<AppConfig>(&self.data[..self.size])?;
-        self.size = size;
+        self.size = json_range(&self.data).len();
         // Fill the rest with 0
-        for i in size..self.data.len() {
+        for i in self.size..self.data.len() {
             self.data[i] = 0;
         }
         // Write to flash
+        warn!("Writing config to flash...");
         let mut flash = FlashStorage::new();
         // Default NVS partition address
         // @see partition_single_app.csv
         let flash_addr = NVS_PARTITION_ADDRESS;
         flash.write(flash_addr, &self.data)?;
+        warn!("Config written to flash");
         Ok(())
     }
 }
@@ -339,7 +343,7 @@ impl From<&AppConfig> for ConfigStore {
             size: 0,
         };
         let mut config = config.clone();
-        config.password = None;
+        config.password = Default::default();
         serde_json_core::to_slice(&config, &mut ret.data).unwrap();
         ret.size = json_range(&ret.data).len();
         ret
