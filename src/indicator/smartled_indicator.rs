@@ -60,11 +60,7 @@ async fn do_fade_in_out<const N: usize>(
     ))
     .unwrap();
     let delta = (max_brightness - min_brightness) as usize;
-    let step = if delta < step {
-        1usize
-    } else {
-        (delta / step) as usize
-    };
+    let step = if delta < step { 1usize } else { delta / step };
 
     loop {
         if (min_brightness == max_brightness) || (step == 0) {
