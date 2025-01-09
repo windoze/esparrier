@@ -58,7 +58,7 @@ async fn main(spawner: Spawner) {
     esp_hal_embassy::init(systimer.alarm0);
 
     // Setup indicator
-    start_indicator_task(spawner);
+    start_indicator_task(spawner).await;
     set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
@@ -73,15 +73,13 @@ async fn main(spawner: Spawner) {
     wdt1.feed();
 
     // Setup HID task
-    let hid_sender = start_hid_task(spawner, AppConfig::get());
+    start_hid_task(spawner);
 
     #[cfg(feature = "clipboard")]
     {
         // Setup paste button task
         let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
-        spawner
-            .spawn(esparrier::button_task(button, hid_sender))
-            .ok();
+        spawner.spawn(esparrier::button_task(button)).ok();
     }
 
     // Initialize WiFi
@@ -126,8 +124,12 @@ async fn main(spawner: Spawner) {
     // Start WiFi connection task
     spawner.must_spawn(connection(
         controller,
-        AppConfig::get().ssid.to_owned().into(),
-        AppConfig::get().password.to_owned().into(),
+        AppConfig::get().ssid.to_owned(),
+        AppConfig::get()
+            .password
+            .to_owned()
+            .unwrap_or_default()
+            .into(),
     ));
     // Start network stack task
     spawner.must_spawn(net_task(stack));
@@ -145,6 +147,7 @@ async fn main(spawner: Spawner) {
     loop {
         if let Some(config) = stack.config_v4() {
             info!("Got IP: {}", config.address);
+            set_indicator_status(IndicatorStatus::WifiConnected(config.address)).await;
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
@@ -153,7 +156,7 @@ async fn main(spawner: Spawner) {
 
     loop {
         // Start the Barrier client
-        let mut actuator = UsbActuator::new(AppConfig::get(), hid_sender);
+        let mut actuator = UsbActuator::new(AppConfig::get());
         start_barrier_client(
             AppConfig::get().get_server_endpoint(),
             &AppConfig::get().screen_name,

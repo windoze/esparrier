@@ -1,16 +1,15 @@
-use core::{net::Ipv4Addr, sync::atomic::AtomicU8};
-
+use embassy_net::Ipv4Cidr;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, once_lock::OnceLock,
 };
 
-#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndicatorStatus {
-    WifiConnecting = 0,
-    WifiConnected = 1,
-    ServerConnected = 2,
-    Active = 3,
+    WifiConnecting,
+    WifiConnected(Ipv4Cidr),
+    ServerConnecting,
+    ServerConnected,
+    Active,
 }
 
 type IndicatorSender = embassy_sync::channel::Sender<
@@ -62,9 +61,8 @@ async fn indicator_task(config: IndicatorConfig, receiver: IndicatorReceiver) {
 }
 
 static INDICATOR_SENDER: OnceLock<IndicatorSender> = OnceLock::new();
-static CURRENT_STATUS: AtomicU8 = AtomicU8::new(0);
 
-pub fn start_indicator_task(spawner: embassy_executor::Spawner) {
+pub async fn start_indicator_task(spawner: embassy_executor::Spawner) {
     let channel = crate::mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
     let sender: IndicatorSender = channel.sender();
@@ -72,48 +70,68 @@ pub fn start_indicator_task(spawner: embassy_executor::Spawner) {
     let config = IndicatorConfig::default();
 
     spawner.spawn(indicator_task(config, receiver)).ok();
+    RUNNING_STATE.lock().await.server_connected = false;
     INDICATOR_SENDER.init(sender).ok();
 }
 
 pub async fn set_indicator_status(status: IndicatorStatus) {
-    INDICATOR_SENDER.get().await.send(status).await;
-    CURRENT_STATUS.store(status as u8, core::sync::atomic::Ordering::Relaxed);
-}
-
-pub fn get_indicator_status() -> IndicatorStatus {
-    match CURRENT_STATUS.load(core::sync::atomic::Ordering::Relaxed) {
-        0 => IndicatorStatus::WifiConnecting,
-        1 => IndicatorStatus::WifiConnected,
-        2 => IndicatorStatus::ServerConnected,
-        3 => IndicatorStatus::Active,
-        _ => IndicatorStatus::WifiConnecting,
+    match status {
+        IndicatorStatus::WifiConnecting => {
+            let mut guard = RUNNING_STATE.lock().await;
+            guard.ip_address = None;
+            guard.server_connected = false;
+            guard.active = false;
+        }
+        IndicatorStatus::WifiConnected(ip_address) => {
+            let mut guard = RUNNING_STATE.lock().await;
+            guard.ip_address = Some(ip_address);
+            guard.server_connected = false;
+            guard.active = false;
+        }
+        IndicatorStatus::ServerConnecting => {
+            let mut guard = RUNNING_STATE.lock().await;
+            guard.server_connected = false;
+            guard.active = false;
+        }
+        IndicatorStatus::ServerConnected => {
+            let mut guard = RUNNING_STATE.lock().await;
+            guard.server_connected = true;
+            guard.active = false;
+        }
+        IndicatorStatus::Active => {
+            let mut guard = RUNNING_STATE.lock().await;
+            guard.server_connected = true;
+            guard.active = true;
+        }
     }
+    INDICATOR_SENDER.get().await.send(status).await;
 }
 
 #[derive(Clone, Debug)]
 pub struct RunningState {
-    pub ip_address: Option<Ipv4Addr>,
+    pub version_major: u8,
+    pub version_minor: u8,
+    pub version_patch: u8,
+    pub ip_address: Option<Ipv4Cidr>,
     pub server_connected: bool,
+    pub active: bool,
 }
 
 impl RunningState {
     pub const fn new() -> Self {
         Self {
+            version_major: VERSION_MAJOR,
+            version_minor: VERSION_MINOR,
+            version_patch: VERSION_PATCH,
             ip_address: None,
             server_connected: false,
+            active: false,
         }
     }
 
-    pub fn set_ip_address(&self, ip_address: Option<Ipv4Addr>) -> Self {
+    pub fn set_ip_address(&self, ip_address: Option<Ipv4Cidr>) -> Self {
         Self {
             ip_address,
-            ..self.clone()
-        }
-    }
-
-    pub fn set_server_connected(&self, server_connected: bool) -> Self {
-        Self {
-            server_connected,
             ..self.clone()
         }
     }
@@ -132,6 +150,7 @@ pub async fn get_running_state() -> RunningState {
     RUNNING_STATE.lock().await.clone()
 }
 
-pub async fn set_running_state(state: RunningState) {
-    *RUNNING_STATE.lock().await = state;
-}
+const VERSION_SEGMENTS: [&str; 3] = const_str::split!(env!("CARGO_PKG_VERSION"), ".");
+const VERSION_MAJOR: u8 = const_str::parse!(VERSION_SEGMENTS[0], u8);
+const VERSION_MINOR: u8 = const_str::parse!(VERSION_SEGMENTS[1], u8);
+const VERSION_PATCH: u8 = const_str::parse!(VERSION_SEGMENTS[2], u8);

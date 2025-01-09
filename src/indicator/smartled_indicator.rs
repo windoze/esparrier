@@ -59,6 +59,12 @@ async fn do_fade_in_out<const N: usize>(
         min_brightness,
     ))
     .unwrap();
+    let delta = (max_brightness - min_brightness) as usize;
+    let step = if delta < step {
+        1usize
+    } else {
+        (delta / step) as usize
+    };
 
     loop {
         if (min_brightness == max_brightness) || (step == 0) {
@@ -135,13 +141,17 @@ pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceive
     loop {
         match status {
             IndicatorStatus::WifiConnecting => {
-                status = fade_in_out(&mut led, RED, receiver, 0, config.max_brightness, 1).await;
+                status = fade_in_out(&mut led, RED, receiver, 0, config.max_brightness, 10).await;
             }
-            IndicatorStatus::WifiConnected => {
-                status = fade_in_out(&mut led, BLUE, receiver, 0, config.max_brightness, 1).await;
+            IndicatorStatus::WifiConnected(_) => {
+                status = fade_in_out(&mut led, BLUE, receiver, 0, config.max_brightness, 10).await;
+            }
+            IndicatorStatus::ServerConnecting => {
+                status = fade_in_out(&mut led, BLUE, receiver, 0, config.max_brightness, 10).await;
             }
             IndicatorStatus::ServerConnected => {
-                status = fade_in_out(&mut led, YELLOW, receiver, 0, config.max_brightness, 1).await;
+                status =
+                    fade_in_out(&mut led, YELLOW, receiver, 0, config.max_brightness, 10).await;
             }
             IndicatorStatus::Active => {
                 status = fade_in_out(

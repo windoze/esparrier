@@ -50,7 +50,8 @@ pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceive
     loop {
         let gif = match status {
             IndicatorStatus::WifiConnecting => &connecting_gif,
-            IndicatorStatus::WifiConnected => &connecting_gif,
+            IndicatorStatus::WifiConnected(_) => &connecting_gif,
+            IndicatorStatus::ServerConnecting => &connecting_gif,
             IndicatorStatus::ServerConnected => &inactive_gif,
             IndicatorStatus::Active => &active_gif,
         };

@@ -15,7 +15,11 @@ fn get_led_config(status: IndicatorStatus) -> LedConfig {
             on_duration: Duration::from_millis(100),
             off_duration: Duration::from_millis(100),
         },
-        IndicatorStatus::WifiConnected => LedConfig {
+        IndicatorStatus::WifiConnected(_) => LedConfig {
+            on_duration: Duration::from_millis(100),
+            off_duration: Duration::from_millis(100),
+        },
+        IndicatorStatus::ServerConnecting(_) => LedConfig {
             on_duration: Duration::from_millis(100),
             off_duration: Duration::from_millis(100),
         },

@@ -36,8 +36,6 @@ impl ReportType {
 #[derive(Debug)]
 pub struct SynergyHid {
     flip_mouse_wheel: bool,
-    x: u16,
-    y: u16,
     server_buttons: [u16; 512],
 
     // Report 1
@@ -52,8 +50,6 @@ impl SynergyHid {
     pub fn new(flip_mouse_wheel: bool) -> Self {
         Self {
             flip_mouse_wheel,
-            x: 0,
-            y: 0,
             server_buttons: [0; 512],
             keyboard_report: KeyboardReport::default(),
             mouse_report: AbsMouseReport::default(),
@@ -146,7 +142,6 @@ impl SynergyHid {
         y: u16,
         report: &'a mut [u8],
     ) -> (ReportType, &'a [u8]) {
-        (self.x, self.y) = (x, y);
         report[0] = ReportType::Mouse as u8;
         report[1..8].copy_from_slice(&self.mouse_report.move_to(x, y));
         (ReportType::Mouse, &report[..8])

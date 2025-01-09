@@ -28,6 +28,12 @@ impl<const N: usize> core::fmt::Debug for Secret<N> {
     }
 }
 
+impl<const N: usize> Default for Secret<N> {
+    fn default() -> Self {
+        Self(String::default())
+    }
+}
+
 impl<const N: usize> From<Secret<N>> for String<N> {
     fn from(s: Secret<N>) -> Self {
         s.0
@@ -49,11 +55,12 @@ impl<const N: usize> AsRef<str> for Secret<N> {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AppConfig {
     // These fields must be set
-    pub ssid: Secret<32>,
-    pub password: Secret<64>,
+    pub ssid: String<32>,
+    #[serde(default)]
+    pub password: Option<Secret<64>>,
     pub server: String<64>,
     pub screen_name: String<64>,
 
@@ -135,8 +142,8 @@ fn get_default_watchdog_timeout() -> u32 {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            ssid: Secret::from_str(WIFI_SSID).unwrap(),
-            password: Secret::from_str(WIFI_PASSWORD).unwrap(),
+            ssid: String::from_str(WIFI_SSID).unwrap(),
+            password: Secret::from_str(WIFI_PASSWORD).ok(),
             server: String::from_str(BARRIER_SERVER).unwrap(),
             screen_name: String::from_str(SCREEN_NAME).unwrap(),
             screen_width: SCREEN_WIDTH,
@@ -297,8 +304,8 @@ impl ConfigStore {
 
     pub fn read_block<'a>(&self, offset: usize, buf: &'a mut [u8]) -> &'a [u8] {
         let end = min(offset + buf.len(), self.size);
-        buf.copy_from_slice(&self.data[offset..end]);
-        &buf[0..end - offset]
+        buf[0..(end - offset)].copy_from_slice(&self.data[offset..end]);
+        &buf[0..(end - offset)]
     }
 
     pub fn commit(&mut self) -> Result<(), ConfigStoreError> {
@@ -331,12 +338,10 @@ impl From<&AppConfig> for ConfigStore {
             data: [0; MAX_CONFIG_SIZE],
             size: 0,
         };
-        let size = serde_json_core::to_slice(config, &mut ret.data).unwrap();
-        ret.size = size;
-        // Fill the rest with 0
-        for i in size..MAX_CONFIG_SIZE {
-            ret.data[i] = 0;
-        }
+        let mut config = config.clone();
+        config.password = None;
+        serde_json_core::to_slice(&config, &mut ret.data).unwrap();
+        ret.size = json_range(&ret.data).len();
         ret
     }
 }

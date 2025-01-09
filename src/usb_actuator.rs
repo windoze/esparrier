@@ -1,9 +1,9 @@
 use log::{debug, info, warn};
 
 use crate::{
-    set_indicator_status,
+    send_hid_report, set_indicator_status,
     synergy_hid::{ReportType, SynergyHid},
-    Actuator, BarrierError, HidReport, HidReportSender, IndicatorStatus,
+    Actuator, BarrierError, HidReport, IndicatorStatus,
 };
 
 pub struct UsbActuator {
@@ -12,37 +12,29 @@ pub struct UsbActuator {
     x: u16,
     y: u16,
     hid: SynergyHid,
-    hid_writer: HidReportSender,
 }
 
 impl UsbActuator {
-    pub fn new(app_config: &crate::AppConfig, hid_writer: HidReportSender) -> Self {
+    pub fn new(app_config: &crate::AppConfig) -> Self {
         Self {
             width: app_config.screen_width,
             height: app_config.screen_height,
             x: 0,
             y: 0,
             hid: SynergyHid::new(app_config.flip_wheel),
-            hid_writer,
         }
     }
 
     async fn send_report(&mut self, report: (ReportType, &[u8])) {
         match report.0 {
             ReportType::Keyboard => {
-                self.hid_writer
-                    .send(HidReport::Keyboard(report.1.try_into().unwrap()))
-                    .await;
+                send_hid_report(HidReport::Keyboard(report.1.try_into().unwrap())).await;
             }
             ReportType::Mouse => {
-                self.hid_writer
-                    .send(HidReport::Mouse(report.1.try_into().unwrap()))
-                    .await;
+                send_hid_report(HidReport::Mouse(report.1.try_into().unwrap())).await;
             }
             ReportType::Consumer => {
-                self.hid_writer
-                    .send(HidReport::Consumer(report.1.try_into().unwrap()))
-                    .await;
+                send_hid_report(HidReport::Consumer(report.1.try_into().unwrap())).await;
             }
         }
     }
@@ -57,7 +49,7 @@ impl Actuator for UsbActuator {
 
     async fn disconnected(&mut self) -> Result<(), BarrierError> {
         warn!("Disconnected from Barrier");
-        set_indicator_status(IndicatorStatus::WifiConnected).await;
+        set_indicator_status(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 
