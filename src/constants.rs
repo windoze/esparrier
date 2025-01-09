@@ -52,3 +52,5 @@ pub const USB_PRODUCT: &str = "Esparrier KVM";
 pub const USB_SERIAL_NUMBER: &str = "88888888";
 #[from_env]
 pub const WATCHDOG_TIMEOUT: u32 = 15;
+
+pub const DEVICE_INTERFACE_GUIDS: &[&str] = &["{4d36e96c-e325-11ce-bfc1-08002be10318}"];

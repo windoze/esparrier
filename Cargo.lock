@@ -158,6 +158,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-str"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3618cccc083bb987a415d85c02ca6c9994ea5b44731ec28b9ecf09658655fba9"
+
+[[package]]
 name = "const_env"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -852,6 +858,7 @@ version = "0.3.1"
 dependencies = [
  "async-debounce",
  "cfg-if",
+ "const-str",
  "const_env",
  "critical-section",
  "display-interface-spi",
@@ -861,6 +868,7 @@ dependencies = [
  "embassy-sync 0.6.1",
  "embassy-time",
  "embassy-usb",
+ "embassy-usb-driver",
  "embedded-graphics",
  "embedded-hal-async",
  "embedded-hal-bus",

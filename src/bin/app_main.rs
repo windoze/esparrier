@@ -27,8 +27,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    mk_static, start_barrier_client, start_hid_task, start_indicator_task, AppConfig,
-    IndicatorStatus, UsbActuator,
+    mk_static, set_indicator_status, start_barrier_client, start_hid_task, start_indicator_task,
+    AppConfig, IndicatorStatus, UsbActuator,
 };
 
 #[main]
@@ -58,10 +58,7 @@ async fn main(spawner: Spawner) {
     esp_hal_embassy::init(systimer.alarm0);
 
     // Setup indicator
-    let indicator_sender = start_indicator_task(spawner);
-    indicator_sender
-        .try_send(IndicatorStatus::WifiConnecting)
-        .ok();
+    start_indicator_task(spawner).await;
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
@@ -75,16 +72,16 @@ async fn main(spawner: Spawner) {
     wdt1.feed();
 
     // Setup HID task
-    let hid_sender = start_hid_task(spawner, AppConfig::get());
+    start_hid_task(spawner);
 
     #[cfg(feature = "clipboard")]
     {
         // Setup paste button task
         let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
-        spawner
-            .spawn(esparrier::button_task(button, hid_sender))
-            .ok();
+        spawner.spawn(esparrier::button_task(button)).ok();
     }
+
+    set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Initialize WiFi
     let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
@@ -128,7 +125,7 @@ async fn main(spawner: Spawner) {
     // Start WiFi connection task
     spawner.must_spawn(connection(
         controller,
-        AppConfig::get().ssid.to_owned().into(),
+        AppConfig::get().ssid.to_owned(),
         AppConfig::get().password.to_owned().into(),
     ));
     // Start network stack task
@@ -140,22 +137,23 @@ async fn main(spawner: Spawner) {
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
+        wdt1.feed();
     }
-    wdt1.feed();
 
     info!("Waiting to get IP address...");
     loop {
         if let Some(config) = stack.config_v4() {
             info!("Got IP: {}", config.address);
+            set_indicator_status(IndicatorStatus::WifiConnected(config.address)).await;
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
+        wdt1.feed();
     }
-    wdt1.feed();
 
     loop {
         // Start the Barrier client
-        let mut actuator = UsbActuator::new(AppConfig::get(), indicator_sender, hid_sender);
+        let mut actuator = UsbActuator::new(AppConfig::get());
         start_barrier_client(
             AppConfig::get().get_server_endpoint(),
             &AppConfig::get().screen_name,
@@ -167,7 +165,8 @@ async fn main(spawner: Spawner) {
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .ok();
         warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
-        Timer::after(Duration::from_millis(5000)).await
+        Timer::after(Duration::from_millis(5000)).await;
+        wdt1.feed();
     }
 }
 

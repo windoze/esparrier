@@ -1,8 +1,9 @@
 use log::{debug, info, warn};
 
 use crate::{
+    send_hid_report, set_indicator_status,
     synergy_hid::{ReportType, SynergyHid},
-    Actuator, BarrierError, HidReport, HidReportSender, IndicatorSender, IndicatorStatus,
+    Actuator, BarrierError, HidReport, IndicatorStatus,
 };
 
 pub struct UsbActuator {
@@ -11,43 +12,29 @@ pub struct UsbActuator {
     x: u16,
     y: u16,
     hid: SynergyHid,
-    indicator: IndicatorSender,
-    hid_writer: HidReportSender,
 }
 
 impl UsbActuator {
-    pub fn new(
-        app_config: &crate::AppConfig,
-        indicator: IndicatorSender,
-        hid_writer: HidReportSender,
-    ) -> Self {
+    pub fn new(app_config: &crate::AppConfig) -> Self {
         Self {
             width: app_config.screen_width,
             height: app_config.screen_height,
             x: 0,
             y: 0,
             hid: SynergyHid::new(app_config.flip_wheel),
-            indicator,
-            hid_writer,
         }
     }
 
     async fn send_report(&mut self, report: (ReportType, &[u8])) {
         match report.0 {
             ReportType::Keyboard => {
-                self.hid_writer
-                    .send(HidReport::Keyboard(report.1.try_into().unwrap()))
-                    .await;
+                send_hid_report(HidReport::Keyboard(report.1.try_into().unwrap())).await;
             }
             ReportType::Mouse => {
-                self.hid_writer
-                    .send(HidReport::Mouse(report.1.try_into().unwrap()))
-                    .await;
+                send_hid_report(HidReport::Mouse(report.1.try_into().unwrap())).await;
             }
             ReportType::Consumer => {
-                self.hid_writer
-                    .send(HidReport::Consumer(report.1.try_into().unwrap()))
-                    .await;
+                send_hid_report(HidReport::Consumer(report.1.try_into().unwrap())).await;
             }
         }
     }
@@ -56,13 +43,13 @@ impl UsbActuator {
 impl Actuator for UsbActuator {
     async fn connected(&mut self) -> Result<(), BarrierError> {
         info!("Connected to Barrier");
-        self.indicator.send(IndicatorStatus::ServerConnected).await;
+        set_indicator_status(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 
     async fn disconnected(&mut self) -> Result<(), BarrierError> {
         warn!("Disconnected from Barrier");
-        self.indicator.send(IndicatorStatus::WifiConnected).await;
+        set_indicator_status(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 
@@ -150,7 +137,7 @@ impl Actuator for UsbActuator {
 
     async fn enter(&mut self) -> Result<(), BarrierError> {
         info!("Entering");
-        self.indicator.send(IndicatorStatus::Active).await;
+        set_indicator_status(IndicatorStatus::Active).await;
         Ok(())
     }
 
@@ -163,7 +150,7 @@ impl Actuator for UsbActuator {
         self.send_report(ret).await;
         let ret = self.hid.clear(ReportType::Consumer, &mut report);
         self.send_report(ret).await;
-        self.indicator.send(IndicatorStatus::ServerConnected).await;
+        set_indicator_status(IndicatorStatus::ServerConnected).await;
         Ok(())
     }
 }

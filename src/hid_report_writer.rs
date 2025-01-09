@@ -7,8 +7,12 @@ use embassy_executor::Spawner;
 use embassy_sync::{
     blocking_mutex::raw::NoopRawMutex,
     channel::{Channel, Receiver, Sender},
+    once_lock::OnceLock,
 };
-use embassy_usb::class::hid::HidWriter;
+use embassy_usb::{
+    class::hid::HidWriter,
+    msos::{self, windows_version},
+};
 use esp_hal::{
     gpio::GpioPin,
     otg_fs::{asynch::Driver, Usb},
@@ -16,7 +20,7 @@ use esp_hal::{
 };
 use log::{debug, info};
 
-use crate::{mk_static, AppConfig, SynergyHid};
+use crate::{constants::DEVICE_INTERFACE_GUIDS, mk_static, AppConfig, SynergyHid};
 
 type ReportWriter<'a, const N: usize> = HidWriter<'a, Driver<'a>, N>;
 
@@ -125,7 +129,14 @@ impl embassy_usb::Handler for MyDeviceHandler {
     }
 }
 
-pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidReportSender {
+static HID_REPORT_SENDER: OnceLock<HidReportSender> = OnceLock::new();
+
+pub async fn send_hid_report(report: HidReport) {
+    HID_REPORT_SENDER.get().await.send(report).await;
+}
+
+pub fn start_hid_task(spawner: Spawner) {
+    let app_config = AppConfig::get();
     // Create the driver, from the HAL.
     let usb = Usb::new(
         unsafe { USB0::steal() },
@@ -168,6 +179,7 @@ pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidRe
     );
 
     builder.handler(device_handler);
+    builder.msos_descriptor(windows_version::WIN8_1, 0);
 
     // Initialize the USB peripheral
     let hid_dev_state = mk_static!(
@@ -189,6 +201,21 @@ pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidRe
         config,
     );
 
+    // Add a vendor-specific function (class 0xFF), and corresponding interface,
+    // that uses our custom handler.
+    let mut function = builder.function(0xFF, 0x0D, 0x0A);
+    function.msos_feature(msos::CompatibleIdFeatureDescriptor::new("WINUSB", ""));
+    function.msos_feature(msos::RegistryPropertyFeatureDescriptor::new(
+        "DeviceInterfaceGUIDs",
+        msos::PropertyData::RegMultiSz(DEVICE_INTERFACE_GUIDS),
+    ));
+    let mut interface = function.interface();
+    let mut alt = interface.alt_setting(0xFF, 0x0D, 0x0A, None);
+    let read_ep = alt.endpoint_bulk_out(64);
+    let write_ep = alt.endpoint_bulk_in(64);
+    drop(function);
+    spawner.must_spawn(crate::control::control_task(read_ep, write_ep));
+
     // // Run the USB device.
     spawner.must_spawn(usb_task(builder));
 
@@ -197,7 +224,7 @@ pub fn start_hid_task(spawner: Spawner, app_config: &'static AppConfig) -> HidRe
     let hid_sender = hid_channel.sender();
     spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
 
-    hid_sender
+    HID_REPORT_SENDER.init(hid_sender).ok();
 }
 
 #[embassy_executor::task]
