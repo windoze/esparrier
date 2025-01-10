@@ -1,5 +1,5 @@
 [target.xtensa-esp32s3-none-elf]
-runner = "espflash flash --monitor --partition-table partition_2_ota.csv"
+runner = "espflash flash --monitor --partition-table partitions_single_app.csv"
 
 [env]
 ESP_WIFI_RX_QUEUE_SIZE = "24"

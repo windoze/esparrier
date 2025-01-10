@@ -50,6 +50,12 @@ jobs:
         run: cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv esparrier-${{ matrix.models }}.bin
       - name: Build merged binary
         run: cargo espflash save-image --merge --chip esp32s3 --flash-size 1mb --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv merged-esparrier-${{ matrix.models }}.bin
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: *.bin
+
   build-archive:
     name: Build Archive
     needs: [rust-build]
@@ -64,17 +70,16 @@ jobs:
         uses: iawia002/get-tag-or-commit-id@v1
         with:
           length: 7
+      - uses: actions/download-artifact@v3
+        with:
+          name: binaries
       - name: Build archive
         shell: bash
         run: |
           package_name="esparrier"
           dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
           mkdir -p "$dirname"
-          cp "zero.bin" "$dirname"
-          cp "esp32s3-bootloader.bin" "$dirname"
-          cp "partition_table.bin" "$dirname"
-          mv "merged-esparrier-*.bin" "$dirname"
-          mv "esparrier-*.bin" "$dirname"
+          mv "*.bin" "$dirname"
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Release

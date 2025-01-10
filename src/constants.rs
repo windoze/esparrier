@@ -1,26 +1,26 @@
 use const_env::from_env;
 
-#[cfg(feature = "led")]
 cfg_if::cfg_if! {
     if #[cfg(feature = "xiao-esp32s3")] {
         pub const LED_PIN: u8 = 21;
-    } else {
+    } else if #[cfg(feature = "led")] {
         #[from_env]
-        pub const LED_PIN: u8;
+        pub const LED_PIN: u8 = 0;
     }
 }
 
-#[cfg(feature = "smartled")]
 cfg_if::cfg_if! {
-    if #[cfg(feature = "m5atoms3-lite")] {
+    if #[cfg(feature = "m5atoms3")] {
+        pub const SMART_LED_PIN: u8 = 35;
+    } else if #[cfg(feature = "m5atoms3-lite")] {
         pub const SMART_LED_PIN: u8 = 35;
     } else if #[cfg(feature = "devkitc-1_0")] {
         pub const SMART_LED_PIN: u8 = 48;
     } else if #[cfg(feature = "devkitc-1_1")] {
         pub const SMART_LED_PIN: u8 = 38;
-    } else {
+    } else if #[cfg(feature = "smartled")] {
         #[from_env]
-        pub const SMART_LED_PIN: u8;
+        pub const SMART_LED_PIN: u8 = 0;
     }
 }
 
@@ -28,16 +28,14 @@ cfg_if::cfg_if! {
 #[from_env]
 pub const SMART_LED_COUNT: usize = 1;
 
-// Pin 41 is for M5Atom S3 and M5Atom S3 Lite
-#[cfg(feature = "clipboard")]
 cfg_if::cfg_if! {
-    if #[cfg(feature = "m5atoms3-lite")] {
+    if #[cfg(feature = "m5atoms3")] {
         pub const PASTE_BUTTON_PIN: u8 = 41;
-    } else if #[cfg(feature = "m5atoms3")] {
+    } else if #[cfg(feature = "m5atoms3-lite")] {
         pub const PASTE_BUTTON_PIN: u8 = 41;
-    } else {
+    } else if #[cfg(feature = "clipboard")] {
         #[from_env]
-        pub const PASTE_BUTTON_PIN: u8;
+        pub const PASTE_BUTTON_PIN: u8 = 0;
     }
 }
 
@@ -60,17 +58,8 @@ pub const SCREEN_WIDTH: u16 = 1920;
 pub const SCREEN_HEIGHT: u16 = 1080;
 #[from_env]
 pub const REVERSED_WHEEL: bool = false;
-cfg_if::cfg_if! {
-    if #[cfg(feature = "graphics")] {
-        // 30 is too dim for LCD screens
-        #[from_env]
-        pub const BRIGHTNESS: u8 = 50;
-    } else {
-        // 30 is bright enough for SmartLED indicators
-        #[from_env]
-        pub const BRIGHTNESS: u8 = 20;
-    }
-}
+#[from_env]
+pub const BRIGHTNESS: u8 = 30;
 #[from_env]
 pub const USB_VID: u16 = 0x0d0a;
 #[from_env]
@@ -83,5 +72,4 @@ pub const USB_PRODUCT: &str = "Esparrier KVM";
 pub const USB_SERIAL_NUMBER: &str = "88888888";
 #[from_env]
 pub const WATCHDOG_TIMEOUT: u32 = 15;
-
 pub const DEVICE_INTERFACE_GUIDS: &[&str] = &["{4d36e96c-e325-11ce-bfc1-08002be10318}"];
