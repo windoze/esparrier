@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: binaries
-          path: *.bin
+          path: ./*.bin
 
   build-archive:
     name: Build Archive
@@ -70,7 +70,8 @@ jobs:
         uses: iawia002/get-tag-or-commit-id@v1
         with:
           length: 7
-      - uses: actions/download-artifact@v3
+      - name: Download binaries
+        uses: actions/download-artifact@v3
         with:
           name: binaries
       - name: Build archive
@@ -82,7 +83,7 @@ jobs:
           mv "*.bin" "$dirname"
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
-      - name: Release
+      - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
