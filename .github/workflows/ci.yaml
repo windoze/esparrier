@@ -21,25 +21,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        action:
-          - command: build
-            args: --release
-          - command: build
-            args: --release --features=led,clipboard
-          - command: build
-            args: --release --features=m5atoms3-lite
-          - command: build
-            args: --release --features=m5atoms3
-          - command: fmt
-            args: --all -- --check --color always
-          - command: clippy
-            args: --release --workspace -- -D warnings
-          - command: clippy
-            args: --release --features=m5atoms3-lite --workspace -- -D warnings
-          - command: clippy
-            args: --release --features=smartled,clipboard --workspace -- -D warnings
-          - command: clippy
-            args: --release --features=m5atoms3 --workspace -- -D warnings
+        models:
+          [
+            "generic",
+            "m5atoms3-lite",
+            "m5atoms3",
+            "xiao-esp32s3",
+            "devkitc-1_0",
+            "devkitc-1_1",
+          ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,4 +42,8 @@ jobs:
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Run command
-        run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
+        run: cargo fmt --all -- --check --color always
+      - name: Run command
+        run: cargo build --release --features=${{ matrix.models }}
+      - name: Run command
+        run: cargo clippy --release --features=${{ matrix.models }} --workspace -- -D warnings
