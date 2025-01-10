@@ -104,7 +104,7 @@ pub async fn set_indicator_status(status: IndicatorStatus) {
             guard.active = true;
         }
     }
-    INDICATOR_SENDER.get().await.send(status).await;
+    INDICATOR_SENDER.get().await.try_send(status).ok();
 }
 
 #[derive(Clone, Debug)]

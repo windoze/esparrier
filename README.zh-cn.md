@@ -123,26 +123,26 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 4. 按照上一节中的描述准备 `config.json` 文件。
 
 5. 将开发板置于下载模式，然后烧录二进制文件和配置到开发板上。注意 USB 设备名称可能会有所不同，您可能需要将其更改为正确的名称。在大多数 Linux 系统中，设备名称为 `/dev/ttyACMx`，其中 `x` 是一个数字，您可以通过运行 `ls /dev/ttyACM*` 找到正确的设备名称。
+
+    * 使用 `esptool.py`：
+
     ```bash
     # 擦除全部闪存
     esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
-    # 写入二进制文件和配置
-    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash \
-        0x0000 /path/to/the/repo/esparrier/esp32s3-bootloader.bin \
-        0x8000 /path/to/the/repo/esparrier/partition_table.bin \
-        0x9000 /path/to/config.json \
-        0x10000 /path/to/esparrier.bin
+    # 写入二进制文件
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x0000 /path/to/esparrier.bin
     ```
 
-6. `partition_table.bin` 文件由 ESP-IDF 开发包中的 `gen_esp32part.py` 生成，如果你已经安装了 ESP-IDF ，你可以使用下列命令自行生成这个文件：
+    * 使用 `espflash`：
+
     ```bash
-    /path/to/esp-idf/components/partition_table/gen_esp32part.py partitions_single_app.csv partition_table.bin
+    # 擦除全部闪存
+    espflash erase-flash --chip esp32s3 --port /dev/ttyACM0
+    # 写入二进制文件
+    espflash write-bin --chip esp32s3 --port /dev/ttyACM0 0x0000 /path/to/esparrier.bin
     ```
 
-7. `esp32s3-bootloader.bin` 文件是官方 ESP32S3 的引导加载程序，可以从 [espflash项目仓库](https://github.com/esp-rs/espflash) 中找到，通常位于 `espflash/resources/bootloaders` 目录下。
-
-
-8. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。
+6. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。此时可以使用 [esparrier-config-cli](https://github.com/windoze/esparrier-config) 更新配置，或者使用 [手动更新配置](#更新配置) 的方法写入配置文件。
 
 ## 故障排除
 

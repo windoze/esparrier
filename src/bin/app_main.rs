@@ -57,9 +57,6 @@ async fn main(spawner: Spawner) {
         .split::<esp_hal::timer::systimer::Target>();
     esp_hal_embassy::init(systimer.alarm0);
 
-    // Setup indicator
-    start_indicator_task(spawner).await;
-
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let timg1 = TimerGroup::new(peripherals.TIMG1);
     let mut wdt1 = timg1.wdt;
@@ -81,6 +78,8 @@ async fn main(spawner: Spawner) {
         spawner.spawn(esparrier::button_task(button)).ok();
     }
 
+    // Setup indicator
+    start_indicator_task(spawner).await;
     set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Initialize WiFi
