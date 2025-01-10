@@ -5,7 +5,7 @@ Esparrier
 ![CI](https://github.com/windoze/esparrier/actions/workflows/ci.yaml/badge.svg)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/windoze/esparrier?logo=GitHub)](https://github.com/windoze/esparrier/releases)
 
-Esparrier is a [Barrier](https://github.com/debauchee/barrier) client for ESP32S3.
+Esparrier is a [Barrier](https://github.com/debauchee/barrier)/[Deskflow](https://deskflow.org/) client for ESP32S3.
 
 This is a re-write of the original [Esparrier-IDF project](https://github.com/windoze/esparrier-idf), moving from `esp-idf-hal` to `esp-hal` baremetal infrastructure.
 

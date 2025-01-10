@@ -5,7 +5,7 @@ Esparrier
 ![CI](https://github.com/windoze/esparrier/actions/workflows/ci.yaml/badge.svg)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/windoze/esparrier?logo=GitHub)](https://github.com/windoze/esparrier/releases)
 
-Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/barrier) 客户端。
+Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/barrier)/[Deskflow](https://deskflow.org/) 客户端。
 
 这是对原有 [Esparrier-IDF 项目](https://github.com/windoze/esparrier-idf) 的重写，从 `esp-idf-hal` 迁移到 `esp-hal`。
 
