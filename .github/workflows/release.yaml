@@ -62,7 +62,7 @@ jobs:
           dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
           mkdir -p "$dirname"
           cp "zero.bin" "$dirname"
-          cp "bootloader.bin" "$dirname"
+          cp "esp32s3-bootloader.bin" "$dirname"
           cp "partition_table.bin" "$dirname"
           mv "merged-esparrier-*.bin" "$dirname"
           mv "esparrier-*.bin" "$dirname"
