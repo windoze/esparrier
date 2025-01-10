@@ -1,14 +1,28 @@
 use const_env::from_env;
 
-// Pin 21 is for XIAO ESP32S3
 #[cfg(feature = "led")]
-#[from_env]
-pub const LED_PIN: u8 = 21;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "xiao-esp32s3")] {
+        pub const LED_PIN: u8 = 21;
+    } else {
+        #[from_env]
+        pub const LED_PIN: u8;
+    }
+}
 
-// Pin 35 is for M5Atom S3 Lite
 #[cfg(feature = "smartled")]
-#[from_env]
-pub const SMART_LED_PIN: u8 = 35;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "m5atoms3-lite")] {
+        pub const SMART_LED_PIN: u8 = 35;
+    } else if #[cfg(feature = "devkitc-1_0")] {
+        pub const SMART_LED_PIN: u8 = 48;
+    } else if #[cfg(feature = "devkitc-1_1")] {
+        pub const SMART_LED_PIN: u8 = 38;
+    } else {
+        #[from_env]
+        pub const SMART_LED_PIN: u8;
+    }
+}
 
 #[cfg(feature = "smartled")]
 #[from_env]
@@ -16,8 +30,16 @@ pub const SMART_LED_COUNT: usize = 1;
 
 // Pin 41 is for M5Atom S3 and M5Atom S3 Lite
 #[cfg(feature = "clipboard")]
-#[from_env]
-pub const PASTE_BUTTON_PIN: u8 = 41;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "m5atoms3-lite")] {
+        pub const PASTE_BUTTON_PIN: u8 = 41;
+    } else if #[cfg(feature = "m5atoms3")] {
+        pub const PASTE_BUTTON_PIN: u8 = 41;
+    } else {
+        #[from_env]
+        pub const PASTE_BUTTON_PIN: u8;
+    }
+}
 
 #[cfg(feature = "clipboard")]
 #[from_env]

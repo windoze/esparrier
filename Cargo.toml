@@ -115,9 +115,12 @@ graphics = [
 ]
 
 # Features for the ESP32-S3 boards
+generic = []
 m5atoms3-lite = ["smartled", "clipboard"]
 m5atoms3 = ["graphics", "clipboard"]
 xiao-esp32s3 = ["led"]
+devkitc-1_0 = ["smartled"]
+devkitc-1_1 = ["smartled"]
 
 [profile.dev]
 # Rust debug is too slow.

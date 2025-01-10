@@ -19,12 +19,24 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        models:
+          [
+            "generic",
+            "m5atoms3-lite",
+            "m5atoms3",
+            "xiao-esp32s3",
+            "devkitc-1_0",
+            "devkitc-1_1",
+          ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Get the release version from the tag
-        shell: bash
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Get tag or commit id
+        id: get-version-id
+        uses: iawia002/get-tag-or-commit-id@v1
+        with:
+          length: 7
       - name: Setup Rust
         uses: esp-rs/xtensa-toolchain@v1.5
         with:
@@ -40,30 +52,20 @@ jobs:
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Build binary
-        run: cargo espflash save-image --merge --flash-size 1mb --release --chip esp32s3 --partition-table partitions_single_app.csv esparrier.bin
-      - name: Build M5AtomS3 Lite binary (with `m5atoms3-lite` features enabled)
-        run: cargo espflash save-image --merge --flash-size 1mb --release --chip esp32s3 --features m5atoms3-lite --partition-table partitions_single_app.csv esparrier-m5atoms3-lite.bin
-      - name: Build M5AtomS3 binary (with `m5atoms3` feature enabled)
-        run: cargo espflash save-image --merge --flash-size 1mb --release --chip esp32s3 --features m5atoms3 --partition-table partitions_single_app.csv esparrier-m5atoms3.bin
-      - name: Build XIAO-ESP32S3 binary (with `led` feature enabled)
-        run: cargo espflash save-image --merge --flash-size 1mb --release --chip esp32s3 --features xiao-esp32s3 esparrier-xiao-esp32s3.bin
-      - name: Build ESP32-S3-DevKitC-1 v1.0 binary (with `smartled` feature enabled)
-        run: SMART_LED_PIN=48 cargo espflash save-image --merge --flash-size 1mb --release --chip esp32s3 --features smartled esparrier-esp32s3-devkitc-1-v1_0.bin
-      - name: Build ESP32-S3-DevKitC-1 v1.1 binary (with `smartled` feature enabled)
-        run: SMART_LED_PIN=38 cargo espflash save-image --merge --flash-size 1mb --release --chip esp32s3 --features smartled esparrier-esp32s3-devkitc-1-v1_1.bin
+        run: cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv esparrier-${{ matrix.models }}.bin
+      - name: Build merged binary
+        run: cargo espflash save-image --merge --chip esp32s3 --flash-size 1mb --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv merged-esparrier-${{ matrix.models }}.bin
       - name: Build archive
         shell: bash
         run: |
           package_name="esparrier"
-          dirname="$package_name-${{ env.VERSION }}"
+          dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
           mkdir -p "$dirname"
           cp "zero.bin" "$dirname"
-          mv "esparrier.bin" "$dirname"
-          mv "esparrier-m5atoms3-lite.bin" "$dirname"
-          mv "esparrier-m5atoms3.bin" "$dirname"
-          mv "esparrier-xiao-esp32s3.bin" "$dirname"
-          mv "esparrier-esp32s3-devkitc-1-v1_0.bin" "$dirname"
-          mv "esparrier-esp32s3-devkitc-1-v1_1.bin" "$dirname"
+          cp "bootloader.bin" "$dirname"
+          cp "partition_table.bin" "$dirname"
+          mv "merged-esparrier-*.bin" "$dirname"
+          mv "esparrier-*.bin" "$dirname"
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Release
