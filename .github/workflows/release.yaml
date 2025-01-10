@@ -79,11 +79,9 @@ jobs:
         shell: bash
         run: |
           package_name="esparrier"
-          dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
-          mkdir -p "$dirname"
-          mv "*.bin" "$dirname"
-          tar -czf "$dirname.tar.gz" "$dirname"
-          echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
+          zip_name="$package_name-${{ steps.get-version-id.outputs.id }}.zip"
+          mv binaries.zip $zip_name
+          echo "ASSET=$zip_name" >> $GITHUB_ENV
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
