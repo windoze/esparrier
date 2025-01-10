@@ -6,6 +6,7 @@
     "asynch",
     "baremetal",
     "binstall",
+    "bootloaders",
     "buildtargets",
     "CALV",
     "CCLP",
