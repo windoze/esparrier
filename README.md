@@ -41,6 +41,10 @@ This is a re-write of the original [Esparrier-IDF project](https://github.com/wi
 
 ## Update Configurations
 
+**A new configuration tool** is available at [esparrier-config](https://github.com/windoze/esparrier-config), you can use it to update the configurations on the board without manually re-flashing. Checkout the repo and follow the instructions to build and run the tool.
+
+Below is the old way to update configurations, it's still valid but not recommended.
+
 First, you need to install `esptool.py`, which can be installed with `pip install esptool`. Refer to the [official documentation](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html) for more information.
 
 ### Prepare and Update Configurations
