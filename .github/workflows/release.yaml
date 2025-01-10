@@ -57,6 +57,7 @@ jobs:
           package_name="esparrier"
           dirname="$package_name-${{ env.VERSION }}"
           mkdir -p "$dirname"
+          cp "esp32s3-bootloader.bin" "$dirname"
           cp "partition_table.bin" "$dirname"
           cp "zero.bin" "$dirname"
           mv "esparrier.bin" "$dirname"
