@@ -79,6 +79,7 @@ jobs:
         shell: bash
         run: |
           package_name="esparrier"
+          find .
           zip_name="$package_name-${{ steps.get-version-id.outputs.id }}.zip"
           mv binaries.zip $zip_name
           echo "ASSET=$zip_name" >> $GITHUB_ENV
