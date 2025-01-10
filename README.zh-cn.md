@@ -9,6 +9,16 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 这是对原有 [Esparrier-IDF 项目](https://github.com/windoze/esparrier-idf) 的重写，从 `esp-idf-hal` 迁移到 `esp-hal`。
 
+## 开始之前
+
+首先确认您的开发板满足以下要求：
+
+* 带有 USB OTG 端口。需要注意的是一些开发板的 USB 端口只能用于串口调试，无法用于 USB HID。请阅读开发板的说明书以确认 USB 端口是否支持 USB OTG。
+* 至少 520KB 的内置 SRAM，目前所有的零售 ESP32S3 模组都满足这个要求，但还是需要确认一下以免遇到应某些客户要求特殊定制的模组。
+* 至少 1MB 的 Flash。请注意一些 ESP32S3 模组没有内置 Flash，需要外接 Flash 芯片，例如 ESP32S3R2 或 ESP32S3R8。
+
+最安全的选择是使用 Espressif 的开发板，例如 ESP32-S3-DevKitC-1，这是一个带有 USB OTG 端口的开发板，同时也是 Espressif官方开发板。另外由于 [Espressif 控股了 M5Stack](https://www.espressif.com/zh-hans/news/Espressif_Acquires_M5Stack)，所以 M5Stack 的开发板也是一个不错的选择，比如 M5AtomS3 或 M5AtomS3 Lite。
+
 ## 如何构建
 
 1. 安装 Rust 工具链。
@@ -20,22 +30,20 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 3. 为 Rust ESP 工具链设置环境变量：
     * `source $HOME/export-esp.sh`
 4. 构建和烧录：
-    1. 设置以下环境变量：
+    1. (可选) 设置以下环境变量：
         * `export WIFI_SSID="YOUR_WIFI_SSID"`
         * `export WIFI_PASSWORD="YOUR_WIFI_PASSWORD"`
         * `export BARRIER_SERVER="BARRIER_SERVER_IP:PORT"`
         * `export SCREEN_NAME="SCREEN_NAME"`
-        * `export SCREEN_WIDTH="SCREEN_WIDTH"`
-        * `export SCREEN_HEIGHT="SCREEN_HEIGHT"`
-        * `export REVERSED_WHEEL="true 反转鼠标滚轮, false 使用默认值"`
     2. 将开发板置于下载模式，然后使用 `cargo run --release` 构建和烧录。在 M5Atom S3 Lite 上，需要按住复位按钮直到绿色 LED 亮起，然后松开按钮。烧录后需要再次按下复位按钮以退出下载模式。
+    3. 如果省略了第一步，程序将使用默认的配置，此时程序将无法连接到 WiFi 和 Barrier/Deskflow 服务器，需要[更新配置](更新配置)之后才能正常工作。
 
 ## 运行
 
-1. 配置 Barrier 服务器以接受您在环境变量 `SCREEN_NAME` 中设置的屏幕名称，并确保关闭 TLS。
+1. 配置 Barrier 或 Deskflow 服务器以接受您在环境变量 `SCREEN_NAME` 中设置的屏幕名称，并确保关闭 TLS。
 2. 将开发板插入 USB 端口。
-3. LED 应在启动时闪烁红色，然后在开发板连接到 WiFi 后变为闪烁蓝色，最终在开发板连接到 Barrier 服务器后变为闪烁暗黄色。
-4. 当 Barrier 进入屏幕时，LED 变为绿色，当 Barrier 离开屏幕时，LED 变为闪烁暗黄色。
+3. LED 应在启动时闪烁红色，然后在开发板连接到 WiFi 后变为闪烁蓝色，最终在开发板连接到 Barrier/Deskflow 服务器后变为闪烁暗黄色。
+4. 当 Barrier/Deskflow 进入屏幕时，LED 变为绿色，当 Barrier/Deskflow 离开屏幕时，LED 变为闪烁暗黄色。
 5. 开发板模拟标准键盘和绝对定位鼠标，应该在任何操作系统中都能正常工作。
 6. 使用 USB HID 启动协议，因此即使操作系统没有驱动程序，您也应该能够将开发板用作 BIOS/EFI 中的 USB 键盘/鼠标。
 
@@ -65,13 +73,13 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 首先，您需要激活其他屏幕并将内容复制到剪贴板，然后切换到连接到开发板的屏幕。
 
-当屏幕被激活时，开发板接收 Barrier 服务器发送的剪贴板内容，**保留纯文本格式的前 1024 个字符，丢弃其他内容**。
+当屏幕被激活时，开发板接收 Barrier/Deskflow 服务器发送的剪贴板内容，**保留纯文本格式的前 1024 个字符，丢弃其他内容**。
 
 然后，您可以通过按下开发板上的按钮来“粘贴”文本，开发板会将文本转换为一系列按键，并将它们发送到计算机。所有不可见的 ASCII 码字符将被丢弃，因为它们不能直接映射到 USB HID 键码，或者它们可能具有特殊含义，会导致问题。
 
 程序无法将内容“复制”到剪贴板，这是 USB HID 本身的限制，该功能无法实现。
 
-注意：当您从其他屏幕复制大量文本或大图像，然后移动到连接到开发板的屏幕时，开发板可能会卡住一段时间，这是因为开发板正在尝试丢弃不支持的剪贴板内容。即使它不会解析和保存整个剪贴板，它仍然需要从 Barrier 服务器接收全部数据，因为在没有实际读取的情况下，无法在 TCP 流中跳过一段。但是，开发板应在几秒钟后恢复操作，如果您再次移出并移入，它将不会重复处理相同的剪贴板内容。
+注意：当您从其他屏幕复制大量文本或大图像，然后移动到连接到开发板的屏幕时，开发板可能会卡住一段时间，这是因为开发板正在尝试丢弃不支持的剪贴板内容。即使它不会解析和保存整个剪贴板，它仍然需要从 Barrier/Deskflow 服务器接收全部数据，因为在没有实际读取的情况下，无法在 TCP 流中跳过一段。但是，开发板应在几秒钟后恢复操作，如果您再次移出并移入，它将不会重复处理相同的剪贴板内容。
 
 ## 为其他 ESP32S3 开发板构建
 
@@ -154,20 +162,20 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 ## 注意事项：
 
-**警告**：此程序仅用于测试目的。它不是 Barrier 客户端的完整实现。可能存在许多错误和缺失的功能。它没有任何安全保障，无论是在 WiFi 还是 USB 上。所以建议仅在私有的安全环境中使用。
+**警告**：此程序仅用于测试目的。它不是 Barrier/Deskflow 客户端的完整实现。可能存在许多错误和缺失的功能。它没有任何安全保障，无论是在 WiFi 还是 USB 上。所以建议仅在私有的安全环境中使用。
 
 * 此代码在 [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) 上开发和测试，其他 ESP32S3 开发板可能无法工作，或者您需要更改代码以适应您的开发板。
 * 强烈建议使用带有外部天线的开发板，ESP32S3 仅支持 2.4G WiFi，而这个频段非常拥挤，如果无线连接不稳定，您可能会遇到抖动和延迟。
 * 代码不适用于 ESP8266/ESP32/ESP32C3，因为它们没有所需的 USB 功能，ESP32S2 可能可以通过一些代码适配工作，但未经过测试。
-* 不支持 TLS，因此您必须在 Barrier 服务器端禁用 TLS 。
+* 不支持 TLS，因此您必须在 Barrier/Deskflow 服务器端禁用 TLS 。
+* 当连接到 Deskflow 服务器时，服务器需使用 “Barrier” 协议，不支持 “Synergy” 协议。
 * 由于技术限制，不支持剪贴板、文件传输和跨屏幕拖放，标准 USB HID 设备无法实现这些功能。
 * 如果未能正确设置屏幕尺寸，鼠标功能可能出现异常，光标可能移动过快或过慢，甚至跳动。一般情况下该设置应该和电脑上的屏幕分辨率一致。
-* 频繁的连接/断开可能导致开发板无法连接到 WiFi 和/或 Barrier 服务器，此时需要切断电源并等待几秒钟之后再尝试。
-* 理论上，开发板应该也能与 [InputLeap](https://github.com/input-leap/input-leap) 服务器一起工作，但未经测试。
+* 频繁的连接/断开可能导致开发板无法连接到 WiFi 和/或 Barrier/Deskflow 服务器，此时需要切断电源并等待几秒钟之后再尝试。
 * USB VID/PID 是随机选择的，并未在标准组织和机构注册，您也并未从作者处得到生产和销售使用这些 VID/PID 的 USB 设备的授权，因此您可能需要更改代码以使用您自己的 VID/PID。
 * USB 远程唤醒可能无法工作，因为USB标准禁止挂起设备消耗过多电流，但此程序需要比标准规定的更多电流来保持 Wi-Fi 连接。我尚未找到在电流 <2.5mA 的情况下保持程序运行的方法。当然，您可以选择带有外部电源（如电池）的开发板，但这似乎有点小题大做。
-* 开发板只有在成功连接到 WiFi 和 Barrier 服务器后才能接受输入，这段延迟可能已经超过了电脑启动时进入 BIOS/EFI 设置的时限，一些主板上带有“始终供电”的USB口也许能避免这个问题，但未经测试，或者您可以使用一个即使主机关闭也能供电的 USB 集线器。
-* 如果在定义的 `WATCHDOG_TIMEOUT` 环境变量中的秒数内没有从 Barrier 服务器接收到心跳，或者程序本身失控且未处理心跳，watchdog 将重置开发板。默认的 watchdog 超时时间为 15 秒，因为默认的 Barrier 心跳间隔为 5 秒，如果 Barrier 服务器设置了较长的心跳间隔，您可能需要更改 watchdog 超时时间。
+* 开发板只有在成功连接到 WiFi 和 Barrier/Deskflow 服务器后才能接受输入，这段延迟可能已经超过了电脑启动时进入 BIOS/EFI 设置的时限，一些主板上带有“始终供电”的USB口也许能避免这个问题，但未经测试，或者您可以使用一个即使主机关闭也能供电的 USB 集线器。
+* 如果在定义的 `WATCHDOG_TIMEOUT` 环境变量中的秒数内没有从服务器接收到心跳，或者程序本身失控且未处理心跳，watchdog 将重置开发板。默认的 watchdog 超时时间为 15 秒，因为默认的心跳间隔为 5 秒，如果服务器设置了较长的心跳间隔，您可能需要更改 watchdog 超时时间。
 * 该程序经测试与Windows/Linux/macOS完全兼容，其中键盘功能应该在所有操作系统中正常工作，但鼠标功能可能在某些操作系统中不完全正常，因为鼠标被设置为绝对定位模式而非常见的相对定位模式。已知Android和iOS/iPadOS不支持绝对定位模式。
 * 程序内建的剪贴板共享功能并不完整，但完整功能可以通过 [ClipSync 应用](https://github.com/windoze/clip-sync) 或操作系统内置的剪贴板共享功能实现，例如 [Windows 上的 Clip Sync](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) 或 [macOS 上的通用剪贴板](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac)。
 

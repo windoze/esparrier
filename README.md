@@ -9,6 +9,16 @@ Esparrier is a [Barrier](https://github.com/debauchee/barrier)/[Deskflow](https:
 
 This is a re-write of the original [Esparrier-IDF project](https://github.com/windoze/esparrier-idf), moving from `esp-idf-hal` to `esp-hal` baremetal infrastructure.
 
+## Before you start
+
+Make sure your ESP32-S3 board meets following requirements:
+
+* It has native USB OTG port. Be aware that some boards have USB-Serial chip instead of native USB OTG port, they won't work. Check the manufacturer's documentation to be sure.
+* It has 520KB of built-in SRAM, all retail packages should meet this requirement, but you should check the datasheet to be sure.
+* It has at least 1MB of flash. Be aware that some packages don't have built-in flash, such as ESP32S3R2/ESP32S3R8, they require external flash chip to work.
+
+The safest option is to get an official development board from Espressif, such as ESP32-S3-DevKitC-1 v1.0 or v1.1. Also because [Espressif has acquired a majority stake in M5Stack](https://www.espressif.com/en/news/Espressif_Acquires_M5Stack), the M5Atom S3 Lite and M5Atom S3 should be good choices as well.
+
 ## How to build
 
 1. Install Rust toolchain.
@@ -20,22 +30,20 @@ This is a re-write of the original [Esparrier-IDF project](https://github.com/wi
 3. Set environment variable for Rust ESP toolchain:
     * `source $HOME/export-esp.sh`
 4. Build and flash:
-    1. Set following environment variables:
+    1. (Optional) Set following environment variables:
         * `export WIFI_SSID="YOUR_WIFI_SSID"`
         * `export WIFI_PASSWORD="YOUR_WIFI_PASSWORD"`
         * `export BARRIER_SERVER="BARRIER_SERVER_IP:PORT"`
         * `export SCREEN_NAME="SCREEN_NAME"`
-        * `export SCREEN_WIDTH="SCREEN_WIDTH"`
-        * `export SCREEN_HEIGHT="SCREEN_HEIGHT"`
-        * `export REVERSED_WHEEL="true to reverse the mouse wheel, false to use the default"`
     2. Put your board in the download mode, then build and flash with `cargo run --release`. On M5Atom S3 Lite, you need to hold the reset button until the green LED turns on, then release the button. And you need to press the reset button again after flashing to exit the download mode.
+    3. If you skip the first step, the program will use default configurations, and it won't be able to connect to WiFi and Barrier/Deskflow server, you need to [update the configurations](#update-configurations) to make it work.
 
 ## Run
 
-1. Configure Barrier server to accept the screen name you set in the environment variable `SCREEN_NAME`, and make sure you turn off the TLS.
+1. Configure Barrier or Deskflow server to accept the screen name you set in the environment variable `SCREEN_NAME`, and make sure you turn off the TLS.
 2. Plug the board into the USB port.
-3. The LED should be red on start, then turn blue when the board is connected to the WiFi, and finally turn dim yellow when the board is connected to the Barrier server.
-4. When Barrier enters the screen, the LED turns bright green, and when Barrier leaves the screen, the LED turns dim yellow.
+3. The LED should be red on start, then turn blue when the board is connected to the WiFi, and finally turn dim yellow when the board is connected to the Barrier/Deskflow server.
+4. When Barrier/Deskflow enters the screen, the LED turns bright green, and when Barrier/Deskflow leaves the screen, the LED turns dim yellow.
 5. The board emulates a standard keyboard and an absolute mouse, it should work in any OS.
 6. USB HID boot protocol is used, so you should be able to use the board as a USB keyboard/mouse in BIOS/EFI or even if the OS doesn't have a driver for it.
 
@@ -65,13 +73,13 @@ The program now has limited support of the clipboard when the feature `clipboard
 
 First you need to activate other screen and copy something into the clipboard, then switch to the screen connected to the board.
 
-When the screen is activated, the board receives the clipboard content sent by the Barrier server, **keeps the first 1024 characters of the plain text format and discard everything else**.
+When the screen is activated, the board receives the clipboard content sent by the Barrier/Deskflow server, **keeps the first 1024 characters of the plain text format and discard everything else**.
 
 Then you can "paste" the text by pressing the button on the board, the board will convert the text into a sequence of keystrokes, and send them to the computer. All characters except the visible ASCII codes will be discarded as they cannot be directly mapped to USB HID key codes, or they may have special meaning that can mess up things.
 
 The program cannot "copy" content to the clipboard.
 
-NOTE: When you copied a large amount of text or big image from other screen then moved into the screen connected to the board, the board may stuck for a while, this is because the board is trying to discard the clipboard content. Even it will not parse and hold the whole content, still it needs to receive the whole content from the Barrier server as there is no way to skip a chunk in the middle of a TCP stream without actually reading it. But the board should resume operation after few seconds and it will not repeatedly process the same clipboard content if you move out and move in again.
+NOTE: When you copied a large amount of text or big image from other screen then moved into the screen connected to the board, the board may stuck for a while, this is because the board is trying to discard the clipboard content. Even it will not parse and hold the whole content, still it needs to receive the whole content from the Barrier/Deskflow server as there is no way to skip a chunk in the middle of a TCP stream without actually reading it. But the board should resume operation after few seconds and it will not repeatedly process the same clipboard content if you move out and move in again.
 
 ## Build for other ESP32S3 boards
 
@@ -161,20 +169,20 @@ If the board stops working after flashing and/or upgrading the program, you may 
 
 ## NOTES:
 
-**WARNING**: This program is only for testing purpose. It is not a complete implementation of Barrier client. There could be a lot of bugs and missing features. It has no concept of security, neither on the WiFi nor on the USB. It is not recommended to use it in anywhere but a private environment.
+**WARNING**: This program is only for testing purpose. It is not a complete implementation of Barrier/Deskflow client. There could be a lot of bugs and missing features. It has no concept of security, neither on the WiFi nor on the USB. It is not recommended to use it in anywhere but a private environment.
 
 * This code is developed and tested on [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite), other ESP32S3 boards may not work, or you need to change the code to fit your board.
 * A board with external antenna is strongly recommended, the ESP32S3 supports 2.4G WiFi only and this band is really crowded, you may experience jittering and lagging if the wireless connection is not stable.
 * The code doesn't work on ESP8266/ESP32/ESP32C3 because they don't have required USB features, ESP32S2 may work with adaptation but it's not tested.
-* It doesn't support TLS, so you must run Barrier server without TLS.
+* It doesn't support TLS, so you must run Barrier/Deskflow server without TLS.
+* When using with Deskflow, you need to make sure the Deskflow server is using "Barrier" protocol, not "Synergy" protocol.
 * Clipboard, file transfer, and cross-screen drag and drop are not supported due to the technical limitation, there is no way a standard USB HID device can do that, maybe an auxiliary app running on the host can help but I still don't have clear idea.
 * The mouse function doesn't work properly unless you set the screen size correctly, it may move too fast/slow or even jumpy. Usually the screen size should be the same as the host screen resolution.
-* Frequently connect/disconnect may cause the board fail to connect to the WiFi and/or Barrier server, you may need to power off the board and wait for a while before trying again.
-* In theory the board should be working with [InputLeap](https://github.com/input-leap/input-leap) server as well but I've never tested it.
+* Frequently connect/disconnect may cause the board fail to connect to the WiFi and/or Barrier/Deskflow server, you may need to power off the board and wait for a while before trying again.
 * The USB VID/PID are randomly picked and not registered, you are not authorized to produce and sell USB devices using these VID/PID, so you may need to change the code to use your own VID/PID if you have any business purpose.
 * The USB remote wakeup may not work because the standard forbids a suspended device consume too much current but this program needs much more than the standard says to keep Wi-Fi connected. I still haven't figured out how to keep the program running with the current <2.5mA. Of course you can choose a board with external power source such as a battery, but it seems to be an overkill.
-* The program can accept inputs only **after** the board successfully connects to the WiFi and Barrier server, it may be too late to use the board as a USB keyboard/mouse in BIOS/EFI, some main board that has always-on USB ports may work, but I haven't tested it, or you can use a USB hub that can supply power even if the host is off.
-* The watchdog will reset the board if it doesn't receive heartbeat from the Barrier server, or the program itself runs out of control and doesn't process the heartbeat, for the number of seconds defined in `WATCHDOG_TIMEOUT` environment variable. The default watchdog timeout is 15 seconds, as the default Barrier heartbeat interval is 5 seconds, you may need to change the watchdog timeout if the Barrier server has a long heartbeat interval.
+* The program can accept inputs only **after** the board successfully connects to the WiFi and Barrier/Deskflow server, it may be too late to use the board as a USB keyboard/mouse in BIOS/EFI, some main board that has always-on USB ports may work, but I haven't tested it, or you can use a USB hub that can supply power even if the host is off.
+* The watchdog will reset the board if it doesn't receive heartbeat from the server, or the program itself runs out of control and doesn't process the heartbeat, for the number of seconds defined in `WATCHDOG_TIMEOUT` environment variable. The default watchdog timeout is 15 seconds, as the default heartbeat interval is 5 seconds, you may need to change the watchdog timeout if the server has a long heartbeat interval.
 * The program is compatible with Windows, macOs, and Linux. The keyboard function should work on any OS that supports USB HID devices, but the mouse function may have issues as it's in the absolute mode, not relative mode, which is known not to work on Android and iOS/iPadOS.
 * The built-in clipboard sharing function is incomplete, but it can be achieved with a [ClipSync app](https://github.com/windoze/clip-sync), or the OS's built-in clipboard sharing function, such as [Clip Sync on Windows](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) or [Universal Clipboard on macOs](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac).
 
