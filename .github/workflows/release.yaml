@@ -12,7 +12,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  rust-checks:
+  rust-build:
     name: Rust Build
     permissions:
       contents: write
@@ -32,11 +32,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Get tag or commit id
-        id: get-version-id
-        uses: iawia002/get-tag-or-commit-id@v1
-        with:
-          length: 7
       - name: Setup Rust
         uses: esp-rs/xtensa-toolchain@v1.5
         with:
@@ -55,6 +50,19 @@ jobs:
         run: cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv esparrier-${{ matrix.models }}.bin
       - name: Build merged binary
         run: cargo espflash save-image --merge --chip esp32s3 --flash-size 1mb --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv merged-esparrier-${{ matrix.models }}.bin
+  build-archive:
+    name: Build Archive
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Get tag or commit id
+        id: get-version-id
+        uses: iawia002/get-tag-or-commit-id@v1
+        with:
+          length: 7
       - name: Build archive
         shell: bash
         run: |
