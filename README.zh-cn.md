@@ -139,7 +139,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
     /path/to/esp-idf/components/partition_table/gen_esp32part.py partitions_single_app.csv partition_table.bin
     ```
 
-7. `esp32s3-bootloader.bin` 文件是官方 ESP32S3 的引导加载程序，可以从 [espflash项目仓库]https://github.com/esp-rs/espflash) 中找到。
+7. `esp32s3-bootloader.bin` 文件是官方 ESP32S3 的引导加载程序，可以从 [espflash项目仓库](https://github.com/esp-rs/espflash) 中找到，通常位于 `espflash/resources/bootloaders` 目录下。
 
 
 8. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。
