@@ -1,6 +1,6 @@
 [package]
 name = "esparrier"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["Chen Xu <windoze@0d0a.com>"]
 description = "Esparrier is an ESP32-S3 based Barrier client."
