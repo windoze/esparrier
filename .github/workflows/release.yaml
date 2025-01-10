@@ -52,6 +52,7 @@ jobs:
         run: cargo espflash save-image --merge --chip esp32s3 --flash-size 1mb --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv merged-esparrier-${{ matrix.models }}.bin
   build-archive:
     name: Build Archive
+    needs: [rust-build]
     permissions:
       contents: write
     runs-on: ubuntu-latest
