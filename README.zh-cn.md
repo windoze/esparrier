@@ -36,7 +36,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
         * `export BARRIER_SERVER="BARRIER_SERVER_IP:PORT"`
         * `export SCREEN_NAME="SCREEN_NAME"`
     2. 将开发板置于下载模式，然后使用 `cargo run --release` 构建和烧录。在 M5Atom S3 Lite 上，需要按住复位按钮直到绿色 LED 亮起，然后松开按钮。烧录后需要再次按下复位按钮以退出下载模式。
-    3. 如果省略了第一步，程序将使用默认的配置，此时程序将无法连接到 WiFi 和 Barrier/Deskflow 服务器，需要[更新配置](更新配置)之后才能正常工作。
+    3. 如果省略了第一步，程序将使用默认的配置，此时程序将无法连接到 WiFi 和 Barrier/Deskflow 服务器，需要[更新配置](#更新配置)之后才能正常工作。
 
 ## 运行
 
