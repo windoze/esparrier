@@ -129,12 +129,12 @@ NOTE: When you copied a large amount of text or big image from other screen then
 2. Download the binary from the [releases page](https://github.com/windoze/esparrier/releases).
 
 3. Extract the binary from the archive. There are 6 pre-built binaries in the archive, choose the one that fits your board.
-    * `esparrier.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable.
-    * `esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite).
-    * `esparrier-m5atoms3.bin` - For [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3).
-    * `esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
-    * `esparrier-esp32s3-devkitc-1-v1_0.bin` - For [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
-    * `esparrier-esp32s3-devkitc-1-v1_1.bin` - For [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).
+    * `merged-esparrier-generic.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable.
+    * `merged-esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite).
+    * `merged-esparrier-m5atoms3.bin` - For [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3).
+    * `merged-esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
+    * `merged-esparrier-esp32s3-devkitc-1-v1_0.bin` - For [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
+    * `merged-esparrier-esp32s3-devkitc-1-v1_1.bin` - For [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).
 
 4. Prepare the `config.json` file as described in the previous section.
 
@@ -145,7 +145,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
     # Erase the whole flash
     esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
     # Write the binary and config
-    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x0000 /path/to/esparrier.bin
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 write_flash 0x0000 /path/to/merged-esparrier-generic.bin
     ```
 
     * Or use `espflash`:
@@ -154,7 +154,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
     # Erase the whole flash
     espflash erase-flash --chip esp32s3 --port /dev/ttyACM0
     # Write the binary and config
-    espflash write-bin --chip esp32s3 --port /dev/ttyACM0 0x0000 /path/to/esparrier.bin
+    espflash write-bin --chip esp32s3 --port /dev/ttyACM0 0x0000 /path/to/merged-esparrier-generic.bin
     ```
 
 6. Exit the download mode and reset the board, you should see the new USB HID device on your host. Now the board is ready to be configured by the [esparrier-config-cli](https://github.com/windoze/esparrier-config), or by the [manual update configuration](#update-configurations) method.
