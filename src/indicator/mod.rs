@@ -2,6 +2,7 @@ use embassy_net::Ipv4Cidr;
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, once_lock::OnceLock,
 };
+use log::info;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndicatorStatus {
@@ -63,6 +64,7 @@ async fn indicator_task(config: IndicatorConfig, receiver: IndicatorReceiver) {
 static INDICATOR_SENDER: OnceLock<IndicatorSender> = OnceLock::new();
 
 pub async fn start_indicator_task(spawner: embassy_executor::Spawner) {
+    info!("Starting indicator task...");
     let channel = crate::mk_static!(IndicatorChannel, IndicatorChannel::new());
     let receiver = channel.receiver();
     let sender: IndicatorSender = channel.sender();
@@ -72,6 +74,7 @@ pub async fn start_indicator_task(spawner: embassy_executor::Spawner) {
     spawner.spawn(indicator_task(config, receiver)).ok();
     RUNNING_STATE.lock().await.server_connected = false;
     INDICATOR_SENDER.init(sender).ok();
+    info!("Indicator task started.");
 }
 
 pub async fn set_indicator_status(status: IndicatorStatus) {
