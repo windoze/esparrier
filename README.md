@@ -166,6 +166,19 @@ If the board stops working after flashing and/or upgrading the program, you may 
 1. Erase the flash with `esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash`.
 2. Flash the binary and config again.
 3. Windows has a USB device driver cache and it may not recognize the board after flashing, you may need to uninstall the driver in the device manager and re-plug the board. Or you can change the USB VID/PID in the config file and re-flash it, then Windows will recognize it as a new device.
+4. If above steps don't work, you can try a different flash command:
+
+    ```bash
+    # Erase the whole flash
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
+    # Write the binary, please note the firmware used here without 'merged-' prefix.
+    esptool.py --chip esp32s3 --port /dev/ttyACM1 write_flash \
+        0x0000 esp32s3-bootloader.bin \
+        0x8000 partition_table.bin \
+        0x10000 esparrier-generic.bin
+    ```
+
+    The root cause of the problem is still not clear, but it seems to be related to the partition table, and the above command will write bootloader, partition table, and the application binary to the flash separately.
 
 ## NOTES:
 

@@ -159,6 +159,19 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 1. 擦除全部闪存 `esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash`
 2. 重新烧录二进制文件和配置。
 3. Windows会缓存USB设备的信息，可以尝试在设备管理器中卸载设备驱动，然后重新插拔开发板。或者在配置文件中更改USB VID/PID，这样Windows会将其视为新设备。
+4. 如果以上步骤未能奏效，您可以尝试另外一种方式刷入固件：
+
+    ```bash
+    # 擦除全部闪存
+    esptool.py --chip esp32s3 --port /dev/ttyACM0 erase_flash
+    # 写入固件，注意这里使用的是名字前面没有'merged-'的固件
+    esptool.py --chip esp32s3 --port /dev/ttyACM1 write_flash \
+        0x0000 esp32s3-bootloader.bin \
+        0x8000 partition_table.bin \
+        0x10000 esparrier-generic.bin
+    ```
+
+    该问题的原因尚不清楚，但可能与分区表有关，上面这些命令分别写入了引导程序、分区表和固件，似乎能让Wi-Fi正常启动。
 
 ## 注意事项：
 
