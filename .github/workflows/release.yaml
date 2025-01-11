@@ -81,7 +81,8 @@ jobs:
           package_name="esparrier"
           dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
           mkdir -p "$dirname"
-          find . -name '*.bin' -exec cp {} "$dirname" \;
+          cp $(pwd)/*.bin "$dirname"
+          # find . -name '*.bin' -exec cp {} "$dirname" \;
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Publish Release
