@@ -58,8 +58,17 @@ pub const SCREEN_WIDTH: u16 = 1920;
 pub const SCREEN_HEIGHT: u16 = 1080;
 #[from_env]
 pub const REVERSED_WHEEL: bool = false;
-#[from_env]
-pub const BRIGHTNESS: u8 = 30;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "m5atoms3")] {
+        #[from_env]
+        pub const BRIGHTNESS: u8 = 50;
+    } else {
+        #[from_env]
+        pub const BRIGHTNESS: u8 = 30;
+    }
+}
+
 #[from_env]
 pub const USB_VID: u16 = 0x0d0a;
 #[from_env]
