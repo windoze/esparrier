@@ -40,6 +40,13 @@ jobs:
           default: true
           buildtargets: esp32
           ldproxy: false
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libudev-dev libusb-dev wget unzip
+          wget 'https://github.com/esp-rs/espflash/releases/download/v3.3.0/cargo-espflash-x86_64-unknown-linux-musl.zip'
+          unzip cargo-espflash-x86_64-unknown-linux-musl.zip
+          mv cargo-espflash ~/.cargo/bin/
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Run cargo fmt
@@ -47,7 +54,7 @@ jobs:
       - name: Run clippy
         run: cargo clippy --release --features=${{ matrix.models }} --workspace -- -D warnings
       - name: Build binary
-        run: cargo build --release --features=${{ matrix.models }}
+        run: cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv esparrier-${{ matrix.models }}.bin
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
