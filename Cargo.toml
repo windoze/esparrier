@@ -99,7 +99,7 @@ tinygif = { version = "0.0.4", optional = true }
 
 
 [features]
-default = ["usb", "m5atoms3r"]
+default = ["usb"]
 clipboard = ["async-debounce", "embedded-hal-async"]
 usb = []
 indicator = []

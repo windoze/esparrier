@@ -1,3 +1,8 @@
+use esp_hal::{
+    ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
+    peripherals::LEDC,
+};
+
 use super::*;
 pub struct IndicatorConfig {
     pub width: u16,
