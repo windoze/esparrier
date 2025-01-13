@@ -99,7 +99,7 @@ tinygif = { version = "0.0.4", optional = true }
 
 
 [features]
-default = ["usb"]
+default = ["usb", "m5atoms3r"]
 clipboard = ["async-debounce", "embedded-hal-async"]
 usb = []
 indicator = []
@@ -118,6 +118,7 @@ graphics = [
 generic = []
 m5atoms3-lite = ["smartled", "clipboard"]
 m5atoms3 = ["graphics", "clipboard"]
+m5atoms3r = ["graphics", "clipboard"]
 xiao-esp32s3 = ["led"]
 devkitc-1_0 = ["smartled"]
 devkitc-1_1 = ["smartled"]

@@ -6,8 +6,7 @@ use embedded_graphics::{
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     gpio::{AnyPin, GpioPin, Level, Output},
-    ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
-    peripherals::{LEDC, SPI3},
+    peripherals::SPI3,
     prelude::*,
     spi::{master::Spi, AnySpi, SpiMode},
 };
@@ -28,7 +27,12 @@ cfg_if::cfg_if! {
         pub use m5atom_s3::IndicatorConfig;
         use m5atom_s3::*;
     }
-    else {
+    else if #[cfg(feature = "m5atoms3r")] {
+        use mipidsi::models::ST7789;
+        mod m5atom_s3r;
+        pub use m5atom_s3r::IndicatorConfig;
+        use m5atom_s3r::*;
+    } else {
         compile_error!("No graphical indicator for this board");
     }
 }

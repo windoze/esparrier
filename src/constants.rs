@@ -10,9 +10,7 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "m5atoms3")] {
-        pub const SMART_LED_PIN: u8 = 35;
-    } else if #[cfg(feature = "m5atoms3-lite")] {
+    if #[cfg(feature = "m5atoms3-lite")] {
         pub const SMART_LED_PIN: u8 = 35;
     } else if #[cfg(feature = "devkitc-1_0")] {
         pub const SMART_LED_PIN: u8 = 48;
@@ -30,6 +28,8 @@ pub const SMART_LED_COUNT: usize = 1;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "m5atoms3")] {
+        pub const PASTE_BUTTON_PIN: u8 = 41;
+    } else if #[cfg(feature = "m5atoms3r")] {
         pub const PASTE_BUTTON_PIN: u8 = 41;
     } else if #[cfg(feature = "m5atoms3-lite")] {
         pub const PASTE_BUTTON_PIN: u8 = 41;
@@ -60,10 +60,12 @@ pub const SCREEN_HEIGHT: u16 = 1080;
 pub const REVERSED_WHEEL: bool = false;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "m5atoms3")] {
+    if #[cfg(feature = "graphics")] {
+        // 30 is too dim for LCD display
         #[from_env]
         pub const BRIGHTNESS: u8 = 50;
     } else {
+        // But is good for SmartLED
         #[from_env]
         pub const BRIGHTNESS: u8 = 30;
     }

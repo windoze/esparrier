@@ -26,6 +26,7 @@ jobs:
             "generic",
             "m5atoms3-lite",
             "m5atoms3",
+            "m5atoms3r",
             "xiao-esp32s3",
             "devkitc-1_0",
             "devkitc-1_1",
@@ -41,9 +42,14 @@ jobs:
           ldproxy: false
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
-      - name: Run command
+      - name: Run cargo fmt
         run: cargo fmt --all -- --check --color always
-      - name: Run command
-        run: cargo build --release --features=${{ matrix.models }}
-      - name: Run command
+      - name: Run clippy
         run: cargo clippy --release --features=${{ matrix.models }} --workspace -- -D warnings
+      - name: Build binary
+        run: cargo build --release --features=${{ matrix.models }}
+      - name: Upload binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: ./*.bin
