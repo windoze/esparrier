@@ -69,7 +69,12 @@ pub trait Actuator {
         data: heapless::Vec<u8, { crate::constants::MAX_CLIPBOARD_SIZE }>,
     ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
-    fn enter(&mut self) -> impl core::future::Future<Output = Result<(), BarrierError>>;
+    fn enter(
+        &mut self,
+        x: u16,
+        y: u16,
+        mask: u16,
+    ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
     fn leave(&mut self) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 }

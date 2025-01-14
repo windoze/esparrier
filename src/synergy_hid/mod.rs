@@ -9,7 +9,9 @@ pub(super) use ascii_2_hid::ASCII_2_HID;
 use descriptors::COMPOSITE_REPORT_DESCRIPTOR;
 pub(super) use hid::KeyboardReport;
 pub(super) use hid::*;
+pub use keycodes::modifier_mask_to_synergy;
 pub(crate) use keycodes::{synergy_mouse_button, synergy_to_hid, KeyCode};
+
 use log::{debug, warn};
 
 #[repr(u8)]

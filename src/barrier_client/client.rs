@@ -152,8 +152,13 @@ pub async fn start_barrier_client<A: Actuator>(
             }
             Packet::InfoAck => { //Ignore
             }
-            Packet::CursorEnter { .. } => {
-                actor.enter().await?;
+            Packet::CursorEnter {
+                x,
+                y,
+                seq_num: _dummy,
+                mask,
+            } => {
+                actor.enter(x, y, mask).await?;
             }
             Packet::CursorLeave => {
                 actor.leave().await?;

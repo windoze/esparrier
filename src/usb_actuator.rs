@@ -2,7 +2,7 @@ use log::{debug, info, warn};
 
 use crate::{
     send_hid_report, set_indicator_status,
-    synergy_hid::{ReportType, SynergyHid},
+    synergy_hid::{modifier_mask_to_synergy, ReportType, SynergyHid},
     Actuator, BarrierError, HidReport, IndicatorStatus,
 };
 
@@ -135,8 +135,16 @@ impl Actuator for UsbActuator {
         Ok(())
     }
 
-    async fn enter(&mut self) -> Result<(), BarrierError> {
-        info!("Entering");
+    async fn enter(&mut self, x: u16, y: u16, mask: u16) -> Result<(), BarrierError> {
+        info!("Entering, x: {}, y: {}, mask: {:#018b}", x, y, mask);
+        // Server sends cursor position on entering, client should move the cursor
+        self.set_cursor_position(x, y).await?;
+        // Server sends modifier mask on entering, client should press the keys
+        let mut modifiers = [0u16; 16];
+        let mods = modifier_mask_to_synergy(mask, &mut modifiers);
+        for key in mods {
+            self.key_down(*key, 0, 0).await?;
+        }
         set_indicator_status(IndicatorStatus::Active).await;
         Ok(())
     }

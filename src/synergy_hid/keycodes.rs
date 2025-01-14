@@ -398,3 +398,43 @@ pub fn synergy_mouse_button(button: i8) -> u8 {
         _ => 0,
     }
 }
+
+#[repr(u16)]
+pub enum Modifiers {
+    ShiftL = 0xEFE1,    /* Left shift */
+    ShiftR = 0xEFE2,    /* Right shift */
+    ControlL = 0xEFE3,  /* Left control */
+    ControlR = 0xEFE4,  /* Right control */
+    CapsLock = 0xEFE5,  /* Caps lock */
+    ShiftLock = 0xEFE6, /* Shift lock */
+    MetaL = 0xEFE7,     /* Left meta */
+    MetaR = 0xEFE8,     /* Right meta */
+    AltL = 0xEFE9,      /* Left alt */
+    AltR = 0xEFEA,      /* Right alt */
+    SuperL = 0xEFEB,    /* Left super */
+    SuperR = 0xEFEC,    /* Right super */
+    HyperL = 0xEFED,    /* Left hyper */
+    HyperR = 0xEFEE,    /* Right hyper */
+}
+
+pub fn modifier_mask_to_synergy(mask: u16, buf: &mut [u16]) -> &[u16] {
+    let mut idx = 0;
+    if mask & 0b00000001 != 0 {
+        buf[idx] = Modifiers::ShiftL as u16;
+        idx += 1;
+    }
+    if mask & 0b00000010 != 0 {
+        buf[idx] = Modifiers::ControlL as u16;
+        idx += 1;
+    }
+    if mask & 0b00000100 != 0 {
+        buf[idx] = Modifiers::AltL as u16;
+        idx += 1;
+    }
+    if mask & 0b00010000 != 0 {
+        buf[idx] = Modifiers::SuperL as u16;
+        idx += 1;
+    }
+    // TODO: Add other modifiers
+    &buf[..idx]
+}

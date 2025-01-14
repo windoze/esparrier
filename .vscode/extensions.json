@@ -2,7 +2,6 @@
   "recommendations": [
     "rust-lang.rust-analyzer",
     "tamasfe.even-better-toml",
-    "barbosshack.crates-io",
     "fill-labs.dependi",
     "shd101wyy.markdown-preview-enhanced"
   ]
