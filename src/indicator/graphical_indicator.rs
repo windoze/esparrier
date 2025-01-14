@@ -1,19 +1,5 @@
-use display_interface_spi::SPIInterface;
 use embassy_time::{with_timeout, Duration};
-use embedded_graphics::{
-    draw_target::DrawTarget, image::ImageDrawable, pixelcolor::Rgb565, prelude::RgbColor,
-};
-use embedded_hal_bus::spi::ExclusiveDevice;
-use esp_hal::{
-    gpio::{AnyPin, GpioPin, Level, Output},
-    peripherals::SPI3,
-    prelude::*,
-    spi::{master::Spi, AnySpi, SpiMode},
-};
-use mipidsi::{
-    options::{ColorInversion, ColorOrder},
-    Builder,
-};
+use embedded_graphics::image::ImageDrawable;
 use tinygif::Gif;
 
 use crate::IndicatorStatus;
@@ -22,13 +8,11 @@ use super::IndicatorReceiver;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "m5atoms3")] {
-        use mipidsi::models::ST7789;
         mod m5atom_s3;
         pub use m5atom_s3::IndicatorConfig;
         use m5atom_s3::*;
     }
     else if #[cfg(feature = "m5atoms3r")] {
-        use mipidsi::models::ST7789;
         mod m5atom_s3r;
         pub use m5atom_s3r::IndicatorConfig;
         use m5atom_s3r::*;
@@ -43,11 +27,10 @@ const ACTIVE: &[u8] = include_bytes!("assets/active.gif");
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
     let mut display = init_display(config);
-    display.clear(Rgb565::BLACK).unwrap();
 
-    let connecting_gif: Gif<'_, Rgb565> = Gif::from_slice(CONNECTING).unwrap();
-    let inactive_gif: Gif<'_, Rgb565> = Gif::from_slice(INACTIVE).unwrap();
-    let active_gif: Gif<'_, Rgb565> = Gif::from_slice(ACTIVE).unwrap();
+    let connecting_gif: Gif<'_, ColorFormat> = Gif::from_slice(CONNECTING).unwrap();
+    let inactive_gif: Gif<'_, ColorFormat> = Gif::from_slice(INACTIVE).unwrap();
+    let active_gif: Gif<'_, ColorFormat> = Gif::from_slice(ACTIVE).unwrap();
 
     let mut status = IndicatorStatus::WifiConnecting;
 

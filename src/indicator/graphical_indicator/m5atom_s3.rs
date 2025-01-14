@@ -1,9 +1,21 @@
+use embedded_graphics::prelude::*;
+use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
+    gpio::{AnyPin, GpioPin, Level, Output},
     ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
-    peripherals::LEDC,
+    peripherals::{LEDC, SPI3},
+    prelude::*,
+    spi::{master::Spi, AnySpi, SpiMode},
+};
+use mipidsi::{
+    interface::SpiInterface,
+    models::ST7789,
+    options::{ColorInversion, ColorOrder},
+    Builder,
 };
 
-use super::*;
+use crate::mk_static;
+
 pub struct IndicatorConfig {
     pub width: u16,
     pub height: u16,
@@ -28,7 +40,8 @@ impl Default for IndicatorConfig {
         Self {
             width: 128,
             height: 128,
-            offset_x: 2, // M5Atom S3 has 1px offset on both x and y axis
+            // Field tested values, may vary on different devices
+            offset_x: 2,
             offset_y: 1,
             spi: unsafe { SPI3::steal() }.into(),
             mosi: unsafe { GpioPin::<21>::steal() }.into(),
@@ -44,8 +57,10 @@ impl Default for IndicatorConfig {
     }
 }
 
+pub type ColorFormat = <ST7789 as mipidsi::models::Model>::ColorFormat;
 pub type Display<'a> = mipidsi::Display<
-    SPIInterface<
+    SpiInterface<
+        'a,
         ExclusiveDevice<Spi<'a, esp_hal::Blocking>, Output<'a>, embedded_hal_bus::spi::NoDelay>,
         Output<'a>,
     >,
@@ -91,16 +106,19 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     let spi_device = ExclusiveDevice::new_no_delay(spi, cs_output).unwrap();
 
     let dc = Output::new(config.dc, Level::Low);
-    let di = SPIInterface::new(spi_device, dc);
+    let buffer = mk_static!([u8; 1024], [0; 1024]);
+    let di = SpiInterface::new(spi_device, dc, buffer);
     let rst = Output::new(config.rst, Level::High);
 
     // Define the display from the display interface and initialize it
-    Builder::new(ST7789, di)
+    let mut display = Builder::new(ST7789, di)
         .reset_pin(rst)
         .display_size(config.width, config.height)
         .display_offset(config.offset_x, config.offset_y)
         .invert_colors(config.color_inversion)
         .color_order(config.color_order)
         .init(&mut delay)
-        .unwrap()
+        .unwrap();
+    display.clear(ColorFormat::BLACK).unwrap();
+    display
 }
