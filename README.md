@@ -87,6 +87,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
     * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, and the clipboard feature is disabled as well.
     * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite), the SmartLED feature and the clipboard feature are enabled.
     * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
+    * [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
     * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, and the clipboard feature is disabled due to the lack of a user button.
     * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
     * (Untested) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
@@ -128,10 +129,11 @@ NOTE: When you copied a large amount of text or big image from other screen then
 
 2. Download the binary from the [releases page](https://github.com/windoze/esparrier/releases).
 
-3. Extract the binary from the archive. There are 6 pre-built binaries in the archive, choose the one that fits your board.
+3. Extract the binary from the archive. There are few pre-built binaries in the archive for specific boards, choose the one that fits your board.
     * `merged-esparrier-generic.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable.
     * `merged-esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite).
     * `merged-esparrier-m5atoms3.bin` - For [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3).
+    * `merged-esparrier-m5atoms3r.bin` - For [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R).
     * `merged-esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
     * `merged-esparrier-esp32s3-devkitc-1-v1_0.bin` - For [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
     * `merged-esparrier-esp32s3-devkitc-1-v1_1.bin` - For [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).

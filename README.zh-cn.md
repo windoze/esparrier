@@ -120,10 +120,11 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 2. 从 [发布页面](https://github.com/windoze/esparrier/releases) 下载二进制文件。
 
-3. 从压缩包中提取二进制文件。压缩包中有 6 个预构建的二进制文件，选择适合您开发板的那一个。
+3. 从压缩包中提取二进制文件。压缩包中有一些为特定型号开发板预构建的二进制文件，选择适合您开发板的那一个。
     * `merged-esparrier-generic.bin` - 适用于大多数具有原生 USB-OTG 端口的通用 ESP32S3 开发板，但不支持状态指示功能。
     * `merged-esparrier-m5atoms3-lite.bin` - 适用于 [M5Atom S3 Lite](https://docs.m5stack.com/zh_CN/core/AtomS3%20Lite)。
     * `merged-esparrier-m5atoms3.bin` - 适用于 [M5Atom S3](https://docs.m5stack.com/zh_CN/core/AtomS3)。
+    * `merged-esparrier-m5atoms3r.bin` - 适用于 [M5Atom S3R](https://docs.m5stack.com/zh_CN/core/AtomS3R)。
     * `merged-esparrier-xiao-esp32s3.bin` - 适用于 [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)。
     * `merged-esparrier-esp32s3-devkitc-1-v1_0.bin` - 适用于 [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
     * `merged-esparrier-esp32s3-devkitc-1-v1_1.bin` - 适用于 [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).
