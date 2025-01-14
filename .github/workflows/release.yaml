@@ -25,6 +25,7 @@ jobs:
             "generic",
             "m5atoms3-lite",
             "m5atoms3",
+            "m5atoms3r",
             "xiao-esp32s3",
             "devkitc-1_0",
             "devkitc-1_1",
@@ -42,7 +43,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install libudev-dev libusb-dev wget unzip
-          wget 'https://github.com/esp-rs/espflash/releases/download/v3.2.0/cargo-espflash-x86_64-unknown-linux-musl.zip'
+          wget 'https://github.com/esp-rs/espflash/releases/download/v3.3.0/cargo-espflash-x86_64-unknown-linux-musl.zip'
           unzip cargo-espflash-x86_64-unknown-linux-musl.zip
           mv cargo-espflash ~/.cargo/bin/
       - name: Enable caching
@@ -82,7 +83,6 @@ jobs:
           dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
           mkdir -p "$dirname"
           cp $(pwd)/*.bin "$dirname"
-          # find . -name '*.bin' -exec cp {} "$dirname" \;
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Publish Release

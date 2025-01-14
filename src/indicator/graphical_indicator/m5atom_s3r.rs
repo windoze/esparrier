@@ -2,8 +2,8 @@ use embedded_graphics::prelude::*;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     gpio::{AnyPin, GpioPin, Level, Output},
-    ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
-    peripherals::{LEDC, SPI3},
+    i2c::master::{AnyI2c, Config, I2c},
+    peripherals::{I2C1, SPI3},
     prelude::*,
     spi::{master::Spi, AnySpi, SpiMode},
 };
@@ -27,7 +27,9 @@ pub struct IndicatorConfig {
     pub dc: AnyPin,
     pub cs: AnyPin,
     pub rst: AnyPin,
-    pub backlight: AnyPin,
+    pub sda: AnyPin,
+    pub scl: AnyPin,
+    pub i2c: AnyI2c,
     pub color_inversion: ColorInversion,
     pub color_order: ColorOrder,
     pub max_brightness: u8,
@@ -36,7 +38,7 @@ pub struct IndicatorConfig {
 impl Default for IndicatorConfig {
     fn default() -> Self {
         // Hardware configuration is found at:
-        // https://github.com/m5stack/M5GFX/blob/2c12f148d6e3df64ead33b04c7989fe6d90a7a83/src/M5GFX.cpp#L1501
+        // https://github.com/m5stack/M5GFX/blob/2c12f148d6e3df64ead33b04c7989fe6d90a7a83/src/M5GFX.cpp#L1782
         Self {
             width: 128,
             height: 128,
@@ -45,11 +47,13 @@ impl Default for IndicatorConfig {
             offset_y: 1,
             spi: unsafe { SPI3::steal() }.into(),
             mosi: unsafe { GpioPin::<21>::steal() }.into(),
-            sck: unsafe { GpioPin::<17>::steal() }.into(),
-            dc: unsafe { GpioPin::<33>::steal() }.into(),
-            cs: unsafe { GpioPin::<15>::steal() }.into(),
-            rst: unsafe { GpioPin::<34>::steal() }.into(),
-            backlight: unsafe { GpioPin::<16>::steal() }.into(),
+            sck: unsafe { GpioPin::<15>::steal() }.into(),
+            dc: unsafe { GpioPin::<42>::steal() }.into(),
+            cs: unsafe { GpioPin::<14>::steal() }.into(),
+            rst: unsafe { GpioPin::<48>::steal() }.into(),
+            sda: unsafe { GpioPin::<45>::steal() }.into(),
+            scl: unsafe { GpioPin::<0>::steal() }.into(),
+            i2c: unsafe { I2C1::steal().into() },
             color_inversion: ColorInversion::Inverted,
             color_order: ColorOrder::Bgr,
             max_brightness: crate::AppConfig::get().brightness,
@@ -69,28 +73,26 @@ pub type Display<'a> = mipidsi::Display<
 >;
 
 pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
-    // Turn on the backlight with LEDC
-    let mut ledc = Ledc::new(unsafe { LEDC::steal() });
-    ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);
-    let mut lstimer0 = ledc.timer::<LowSpeed>(timer::Number::Timer0);
-    lstimer0
-        .configure(timer::config::Config {
-            duty: timer::config::Duty::Duty5Bit,
-            clock_source: timer::LSClockSource::APBClk,
-            frequency: 500.Hz(),
-        })
-        .unwrap();
-    let mut channel0 = ledc.channel(channel::Number::Channel0, config.backlight);
-    channel0
-        .configure(channel::config::Config {
-            timer: &lstimer0,
-            duty_pct: config.max_brightness,
-            pin_config: channel::config::PinConfig::PushPull,
-        })
-        .unwrap();
+    let mut delay = esp_hal::delay::Delay::new();
+
+    // Turn on the backlight with LP5562
+    // @see https://github.com/m5stack/M5GFX/blob/2c12f148d6e3df64ead33b04c7989fe6d90a7a83/src/M5GFX.cpp#L566
+    let mut i2c = I2c::new(
+        config.i2c,
+        Config {
+            frequency: 400.kHz(),
+            ..Default::default()
+        },
+    )
+    .with_scl(config.scl)
+    .with_sda(config.sda);
+    i2c.write(48, &[0x00, 0b01000000]).unwrap();
+    delay.delay_millis(1);
+    i2c.write(48, &[0x08, 0b00000001]).unwrap();
+    i2c.write(48, &[0x70, 0b00000000]).unwrap();
+    i2c.write(48, &[0x0E, config.max_brightness]).unwrap();
 
     // Initialize the SPI bus
-    let mut delay = esp_hal::delay::Delay::new();
     let spi = Spi::new_with_config(
         config.spi,
         esp_hal::spi::master::Config {
