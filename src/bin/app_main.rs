@@ -5,13 +5,18 @@ extern crate alloc;
 
 use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
-use embassy_net::{Stack, StackResources};
+use embassy_net::{Runner, StackResources};
 use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
 use esp_hal::{
-    prelude::*,
-    timer::timg::{MwdtStage, MwdtStageAction, TimerGroup},
+    clock::CpuClock,
+    peripherals::TIMG1,
+    timer::{
+        systimer::SystemTimer,
+        timg::{MwdtStage, MwdtStageAction, TimerGroup, Wdt},
+    },
 };
+use esp_hal_embassy::main;
 use esp_println::println;
 use esp_wifi::{
     wifi::{
@@ -53,20 +58,17 @@ async fn main(spawner: Spawner) {
     esp_alloc::heap_allocator!(160 * 1024);
 
     // Setup Embassy
-    let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER)
-        .split::<esp_hal::timer::systimer::Target>();
+    let systimer = SystemTimer::new(peripherals.SYSTIMER);
     esp_hal_embassy::init(systimer.alarm0);
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
-    let timg1 = TimerGroup::new(peripherals.TIMG1);
-    let mut wdt1 = timg1.wdt;
-    wdt1.set_timeout(
-        MwdtStage::Stage0,
-        fugit::MicrosDurationU64::secs(AppConfig::get().watchdog_timeout as u64),
-    );
+    let wdt1 = mk_static!(Wdt<TIMG1>, TimerGroup::new(peripherals.TIMG1).wdt);
+    wdt1.set_timeout(MwdtStage::Stage0, fugit::MicrosDurationU64::secs(2));
     wdt1.set_stage_action(MwdtStage::Stage0, MwdtStageAction::ResetSystem);
     wdt1.enable();
     wdt1.feed();
+
+    spawner.must_spawn(watchdog_task(wdt1));
 
     // Setup HID task
     start_hid_task(spawner);
@@ -111,14 +113,11 @@ async fn main(spawner: Spawner) {
         .ok();
 
     // Init network stack
-    let stack = &*mk_static!(
-        Stack<WifiDevice<'_, WifiStaDevice>>,
-        Stack::new(
-            wifi_interface,
-            config,
-            mk_static!(StackResources<3>, StackResources::<3>::new()),
-            seed,
-        )
+    let (stack, runner) = embassy_net::new(
+        wifi_interface,
+        config,
+        mk_static!(StackResources<3>, StackResources::<3>::new()),
+        seed,
     );
 
     // Start WiFi connection task
@@ -128,7 +127,7 @@ async fn main(spawner: Spawner) {
         AppConfig::get().password.to_owned().into(),
     ));
     // Start network stack task
-    spawner.must_spawn(net_task(stack));
+    spawner.must_spawn(net_task(runner));
 
     info!("Waiting for WiFi to connect...");
     loop {
@@ -136,7 +135,6 @@ async fn main(spawner: Spawner) {
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
-        wdt1.feed();
     }
 
     info!("Waiting to get IP address...");
@@ -147,25 +145,34 @@ async fn main(spawner: Spawner) {
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
-        wdt1.feed();
     }
 
     loop {
         // Start the Barrier client
-        let mut actuator = UsbActuator::new(AppConfig::get());
+        let actuator = UsbActuator::new(AppConfig::get());
         start_barrier_client(
             AppConfig::get().get_server_endpoint(),
             &AppConfig::get().screen_name,
             stack,
-            &mut actuator,
-            &mut wdt1,
+            actuator,
         )
         .await
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .ok();
         warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
         Timer::after(Duration::from_millis(5000)).await;
-        wdt1.feed();
+    }
+}
+
+#[embassy_executor::task]
+async fn watchdog_task(
+    watchdog: &'static mut esp_hal::timer::timg::Wdt<
+        <esp_hal::peripherals::TIMG1 as esp_hal::peripheral::Peripheral>::P,
+    >,
+) {
+    loop {
+        watchdog.feed();
+        Timer::after(Duration::from_secs(1)).await;
     }
 }
 
@@ -206,6 +213,6 @@ async fn connection(
 }
 
 #[embassy_executor::task]
-async fn net_task(stack: &'static Stack<WifiDevice<'static, WifiStaDevice>>) {
-    stack.run().await
+async fn net_task(mut runner: Runner<'static, WifiDevice<'static, WifiStaDevice>>) {
+    runner.run().await
 }

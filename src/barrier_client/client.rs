@@ -1,8 +1,7 @@
 use embassy_net::{tcp::TcpSocket, IpEndpoint, Stack};
+use embassy_time::Duration;
 use embedded_io_async::Write;
-use esp_hal::{peripheral::Peripheral, timer::timg::Wdt};
-use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 
 use super::{
     packet::Packet, packet_io::PacketReader, packet_io::PacketWriter, packet_stream::PacketStream,
@@ -19,12 +18,11 @@ pub enum ClipboardStage {
 }
 
 #[allow(unused_assignments)]
-pub async fn start_barrier_client<A: Actuator>(
+pub async fn start_barrier_client<Actor: Actuator>(
     endpoint: IpEndpoint,
     device_name: &'static str,
-    stack: &'static Stack<WifiDevice<'_, WifiStaDevice>>,
-    actor: &mut A,
-    watchdog: &mut Wdt<<esp_hal::peripherals::TIMG1 as Peripheral>::P>,
+    stack: Stack<'_>,
+    mut actor: Actor,
 ) -> Result<(), BarrierError> {
     let screen_size: (u16, u16) = actor.get_screen_size().await?;
 
@@ -41,6 +39,8 @@ pub async fn start_barrier_client<A: Actuator>(
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .map_err(|_| BarrierError::Disconnected)?;
     debug!("Connected");
+    stream.set_keep_alive(Some(Duration::from_secs(1)));
+    stream.set_timeout(Some(Duration::from_secs(3)));
 
     let _size = stream.read_packet_size().await?;
     if stream.read_bytes_fixed::<7>().await? == [b'B', b'a', b'r', b'r', b'i', b'e', b'r'] {
@@ -67,7 +67,7 @@ pub async fn start_barrier_client<A: Actuator>(
     stream.write_str(device_name).await?;
 
     actor.connected().await?;
-    watchdog.feed();
+    // watchdog.feed();
 
     #[cfg(feature = "clipboard")]
     let mut clipboard_stage = ClipboardStage::None;
@@ -105,7 +105,7 @@ pub async fn start_barrier_client<A: Actuator>(
                 match packet_stream.write(Packet::KeepAlive).await {
                     Ok(_) => {
                         debug!("Feed watchdog on KeepAlive");
-                        watchdog.feed();
+                        // watchdog.feed();
                         Ok(())
                     }
                     Err(e) => {
@@ -116,10 +116,8 @@ pub async fn start_barrier_client<A: Actuator>(
             }
             Packet::MouseMoveAbs { x, y } => {
                 // There is no `ceil` function in `no_std` environment
-                let abs_x = (((x as u32 * 0x7fff) + (screen_size.0 as u32) - 1)
-                    / (screen_size.0 as u32)) as u16;
-                let abs_y = (((y as u32 * 0x7fff) + (screen_size.1 as u32) - 1)
-                    / (screen_size.1 as u32)) as u16;
+                let abs_x = (x as u32 * 0x7fff).div_ceil(screen_size.0 as u32) as u16;
+                let abs_y = (y as u32 * 0x7fff).div_ceil(screen_size.1 as u32) as u16;
                 // let abs_x = ((x as f32) * (0x7fff as f32 / (screen_size.0 as f32))).ceil() as u16;
                 // let abs_y = ((y as f32) * (0x7fff as f32 / (screen_size.1 as f32))).ceil() as u16;
                 actor.set_cursor_position(abs_x, abs_y).await?;
@@ -181,6 +179,21 @@ pub async fn start_barrier_client<A: Actuator>(
             }
             Packet::ServerBusy => {
                 warn!("Server is busy, disconnecting");
+                break;
+            }
+            Packet::ResetOptions => {
+                info!("Reset options");
+            }
+            Packet::GoodBye => {
+                info!("Goodbye");
+                break;
+            }
+            Packet::BadProtocol => {
+                error!("Bad protocol");
+                break;
+            }
+            Packet::IncompatibleVersion { major, minor } => {
+                error!("Incompatible version: {}:{}", major, minor);
                 break;
             }
             Packet::Unknown(cmd) => {

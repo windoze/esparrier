@@ -95,10 +95,6 @@ pub struct AppConfig {
     pub product: String<64>,
     #[serde(default = "get_default_serial_number")]
     pub serial_number: String<64>,
-
-    // Misc internal fields
-    #[serde(default = "get_default_watchdog_timeout")]
-    pub watchdog_timeout: u32,
 }
 
 // Kinda stupid
@@ -134,10 +130,6 @@ fn get_default_serial_number() -> String<64> {
     String::from_str(USB_SERIAL_NUMBER).unwrap()
 }
 
-fn get_default_watchdog_timeout() -> u32 {
-    WATCHDOG_TIMEOUT
-}
-
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
@@ -156,7 +148,6 @@ impl Default for AppConfig {
             manufacturer: String::from_str(USB_MANUFACTURER).unwrap(),
             product: String::from_str(USB_PRODUCT).unwrap(),
             serial_number: String::from_str(USB_SERIAL_NUMBER).unwrap(),
-            watchdog_timeout: WATCHDOG_TIMEOUT,
         }
     }
 }

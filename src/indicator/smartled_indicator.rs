@@ -1,5 +1,5 @@
 use embassy_time::Duration;
-use esp_hal::{gpio::AnyPin, peripherals::RMT, prelude::*, rmt::Rmt};
+use esp_hal::{gpio::AnyPin, peripherals::RMT, rmt::Rmt, time::RateExtU32};
 use log::error;
 use smart_leds::{
     brightness, gamma,

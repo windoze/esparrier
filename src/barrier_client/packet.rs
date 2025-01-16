@@ -73,6 +73,13 @@ pub enum Packet {
         y: i16,
     },
     ServerBusy,
+    GoodBye,
+    ResetOptions,
+    BadProtocol,
+    IncompatibleVersion {
+        major: u16,
+        minor: u16,
+    },
     Unknown([u8; 4]),
 }
 

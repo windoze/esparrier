@@ -2,10 +2,17 @@ use embedded_graphics::prelude::*;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     gpio::{AnyPin, GpioPin, Level, Output},
-    ledc::{channel, timer, LSGlobalClkSource, Ledc, LowSpeed},
+    ledc::{
+        channel::{self, ChannelIFace},
+        timer::{self, TimerIFace},
+        LSGlobalClkSource, Ledc, LowSpeed,
+    },
     peripherals::{LEDC, SPI3},
-    prelude::*,
-    spi::{master::Spi, AnySpi, SpiMode},
+    spi::{
+        master::{Config, Spi},
+        AnySpi, Mode,
+    },
+    time::RateExtU32,
 };
 use mipidsi::{
     interface::SpiInterface,
@@ -91,14 +98,13 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
 
     // Initialize the SPI bus
     let mut delay = esp_hal::delay::Delay::new();
-    let spi = Spi::new_with_config(
-        config.spi,
-        esp_hal::spi::master::Config {
-            frequency: 40.MHz(),
-            mode: SpiMode::Mode0,
-            ..Default::default()
-        },
-    )
+    let spi = Spi::new(config.spi, {
+        let mut config = Config::default();
+        config.frequency = 40.MHz();
+        config.mode = Mode::_0;
+        config
+    })
+    .unwrap()
     .with_sck(config.sck)
     .with_mosi(config.mosi);
 
