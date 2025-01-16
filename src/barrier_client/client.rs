@@ -31,6 +31,8 @@ pub async fn start_barrier_client<Actor: Actuator>(
 
     debug!("Connecting to {}", endpoint);
     let mut stream = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
+    stream.set_keep_alive(Some(Duration::from_secs(1)));
+    stream.set_timeout(Some(Duration::from_secs(3)));
 
     stream
         .connect(endpoint)
@@ -38,8 +40,6 @@ pub async fn start_barrier_client<Actor: Actuator>(
         .inspect_err(|e| error!("Failed to connect: {:?}", e))
         .map_err(|_| BarrierError::Disconnected)?;
     debug!("Connected");
-    stream.set_keep_alive(Some(Duration::from_secs(1)));
-    stream.set_timeout(Some(Duration::from_secs(3)));
 
     let _size = stream.read_packet_size().await?;
     if stream.read_bytes_fixed::<7>().await? == [b'B', b'a', b'r', b'r', b'i', b'e', b'r'] {
