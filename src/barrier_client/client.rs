@@ -31,7 +31,6 @@ pub async fn start_barrier_client<Actor: Actuator>(
 
     debug!("Connecting to {}", endpoint);
     let mut stream = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-    stream.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
     stream
         .connect(endpoint)
