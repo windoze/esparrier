@@ -1,4 +1,5 @@
 use embedded_io_async::Read as AsyncRead;
+use log::debug;
 
 #[cfg(feature = "clipboard")]
 use crate::barrier_client::{client::ClipboardStage, clipboard::parse_clipboard};
@@ -198,7 +199,37 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 limit -= 2;
                 Packet::MouseWheel { x_delta, y_delta }
             }
-            _ => Packet::Unknown(code),
+            b"EICV" => {
+                let major = chunk.read_u16().await?;
+                limit -= 2;
+                let minor = chunk.read_u16().await?;
+                limit -= 2;
+                Packet::IncompatibleVersion { major, minor }
+            }
+            b"CROP" => Packet::ResetOptions,
+            b"EBAD" => Packet::BadProtocol,
+            b"CBYE" => Packet::GoodBye,
+            b"DSOP" => {
+                // TODO: Maybe there is any option we should care about?
+                let num_options = chunk.read_u32().await? / 2;
+                limit -= 4;
+                for _ in 0..num_options {
+                    let mut buf = [0; 4];
+                    chunk
+                        .read_exact(&mut buf)
+                        .await
+                        .map_err(|_| PacketError::InsufficientDataError)?;
+                    limit -= 4;
+                    let value = chunk.read_u32().await?;
+                    limit -= 4;
+                    debug!("Option: {:?}, value: {}", buf, value);
+                }
+                Packet::ClientNoOp
+            }
+            _ => {
+                log::info!("Unknown packet code: {:?}", code);
+                Packet::Unknown(code)
+            }
         };
 
         // Discard the rest of the packet

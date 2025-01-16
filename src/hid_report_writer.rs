@@ -9,6 +9,7 @@ use embassy_sync::{
     channel::{Channel, Receiver, Sender},
     once_lock::OnceLock,
 };
+use embassy_time::{with_timeout, Duration};
 use embassy_usb::{
     class::hid::HidWriter,
     msos::{self, windows_version},
@@ -18,7 +19,7 @@ use esp_hal::{
     otg_fs::{asynch::Driver, Usb},
     peripherals::USB0,
 };
-use log::{debug, info};
+use log::{debug, info, warn};
 
 use crate::{constants::DEVICE_INTERFACE_GUIDS, mk_static, AppConfig, SynergyHid};
 
@@ -68,7 +69,7 @@ impl<'a> UsbHidReportWriter<'a> {
     }
 }
 
-impl<'a> HidReportWriter for UsbHidReportWriter<'a> {
+impl HidReportWriter for UsbHidReportWriter<'_> {
     async fn write_report(&mut self, report: HidReport) {
         debug!("Sending report: {:?}", report);
         let data: &[u8] = match &report {
@@ -76,7 +77,20 @@ impl<'a> HidReportWriter for UsbHidReportWriter<'a> {
             HidReport::Mouse(data) => data,
             HidReport::Consumer(data) => data,
         };
-        self.hid_report_writer.write(data).await.ok();
+        with_timeout(Duration::from_millis(1), async {
+            self.hid_report_writer
+                .write(data)
+                .await
+                .inspect_err(|e| {
+                    warn!("Error writing HID report: {:?}", e);
+                })
+                .ok();
+        })
+        .await
+        .inspect_err(|_| {
+            warn!("Timeout writing HID report");
+        })
+        .unwrap();
     }
 }
 

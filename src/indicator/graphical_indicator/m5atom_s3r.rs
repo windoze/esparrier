@@ -4,8 +4,8 @@ use esp_hal::{
     gpio::{AnyPin, GpioPin, Level, Output},
     i2c::master::{AnyI2c, Config, I2c},
     peripherals::{I2C1, SPI3},
-    prelude::*,
-    spi::{master::Spi, AnySpi, SpiMode},
+    spi::{self, master::Spi, AnySpi, Mode},
+    time::RateExtU32,
 };
 use mipidsi::{
     interface::SpiInterface,
@@ -77,13 +77,12 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
 
     // Turn on the backlight with LP5562
     // @see https://github.com/m5stack/M5GFX/blob/2c12f148d6e3df64ead33b04c7989fe6d90a7a83/src/M5GFX.cpp#L566
-    let mut i2c = I2c::new(
-        config.i2c,
-        Config {
-            frequency: 400.kHz(),
-            ..Default::default()
-        },
-    )
+    let mut i2c = I2c::new(config.i2c, {
+        let mut config = Config::default();
+        config.frequency = 400.kHz();
+        config
+    })
+    .unwrap()
     .with_scl(config.scl)
     .with_sda(config.sda);
     i2c.write(48, &[0x00, 0b01000000]).unwrap();
@@ -93,14 +92,13 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     i2c.write(48, &[0x0E, config.max_brightness]).unwrap();
 
     // Initialize the SPI bus
-    let spi = Spi::new_with_config(
-        config.spi,
-        esp_hal::spi::master::Config {
-            frequency: 40.MHz(),
-            mode: SpiMode::Mode0,
-            ..Default::default()
-        },
-    )
+    let spi = Spi::new(config.spi, {
+        let mut config = spi::master::Config::default();
+        config.frequency = 40.MHz();
+        config.mode = Mode::_0;
+        config
+    })
+    .unwrap()
     .with_sck(config.sck)
     .with_mosi(config.mosi);
 

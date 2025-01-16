@@ -75,7 +75,9 @@ impl ControlCommandResponse {
                 bytes[2] = state.version_minor;
                 bytes[3] = state.version_patch;
                 bytes[4] = state.feature_flags;
-                let octets = state.ip_address.map_or([0, 0, 0, 0], |ip| ip.address().0);
+                let octets = state
+                    .ip_address
+                    .map_or([0, 0, 0, 0], |ip| ip.address().octets());
                 bytes[5] = octets[0];
                 bytes[6] = octets[1];
                 bytes[7] = octets[2];
