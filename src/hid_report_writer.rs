@@ -77,7 +77,9 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
             HidReport::Mouse(data) => data,
             HidReport::Consumer(data) => data,
         };
-        with_timeout(Duration::from_millis(1), async {
+        // As we asked the host to poll the device every 1 ms, we can safely assume
+        // that 5ms is already timed-out.
+        with_timeout(Duration::from_millis(5), async {
             self.hid_report_writer
                 .write(data)
                 .await
@@ -87,10 +89,24 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
                 .ok();
         })
         .await
-        .inspect_err(|_| {
-            warn!("Timeout writing HID report");
-        })
-        .unwrap();
+        .expect(
+            // This can happen if the device is writing the report while unplugged.
+            // Some board doesn't really support `self_powered` because the VBUS pin
+            // in USB-OTG port is not solely powered by the host, or, it has not
+            // configured a GPIO pin to monitor the VBUS voltage, which doesn't meet
+            // the standard of USB self-powered device.
+            // In this case, the board cannot detect the unplugging event even the
+            // function is already implemented by the underlying OTG driver. And if a
+            // report is being sent while the device is unplugged, the USB stack will
+            // be stalled.
+            // Above scenario may happen if the device is plugged into a USB hub which
+            // supplies power to the device even if the host is disconnected or powered
+            // off.
+            // There is no way we can resume the USB stack, so we just panic here, and
+            // the watchdog will reset the board.
+            // @see https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/api-reference/peripherals/usb_device.html#self-powered-device
+            "Timeout writing HID report",
+        );
     }
 }
 

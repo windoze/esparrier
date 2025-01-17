@@ -63,7 +63,7 @@ async fn main(spawner: Spawner) {
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let wdt1 = mk_static!(Wdt<TIMG1>, TimerGroup::new(peripherals.TIMG1).wdt);
-    wdt1.set_timeout(MwdtStage::Stage0, fugit::MicrosDurationU64::secs(2));
+    wdt1.set_timeout(MwdtStage::Stage0, fugit::MicrosDurationU64::secs(1));
     wdt1.set_stage_action(MwdtStage::Stage0, MwdtStageAction::ResetSystem);
     wdt1.enable();
     wdt1.feed();
@@ -172,7 +172,7 @@ async fn watchdog_task(
 ) {
     loop {
         watchdog.feed();
-        Timer::after(Duration::from_secs(1)).await;
+        Timer::after(Duration::from_millis(500)).await;
     }
 }
 

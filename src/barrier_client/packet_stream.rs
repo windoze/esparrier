@@ -49,7 +49,7 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
             b"QINF" => Packet::QueryInfo,
             b"CIAK" => Packet::InfoAck,
             b"CALV" => Packet::KeepAlive,
-            b"EUNK" => Packet::ErrorUnknownDevice,
+            b"EUNK" => Packet::UnknownDevice,
             b"EBSY" => Packet::ServerBusy,
             b"DMMV" => {
                 let x = chunk.read_u16().await?;
@@ -226,10 +226,7 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 }
                 Packet::ClientNoOp
             }
-            _ => {
-                log::info!("Unknown packet code: {:?}", code);
-                Packet::Unknown(code)
-            }
+            _ => Packet::Unknown(code),
         };
 
         // Discard the rest of the packet

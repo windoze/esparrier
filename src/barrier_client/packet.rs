@@ -20,7 +20,7 @@ pub enum Packet {
     InfoAck,
     KeepAlive,
     ClientNoOp,
-    ErrorUnknownDevice,
+    UnknownDevice,
     GrabClipboard {
         id: u8,
         seq_num: u32,
@@ -130,7 +130,7 @@ impl Packet {
                 out.write_str("CALV").await?;
                 Ok(())
             }
-            Packet::ErrorUnknownDevice => {
+            Packet::UnknownDevice => {
                 out.write_str("EUNK").await?;
                 Ok(())
             }

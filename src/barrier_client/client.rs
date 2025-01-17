@@ -66,7 +66,6 @@ pub async fn start_barrier_client<Actor: Actuator>(
     stream.write_str(device_name).await?;
 
     actor.connected().await?;
-    // watchdog.feed();
 
     #[cfg(feature = "clipboard")]
     let mut clipboard_stage = ClipboardStage::None;
@@ -102,11 +101,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
             }
             Packet::KeepAlive => {
                 match packet_stream.write(Packet::KeepAlive).await {
-                    Ok(_) => {
-                        debug!("Feed watchdog on KeepAlive");
-                        // watchdog.feed();
-                        Ok(())
-                    }
+                    Ok(_) => Ok(()),
                     Err(e) => {
                         actor.disconnected().await?;
                         Err(e)
@@ -114,11 +109,8 @@ pub async fn start_barrier_client<Actor: Actuator>(
                 }?;
             }
             Packet::MouseMoveAbs { x, y } => {
-                // There is no `ceil` function in `no_std` environment
                 let abs_x = (x as u32 * 0x7fff).div_ceil(screen_size.0 as u32) as u16;
                 let abs_y = (y as u32 * 0x7fff).div_ceil(screen_size.1 as u32) as u16;
-                // let abs_x = ((x as f32) * (0x7fff as f32 / (screen_size.0 as f32))).ceil() as u16;
-                // let abs_y = ((y as f32) * (0x7fff as f32 / (screen_size.1 as f32))).ceil() as u16;
                 actor.set_cursor_position(abs_x, abs_y).await?;
             }
             Packet::MouseMove { x, y } => {
@@ -147,8 +139,6 @@ pub async fn start_barrier_client<Actor: Actuator>(
             Packet::MouseWheel { x_delta, y_delta } => {
                 actor.mouse_wheel(x_delta, y_delta).await?;
             }
-            Packet::InfoAck => { //Ignore
-            }
             Packet::CursorEnter {
                 x,
                 y,
@@ -173,15 +163,15 @@ pub async fn start_barrier_client<Actor: Actuator>(
                     actor.set_clipboard(data).await?;
                 }
             }
-            Packet::DeviceInfo { .. } | Packet::ErrorUnknownDevice | Packet::ClientNoOp => {
-                // Server only packets
-            }
             Packet::ServerBusy => {
                 warn!("Server is busy, disconnecting");
                 break;
             }
-            Packet::ResetOptions => {
-                info!("Reset options");
+            Packet::DeviceInfo { .. }
+            | Packet::ClientNoOp
+            | Packet::InfoAck
+            | Packet::ResetOptions => {
+                // Do nothing
             }
             Packet::GoodBye => {
                 info!("Goodbye");
@@ -191,14 +181,22 @@ pub async fn start_barrier_client<Actor: Actuator>(
                 error!("Bad protocol");
                 break;
             }
+            Packet::UnknownDevice => {
+                error!("Unknown device");
+                break;
+            }
             Packet::IncompatibleVersion { major, minor } => {
                 error!("Incompatible version: {}:{}", major, minor);
                 break;
             }
             Packet::Unknown(cmd) => {
-                debug!(
-                    "Unknown packet: {}",
-                    core::str::from_utf8(&cmd).unwrap_or("????")
+                log::info!(
+                    "Unknown packet code: '{}' ({:02X} {:02X} {:02X} {:02X})",
+                    core::str::from_utf8(&cmd).unwrap_or("????"),
+                    cmd[0],
+                    cmd[1],
+                    cmd[2],
+                    cmd[3]
                 );
             }
         }
