@@ -1,4 +1,34 @@
 use const_env::from_env;
+use const_str::{parse, split};
+
+const VERSION_SEGMENTS: [&str; 3] = split!(env!("CARGO_PKG_VERSION"), ".");
+pub const VERSION_MAJOR: u8 = parse!(VERSION_SEGMENTS[0], u8);
+pub const VERSION_MINOR: u8 = parse!(VERSION_SEGMENTS[1], u8);
+pub const VERSION_PATCH: u8 = parse!(VERSION_SEGMENTS[2], u8);
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "led")] {
+        const INDICATOR_FLAGS: u8 = 0b0000_0001;
+    }
+    else if #[cfg(feature = "smartled")] {
+        const INDICATOR_FLAGS: u8 = 0b0000_0010;
+    }
+    else if #[cfg(feature = "graphics")] {
+        const INDICATOR_FLAGS: u8 = 0b0000_0100;
+    }
+    else {
+        const INDICATOR_FLAGS: u8 = 0b0000_0000;
+    }
+}
+cfg_if::cfg_if! {
+    if #[cfg(feature = "clipboard")] {
+        const CLIPBOARD_FLAG: u8 = 0b1000_0000;
+    }
+    else {
+        const CLIPBOARD_FLAG: u8 = 0b0000_0000;
+    }
+}
+pub const FEATURE_FLAGS: u8 = INDICATOR_FLAGS | CLIPBOARD_FLAG;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "xiao-esp32s3")] {

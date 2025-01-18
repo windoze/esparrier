@@ -3,11 +3,11 @@ use core::{
     str::FromStr,
 };
 
-use embassy_net::{IpEndpoint, Ipv4Address, Ipv4Cidr};
+use embassy_net::{Config, IpEndpoint, Ipv4Address, Ipv4Cidr, StaticConfigV4};
 use embassy_sync::once_lock::OnceLock;
 use embedded_storage::{ReadStorage, Storage};
 use esp_storage::FlashStorage;
-use heapless::String;
+use heapless::{String, Vec};
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 
@@ -80,6 +80,9 @@ pub struct AppConfig {
     // Static IP configuration, CIDR notation, optional
     #[serde(default)]
     ip_addr: Option<String<20>>,
+    // DNS server address, optional
+    #[serde(default)]
+    dns_server: Vec<String<16>, 3>,
     // Gateway IP address, optional
     #[serde(default)]
     gateway: Option<String<16>>,
@@ -142,6 +145,7 @@ impl Default for AppConfig {
             flip_wheel: REVERSED_WHEEL,
             brightness: BRIGHTNESS,
             ip_addr: None,
+            dns_server: Vec::new(),
             gateway: None,
             vid: USB_VID,
             pid: USB_PID,
@@ -185,12 +189,15 @@ impl AppConfig {
         parse_endpoint(&self.server)
     }
 
-    pub fn get_ip_addr(&self) -> Option<Ipv4Cidr> {
-        self.ip_addr.as_ref().map(|s| parse_cidr(s))
-    }
-
-    pub fn get_gateway(&self) -> Option<Ipv4Address> {
-        self.gateway.as_ref().map(|s| parse_addr(s))
+    pub fn get_ip_config(&self) -> Config {
+        match self.ip_addr.as_ref().map(|s| parse_cidr(s)) {
+            Some(addr) => Config::ipv4_static(StaticConfigV4 {
+                address: addr,
+                dns_servers: self.dns_server.iter().map(|s| parse_addr(s)).collect(),
+                gateway: self.gateway.as_ref().map(|s| parse_addr(s)), // Gateway is optional if server is on the same subnet
+            }),
+            None => Config::dhcpv4(Default::default()),
+        }
     }
 }
 

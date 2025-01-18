@@ -3,7 +3,7 @@ use log::{debug, info, warn};
 use crate::{
     send_hid_report, set_indicator_status,
     synergy_hid::{modifier_mask_to_synergy, ReportType, SynergyHid},
-    Actuator, BarrierError, HidReport, IndicatorStatus,
+    Actuator, AppConfig, BarrierError, HidReport, IndicatorStatus,
 };
 
 pub struct UsbActuator {
@@ -15,13 +15,13 @@ pub struct UsbActuator {
 }
 
 impl UsbActuator {
-    pub fn new(app_config: &crate::AppConfig) -> Self {
+    pub fn new() -> Self {
         Self {
-            width: app_config.screen_width,
-            height: app_config.screen_height,
+            width: AppConfig::get().screen_width,
+            height: AppConfig::get().screen_height,
             x: 0,
             y: 0,
-            hid: SynergyHid::new(app_config.flip_wheel),
+            hid: SynergyHid::new(AppConfig::get().flip_wheel),
         }
     }
 
@@ -37,6 +37,12 @@ impl UsbActuator {
                 send_hid_report(HidReport::Consumer(report.1.try_into().unwrap())).await;
             }
         }
+    }
+}
+
+impl Default for UsbActuator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

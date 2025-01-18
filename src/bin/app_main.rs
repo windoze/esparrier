@@ -3,14 +3,15 @@
 
 extern crate alloc;
 
-use alloc::borrow::ToOwned;
 use embassy_executor::Spawner;
 use embassy_net::{Runner, StackResources};
 use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
 use esp_hal::{
     clock::CpuClock,
+    peripheral::Peripheral,
     peripherals::TIMG1,
+    rng::Rng,
     timer::{
         systimer::SystemTimer,
         timg::{MwdtStage, MwdtStageAction, TimerGroup, Wdt},
@@ -19,13 +20,14 @@ use esp_hal::{
 use esp_hal_embassy::main;
 use esp_println::println;
 use esp_wifi::{
+    config::PowerSaveMode,
     wifi::{
         ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
         WifiState,
     },
     EspWifiController,
 };
-use heapless::Vec;
+use fugit::ExtU64;
 use log::{debug, error, info, warn};
 
 #[allow(unused_imports)]
@@ -49,11 +51,7 @@ async fn main(spawner: Spawner) {
     // Load the configuration
     println!("Config: {:?}", AppConfig::get());
 
-    let peripherals = esp_hal::init({
-        let mut config = esp_hal::Config::default();
-        config.cpu_clock = CpuClock::max();
-        config
-    });
+    let peripherals = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
 
     esp_alloc::heap_allocator!(160 * 1024);
 
@@ -63,75 +61,62 @@ async fn main(spawner: Spawner) {
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let wdt1 = mk_static!(Wdt<TIMG1>, TimerGroup::new(peripherals.TIMG1).wdt);
-    wdt1.set_timeout(MwdtStage::Stage0, fugit::MicrosDurationU64::secs(1));
+    wdt1.set_timeout(MwdtStage::Stage0, 1.secs());
     wdt1.set_stage_action(MwdtStage::Stage0, MwdtStageAction::ResetSystem);
     wdt1.enable();
     wdt1.feed();
 
+    // Start watchdog task
     spawner.must_spawn(watchdog_task(wdt1));
 
     // Setup HID task
     start_hid_task(spawner);
 
+    // Setup paste button task
     #[cfg(feature = "clipboard")]
-    {
-        // Setup paste button task
-        let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() }.into();
-        spawner.spawn(esparrier::button_task(button)).ok();
-    }
+    spawner
+        .spawn(esparrier::button_task())
+        .inspect_err(|e| error!("Failed to start button task: {:?}", e))
+        .unwrap();
 
     // Setup indicator
     start_indicator_task(spawner).await;
     set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Initialize WiFi
-    let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
+    let mut rng = Rng::new(peripherals.RNG);
     let seed: u64 = ((rng.random() as u64) << 32) | (rng.random() as u64);
 
-    let timg0 = esp_hal::timer::timg::TimerGroup::new(peripherals.TIMG0);
+    let timg0 = TimerGroup::new(peripherals.TIMG0);
     let init = &*mk_static!(
         EspWifiController<'static>,
         esp_wifi::init(timg0.timer0, rng, peripherals.RADIO_CLK,).unwrap()
     );
-
-    let config = match AppConfig::get().get_ip_addr() {
-        Some(addr) => embassy_net::Config::ipv4_static(embassy_net::StaticConfigV4 {
-            address: addr,
-            dns_servers: Vec::new(), // We don't really need DNS
-            gateway: AppConfig::get().get_gateway(), // Gateway is optional if server is on the same subnet
-        }),
-        None => embassy_net::Config::dhcpv4(Default::default()),
-    };
 
     let wifi = peripherals.WIFI;
     let (wifi_interface, mut controller) =
         esp_wifi::wifi::new_with_mode(init, wifi, WifiStaDevice).unwrap();
 
     // Disable power saving for maximum performance
-    controller
-        .set_power_saving(esp_wifi::config::PowerSaveMode::None)
-        .ok();
+    controller.set_power_saving(PowerSaveMode::None).ok();
 
     // Init network stack
     let (stack, runner) = embassy_net::new(
         wifi_interface,
-        config,
+        AppConfig::get().get_ip_config(),
         mk_static!(StackResources<3>, StackResources::<3>::new()),
         seed,
     );
 
     // Start WiFi connection task
-    spawner.must_spawn(connection(
-        controller,
-        AppConfig::get().ssid.to_owned(),
-        AppConfig::get().password.to_owned().into(),
-    ));
+    spawner.must_spawn(connection(controller));
     // Start network stack task
     spawner.must_spawn(net_task(runner));
 
     info!("Waiting for WiFi to connect...");
     loop {
         if stack.is_link_up() {
+            info!("WiFi connected!");
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
@@ -149,7 +134,7 @@ async fn main(spawner: Spawner) {
 
     loop {
         // Start the Barrier client
-        let actuator = UsbActuator::new(AppConfig::get());
+        let actuator = UsbActuator::default();
         start_barrier_client(
             AppConfig::get().get_server_endpoint(),
             &AppConfig::get().screen_name,
@@ -157,19 +142,19 @@ async fn main(spawner: Spawner) {
             actuator,
         )
         .await
-        .inspect_err(|e| error!("Failed to connect: {:?}", e))
+        .inspect_err(|e| {
+            warn!(
+                "Disconnected from Barrier, error: {:?}, reconnecting in 5 seconds...",
+                e
+            )
+        })
         .ok();
-        warn!("Disconnected from Barrier, reconnecting in 5 seconds...");
         Timer::after(Duration::from_millis(5000)).await;
     }
 }
 
 #[embassy_executor::task]
-async fn watchdog_task(
-    watchdog: &'static mut esp_hal::timer::timg::Wdt<
-        <esp_hal::peripherals::TIMG1 as esp_hal::peripheral::Peripheral>::P,
-    >,
-) {
+async fn watchdog_task(watchdog: &'static mut Wdt<<TIMG1 as Peripheral>::P>) {
     loop {
         watchdog.feed();
         Timer::after(Duration::from_millis(500)).await;
@@ -177,11 +162,7 @@ async fn watchdog_task(
 }
 
 #[embassy_executor::task]
-async fn connection(
-    mut controller: WifiController<'static>,
-    ssid: heapless::String<32>,
-    password: heapless::String<64>,
-) {
+async fn connection(mut controller: WifiController<'static>) {
     debug!("start connection task");
     loop {
         if esp_wifi::wifi::wifi_state() == WifiState::StaConnected {
@@ -191,8 +172,8 @@ async fn connection(
         }
         if !matches!(controller.is_started(), Ok(true)) {
             let client_config = Configuration::Client(ClientConfiguration {
-                ssid: ssid.clone(),
-                password: password.clone(),
+                ssid: AppConfig::get().ssid.clone(),
+                password: AppConfig::get().password.clone().into(),
                 ..Default::default()
             });
             controller.set_configuration(&client_config).unwrap();
