@@ -89,5 +89,6 @@
     "WINUSB",
     "XIAO",
     "xtensa"
-  ]
+  ],
+  "CodeGPT.apiKey": "Ollama"
 }

@@ -79,7 +79,7 @@ Then you can "paste" the text by pressing the button on the board, the board wil
 
 The program cannot "copy" content to the clipboard.
 
-NOTE: When you copied a large amount of text or big image from other screen then moved into the screen connected to the board, the board may stuck for a while, this is because the board is trying to discard the clipboard content. Even it will not parse and hold the whole content, still it needs to receive the whole content from the Barrier/Deskflow server as there is no way to skip a chunk in the middle of a TCP stream without actually reading it. But the board should resume operation after few seconds and it will not repeatedly process the same clipboard content if you move out and move in again.
+NOTE: When you copied a large amount of text or big image from other screen then moved into the screen connected to the board, the board may stuck for a while, this is because the board is trying to discard the clipboard content. Even it will not parse and hold the whole content, still it needs to receive the whole content from the Barrier/Deskflow server as there is no way to skip a chunk in the middle of a TCP stream without actually reading it. The server sends the content synchronously so the keyboard and mouse will be completely unresponsive until the content has been fully transferred. Due to the low WiFi bandwidth of the ESP32-S3, the transferred could take several seconds or even minutes. [The Deskflow has a `clipboardSharingSize = N` option](https://github.com/deskflow/deskflow/wiki/Text-Config#list-of-options) which can limit the clipboard size to be shared, but this option is unavailable in Barrier.
 
 ## Build for other ESP32S3 boards
 
