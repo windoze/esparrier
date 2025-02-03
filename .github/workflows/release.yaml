@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           package_name="esparrier"
-          dirname="$package_name-${{ steps.get-version-id.outputs.id }}"
+          dirname="$package_name-${{ matrix.models }}-${{ steps.get-version-id.outputs.id }}"
           mkdir -p "$dirname"
           cp $(pwd)/*.bin "$dirname"
           tar -czf "$dirname.tar.gz" "$dirname"
