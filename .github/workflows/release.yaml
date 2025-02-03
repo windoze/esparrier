@@ -53,7 +53,7 @@ jobs:
       - name: Build merged binary
         run: cargo espflash save-image --merge --chip esp32s3 --flash-size 1mb --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv merged-esparrier-${{ matrix.models }}.bin
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: ./*.bin
