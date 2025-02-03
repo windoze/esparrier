@@ -55,7 +55,7 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: image-${{ matrix.models }}
           path: ./*.bin
 
   build-archive:
@@ -66,6 +66,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        models:
+          [
+            "generic",
+            "m5atoms3-lite",
+            "m5atoms3",
+            "m5atoms3r",
+            "xiao-esp32s3",
+            "devkitc-1_0",
+            "devkitc-1_1",
+          ]
     steps:
       - name: Get tag or commit id
         id: get-version-id
@@ -73,9 +84,9 @@ jobs:
         with:
           length: 7
       - name: Download binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: binaries
+          name: image-${{ matrix.models }}
       - name: Build archive
         shell: bash
         run: |
