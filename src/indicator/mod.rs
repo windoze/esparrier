@@ -1,10 +1,8 @@
 use embassy_net::Ipv4Cidr;
-use embassy_sync::{
-    blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, once_lock::OnceLock,
-};
+use embassy_sync::once_lock::OnceLock;
 use log::info;
 
-use crate::constants::*;
+use crate::global_state::get_running_state_mut;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndicatorStatus {
@@ -74,7 +72,7 @@ pub async fn start_indicator_task(spawner: embassy_executor::Spawner) {
     let config = IndicatorConfig::default();
 
     spawner.spawn(indicator_task(config, receiver)).ok();
-    RUNNING_STATE.lock().await.server_connected = false;
+    get_running_state_mut().await.server_connected = false;
     INDICATOR_SENDER.init(sender).ok();
     info!("Indicator task started.");
 }
@@ -82,77 +80,32 @@ pub async fn start_indicator_task(spawner: embassy_executor::Spawner) {
 pub async fn set_indicator_status(status: IndicatorStatus) {
     match status {
         IndicatorStatus::WifiConnecting => {
-            let mut guard = RUNNING_STATE.lock().await;
+            let mut guard = get_running_state_mut().await;
             guard.ip_address = None;
             guard.server_connected = false;
             guard.active = false;
         }
         IndicatorStatus::WifiConnected(ip_address) => {
-            let mut guard = RUNNING_STATE.lock().await;
+            let mut guard = get_running_state_mut().await;
             guard.ip_address = Some(ip_address);
             guard.server_connected = false;
             guard.active = false;
         }
         IndicatorStatus::ServerConnecting => {
-            let mut guard = RUNNING_STATE.lock().await;
+            let mut guard = get_running_state_mut().await;
             guard.server_connected = false;
             guard.active = false;
         }
         IndicatorStatus::ServerConnected => {
-            let mut guard = RUNNING_STATE.lock().await;
+            let mut guard = get_running_state_mut().await;
             guard.server_connected = true;
             guard.active = false;
         }
         IndicatorStatus::Active => {
-            let mut guard = RUNNING_STATE.lock().await;
+            let mut guard = get_running_state_mut().await;
             guard.server_connected = true;
             guard.active = true;
         }
     }
     INDICATOR_SENDER.get().await.try_send(status).ok();
-}
-
-#[derive(Clone, Debug)]
-pub struct RunningState {
-    pub version_major: u8,
-    pub version_minor: u8,
-    pub version_patch: u8,
-    pub feature_flags: u8,
-    pub ip_address: Option<Ipv4Cidr>,
-    pub server_connected: bool,
-    pub active: bool,
-}
-
-impl RunningState {
-    pub const fn new() -> Self {
-        Self {
-            version_major: VERSION_MAJOR,
-            version_minor: VERSION_MINOR,
-            version_patch: VERSION_PATCH,
-            feature_flags: FEATURE_FLAGS,
-            ip_address: None,
-            server_connected: false,
-            active: false,
-        }
-    }
-
-    pub fn set_ip_address(&self, ip_address: Option<Ipv4Cidr>) -> Self {
-        Self {
-            ip_address,
-            ..self.clone()
-        }
-    }
-}
-
-impl Default for RunningState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-static RUNNING_STATE: Mutex<CriticalSectionRawMutex, RunningState> =
-    Mutex::new(RunningState::new());
-
-pub async fn get_running_state() -> RunningState {
-    RUNNING_STATE.lock().await.clone()
 }

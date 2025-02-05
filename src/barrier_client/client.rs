@@ -1,7 +1,9 @@
 use embassy_net::{tcp::TcpSocket, IpEndpoint, Stack};
-use embassy_time::Duration;
+use embassy_time::{with_timeout, Duration, TimeoutError};
 use embedded_io_async::Write;
 use log::{debug, error, info, warn};
+
+use crate::get_running_state;
 
 use super::{
     packet::Packet, packet_io::PacketReader, packet_io::PacketWriter, packet_stream::PacketStream,
@@ -71,133 +73,150 @@ pub async fn start_barrier_client<Actor: Actuator>(
     let mut clipboard_stage = ClipboardStage::None;
 
     let mut packet_stream = PacketStream::new(stream);
-    while let Ok(packet) = packet_stream
-        .read(
-            #[cfg(feature = "clipboard")]
-            &mut clipboard_stage,
+    loop {
+        match with_timeout(
+            Duration::from_secs(1),
+            packet_stream.read(
+                #[cfg(feature = "clipboard")]
+                &mut clipboard_stage,
+            ),
         )
         .await
-    {
-        match packet {
-            Packet::QueryInfo => {
-                match packet_stream
-                    .write(Packet::DeviceInfo {
-                        x: 0,
-                        y: 0,
-                        w: screen_size.0,
-                        h: screen_size.1,
-                        _dummy: 0,
-                        mx: 0,
-                        my: 0,
-                    })
-                    .await
-                {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        actor.disconnected().await?;
-                        Err(e)
-                    }
-                }?;
-            }
-            Packet::KeepAlive => {
-                match packet_stream.write(Packet::KeepAlive).await {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        actor.disconnected().await?;
-                        Err(e)
-                    }
-                }?;
-            }
-            Packet::MouseMoveAbs { x, y } => {
-                let abs_x = (x as u32 * 0x7fff).div_ceil(screen_size.0 as u32) as u16;
-                let abs_y = (y as u32 * 0x7fff).div_ceil(screen_size.1 as u32) as u16;
-                actor.set_cursor_position(abs_x, abs_y).await?;
-            }
-            Packet::MouseMove { x, y } => {
-                actor.move_cursor(x, y).await?;
-            }
-            Packet::KeyUp { id, mask, button } => {
-                actor.key_up(id, mask, button).await?;
-            }
-            Packet::KeyDown { id, mask, button } => {
-                actor.key_down(id, mask, button).await?;
-            }
-            Packet::KeyRepeat {
-                id,
-                mask,
-                button,
-                count,
-            } => {
-                actor.key_repeat(id, mask, button, count).await?;
-            }
-            Packet::MouseDown { id } => {
-                actor.mouse_down(id).await?;
-            }
-            Packet::MouseUp { id } => {
-                actor.mouse_up(id).await?;
-            }
-            Packet::MouseWheel { x_delta, y_delta } => {
-                actor.mouse_wheel(x_delta, y_delta).await?;
-            }
-            Packet::CursorEnter {
-                x,
-                y,
-                seq_num: _dummy,
-                mask,
-            } => {
-                actor.enter(x, y, mask).await?;
-            }
-            Packet::CursorLeave => {
-                actor.leave().await?;
-            }
-            Packet::GrabClipboard { id, seq_num } => {
-                debug!("Grab clipboard: id:{}, seq_num:{}", id, seq_num);
-            }
-            #[cfg(feature = "clipboard")]
-            Packet::SetClipboard { id, seq_num, data } => {
-                debug!(
-                    "Set clipboard: id:{}, seq_num:{}, data:{:?}",
-                    id, seq_num, data
-                );
-                if let Some(data) = data {
-                    actor.set_clipboard(data).await?;
+        {
+            Err(TimeoutError) => {
+                // Periodical tasks
+                if get_running_state().await.keep_awake {
+                    // Jiggling the cursor to keep the device awake
+                    actor.move_cursor(0, 0).await?;
                 }
             }
-            Packet::ServerBusy => {
-                warn!("Server is busy, disconnecting");
+            Ok(Err(e)) => {
+                error!("Error: {:?}", e);
                 break;
             }
-            Packet::DeviceInfo { .. }
-            | Packet::ClientNoOp
-            | Packet::InfoAck
-            | Packet::ResetOptions => {
-                // Do nothing
-            }
-            Packet::GoodBye => {
-                info!("Goodbye");
-                break;
-            }
-            Packet::BadProtocol => {
-                error!("Bad protocol");
-                break;
-            }
-            Packet::UnknownDevice => {
-                error!("Unknown device");
-                break;
-            }
-            Packet::IncompatibleVersion { major, minor } => {
-                error!("Incompatible version: {}:{}", major, minor);
-                break;
-            }
-            Packet::Unknown(cmd) => {
-                log::info!(
-                    "Unknown packet code: '{}' ({:02X} {:02X} {:02X} {:02X})",
-                    core::str::from_utf8(&cmd).unwrap_or("????"),
-                    cmd[0],
-                    cmd[1],
-                    cmd[2],
-                    cmd[3]
-                );
+            Ok(Ok(packet)) => {
+                match packet {
+                    Packet::QueryInfo => {
+                        match packet_stream
+                            .write(Packet::DeviceInfo {
+                                x: 0,
+                                y: 0,
+                                w: screen_size.0,
+                                h: screen_size.1,
+                                _dummy: 0,
+                                mx: 0,
+                                my: 0,
+                            })
+                            .await
+                        {
+                            Ok(_) => Ok(()),
+                            Err(e) => {
+                                actor.disconnected().await?;
+                                Err(e)
+                            }
+                        }?;
+                    }
+                    Packet::KeepAlive => {
+                        match packet_stream.write(Packet::KeepAlive).await {
+                            Ok(_) => Ok(()),
+                            Err(e) => {
+                                actor.disconnected().await?;
+                                Err(e)
+                            }
+                        }?;
+                    }
+                    Packet::MouseMoveAbs { x, y } => {
+                        let abs_x = (x as u32 * 0x7fff).div_ceil(screen_size.0 as u32) as u16;
+                        let abs_y = (y as u32 * 0x7fff).div_ceil(screen_size.1 as u32) as u16;
+                        actor.set_cursor_position(abs_x, abs_y).await?;
+                    }
+                    Packet::MouseMove { x, y } => {
+                        actor.move_cursor(x, y).await?;
+                    }
+                    Packet::KeyUp { id, mask, button } => {
+                        actor.key_up(id, mask, button).await?;
+                    }
+                    Packet::KeyDown { id, mask, button } => {
+                        actor.key_down(id, mask, button).await?;
+                    }
+                    Packet::KeyRepeat {
+                        id,
+                        mask,
+                        button,
+                        count,
+                    } => {
+                        actor.key_repeat(id, mask, button, count).await?;
+                    }
+                    Packet::MouseDown { id } => {
+                        actor.mouse_down(id).await?;
+                    }
+                    Packet::MouseUp { id } => {
+                        actor.mouse_up(id).await?;
+                    }
+                    Packet::MouseWheel { x_delta, y_delta } => {
+                        actor.mouse_wheel(x_delta, y_delta).await?;
+                    }
+                    Packet::CursorEnter {
+                        x,
+                        y,
+                        seq_num: _dummy,
+                        mask,
+                    } => {
+                        actor.enter(x, y, mask).await?;
+                    }
+                    Packet::CursorLeave => {
+                        actor.leave().await?;
+                    }
+                    Packet::GrabClipboard { id, seq_num } => {
+                        debug!("Grab clipboard: id:{}, seq_num:{}", id, seq_num);
+                    }
+                    #[cfg(feature = "clipboard")]
+                    Packet::SetClipboard { id, seq_num, data } => {
+                        debug!(
+                            "Set clipboard: id:{}, seq_num:{}, data:{:?}",
+                            id, seq_num, data
+                        );
+                        if let Some(data) = data {
+                            actor.set_clipboard(data).await?;
+                        }
+                    }
+                    Packet::DeviceInfo { .. }
+                    | Packet::ClientNoOp
+                    | Packet::InfoAck
+                    | Packet::ResetOptions => {
+                        // Do nothing
+                    }
+                    Packet::ServerBusy => {
+                        warn!("Server is busy, disconnecting");
+                        break;
+                    }
+                    Packet::GoodBye => {
+                        info!("Goodbye");
+                        break;
+                    }
+                    Packet::BadProtocol => {
+                        error!("Bad protocol");
+                        break;
+                    }
+                    Packet::UnknownDevice => {
+                        error!("Unknown device");
+                        break;
+                    }
+                    Packet::IncompatibleVersion { major, minor } => {
+                        error!("Incompatible version: {}:{}", major, minor);
+                        break;
+                    }
+                    Packet::Unknown(cmd) => {
+                        log::info!(
+                            "Unknown packet code: '{}' ({:02X} {:02X} {:02X} {:02X})",
+                            core::str::from_utf8(&cmd).unwrap_or("????"),
+                            cmd[0],
+                            cmd[1],
+                            cmd[2],
+                            cmd[3]
+                        );
+                    }
+                }
             }
         }
     }

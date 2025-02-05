@@ -7,6 +7,7 @@ mod config;
 mod control;
 #[cfg(feature = "smartled")]
 mod esp_hal_smartled;
+mod global_state;
 mod hid_report_writer;
 mod indicator;
 mod synergy_hid;
@@ -17,6 +18,7 @@ pub use barrier_client::*;
 #[cfg(feature = "clipboard")]
 pub use clipboard::{button_task, set_clipboard};
 pub use config::{AppConfig, ConfigStore};
+pub use global_state::{get_running_state, RunningState};
 pub use hid_report_writer::{send_hid_report, start_hid_task, HidReport};
 pub use indicator::*;
 pub use synergy_hid::{ReportType, SynergyHid};

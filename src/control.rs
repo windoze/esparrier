@@ -3,7 +3,10 @@ use embassy_usb_driver::{Endpoint, EndpointError, EndpointIn, EndpointOut};
 use esp_hal::otg_fs::asynch::Driver;
 use log::{info, warn};
 
-use crate::{config::ConfigStoreError, get_running_state, ConfigStore, RunningState};
+use crate::{
+    config::ConfigStoreError, get_running_state, global_state::get_running_state_mut, ConfigStore,
+    RunningState,
+};
 
 type EpOut = <Driver<'static> as embassy_usb_driver::Driver<'static>>::EndpointOut;
 type EpIn = <Driver<'static> as embassy_usb_driver::Driver<'static>>::EndpointIn;
@@ -45,6 +48,7 @@ enum ControlCommand {
     ReadConfig,
     WriteConfig(u8),
     CommitConfig,
+    KeepAwake(bool),
     Reboot,
 }
 
@@ -55,6 +59,7 @@ impl ControlCommand {
             b'r' => Some(Self::ReadConfig),
             b'w' => Some(Self::WriteConfig(bytes[1])),
             b'c' => Some(Self::CommitConfig),
+            b'k' => Some(Self::KeepAwake(bytes[1] != 0)),
             b'b' => Some(Self::Reboot),
             _ => None,
         }
@@ -130,6 +135,12 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                     )
                     .await
                     .ok();
+                }
+                Some(ControlCommand::KeepAwake(keep_awake)) => {
+                    get_running_state_mut().await.keep_awake = keep_awake;
+                    write_response(&mut write_ep, ControlCommandResponse::Ok)
+                        .await
+                        .ok();
                 }
                 Some(ControlCommand::ReadConfig) => {
                     send_config(&mut write_ep).await.ok();
