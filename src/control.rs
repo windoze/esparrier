@@ -4,7 +4,7 @@ use esp_hal::otg_fs::asynch::Driver;
 use log::{info, warn};
 
 use crate::{
-    config::ConfigStoreError, get_running_state, global_state::get_running_state_mut, ConfigStore,
+    config::ConfigStoreError, get_running_state, running_state::get_running_state_mut, ConfigStore,
     RunningState,
 };
 

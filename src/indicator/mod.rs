@@ -2,7 +2,7 @@ use embassy_net::Ipv4Cidr;
 use embassy_sync::once_lock::OnceLock;
 use log::info;
 
-use crate::global_state::get_running_state_mut;
+use crate::running_state::get_running_state_mut;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndicatorStatus {
