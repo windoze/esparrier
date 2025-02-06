@@ -63,6 +63,8 @@ pub trait Actuator {
         button: u16,
     ) -> impl core::future::Future<Output = Result<(), BarrierError>>;
 
+    fn jiggle(&mut self) -> impl core::future::Future<Output = Result<(), BarrierError>>;
+
     #[cfg(feature = "clipboard")]
     fn set_clipboard(
         &mut self,

@@ -75,7 +75,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
     let mut packet_stream = PacketStream::new(stream);
     loop {
         match with_timeout(
-            Duration::from_secs(1),
+            Duration::from_secs(10),
             packet_stream.read(
                 #[cfg(feature = "clipboard")]
                 &mut clipboard_stage,
@@ -87,7 +87,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
                 // Periodical tasks
                 if get_running_state().await.keep_awake {
                     // Jiggling the cursor to keep the device awake
-                    actor.move_cursor(0, 0).await?;
+                    actor.jiggle().await?;
                 }
             }
             Ok(Err(e)) => {
@@ -118,7 +118,13 @@ pub async fn start_barrier_client<Actor: Actuator>(
                     }
                     Packet::KeepAlive => {
                         match packet_stream.write(Packet::KeepAlive).await {
-                            Ok(_) => Ok(()),
+                            Ok(_) => {
+                                if get_running_state().await.keep_awake {
+                                    // Jiggling the cursor to keep the device awake
+                                    actor.jiggle().await?;
+                                }
+                                Ok(())
+                            }
                             Err(e) => {
                                 actor.disconnected().await?;
                                 Err(e)
