@@ -92,7 +92,8 @@ impl ControlCommandResponse {
                 bytes[9] = state.ip_address.map_or(0, |ip| ip.prefix_len());
                 bytes[10] = state.server_connected as u8;
                 bytes[11] = state.active as u8;
-                &bytes[..12]
+                bytes[12] = state.keep_awake as u8;
+                &bytes[..13]
             }
             Self::Config(value) => {
                 bytes[0] = b'r';
