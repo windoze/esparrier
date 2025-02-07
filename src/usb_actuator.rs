@@ -132,6 +132,20 @@ impl Actuator for UsbActuator {
         Ok(())
     }
 
+    async fn jiggle(&mut self) -> Result<(), BarrierError> {
+        debug!("Jiggle the host");
+        if self.hid.is_empty() {
+            let mut report = [0; 9];
+            let ret = self
+                .hid
+                .set_cursor_position(self.x + 1, self.y, &mut report);
+            self.send_report(ret).await;
+            let ret = self.hid.set_cursor_position(self.x, self.y, &mut report);
+            self.send_report(ret).await;
+        }
+        Ok(())
+    }
+
     #[cfg(feature = "clipboard")]
     async fn set_clipboard(
         &mut self,

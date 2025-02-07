@@ -207,6 +207,12 @@ impl SynergyHid {
             }
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.keyboard_report.is_empty()
+            && self.mouse_report.is_empty()
+            && self.consumer_report.is_empty()
+    }
 }
 
 #[cfg(test)]

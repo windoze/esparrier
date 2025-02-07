@@ -31,6 +31,10 @@ impl AbsMouseReport {
         self.send(None, None)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.button == 0
+    }
+
     fn send<S: Into<Option<i8>>, P: Into<Option<i8>>>(&self, scroll: S, pan: P) -> [u8; 7] {
         let scroll = scroll.into().unwrap_or(0);
         let pan = pan.into().unwrap_or(0);
@@ -113,6 +117,10 @@ impl KeyboardReport {
         self.send()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.modifier == 0 && self.keycode.iter().all(|&x| x == 0)
+    }
+
     fn send(&self) -> [u8; 8] {
         let mut report = [0u8; 8];
         report[0] = self.modifier;
@@ -155,6 +163,10 @@ impl ConsumerReport {
     pub fn clear(&mut self) -> [u8; 2] {
         self.code = 0;
         self.send()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.code == 0
     }
 
     fn send(&self) -> [u8; 2] {
