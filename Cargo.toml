@@ -1,6 +1,6 @@
 [package]
 name = "esparrier"
-version = "0.4.4"
+version = "0.5.0"
 edition = "2021"
 rust-version = "1.84"
 authors = ["Chen Xu <windoze@0d0a.com>"]
