@@ -85,7 +85,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
 
 * The release page provides pre-built binaries for some ESP32S3 boards, you can use them directly if your board is listed.
     * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, and the clipboard feature is disabled as well.
-    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite), the SmartLED feature and the clipboard feature are enabled.
+    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) and [M5AtomS3U](https://docs.m5stack.com/en/core/AtomS3U), the SmartLED feature and the clipboard feature are enabled.
     * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
     * [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
     * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, and the clipboard feature is disabled due to the lack of a user button.
@@ -123,15 +123,15 @@ NOTE: When you copied a large amount of text or big image from other screen then
 
 ## Use pre-built binaries
 
-**NOTE**: Using pre-built binaries is not recommended, because it cannot utilize the full potential of the board, and you may need to change the code to fit your board. So you should build the binary yourself when possible.
+**NOTE**: Use pre-built binaries only when you have exactly the same board as the binary is built for, or you know what you are doing. Flashing a wrong binary to the board may cause the board to not work properly.
 
 1. Install `esptool.py` as described in the previous section. You don't need to install Rust toolchain and any other ESP32 tools.
 
 2. Download the binary from the [releases page](https://github.com/windoze/esparrier/releases).
 
 3. Extract the binary from the archive. There are few pre-built binaries in the archive for specific boards, choose the one that fits your board.
-    * `merged-esparrier-generic.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable.
-    * `merged-esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite).
+    * `merged-esparrier-generic.bin` - For generic ESP32S3 boards with native USB-OTG port, the indicator and clipboard features are unavailable.
+    * `merged-esparrier-m5atoms3-lite.bin` - For [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) and [M5AtomS3U](https://docs.m5stack.com/en/core/AtomS3U).
     * `merged-esparrier-m5atoms3.bin` - For [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3).
     * `merged-esparrier-m5atoms3r.bin` - For [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R).
     * `merged-esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).

@@ -114,15 +114,15 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 ## 使用预构建的二进制文件
 
-**注意**：不推荐使用预构建的二进制文件，因为它不能充分利用开发板的全部功能，并且您可能需要更改代码以适应您的开发板。因此，在可能的情况下，您应该自己构建二进制文件。
+**注意**：请仅在您的开发板型号与预构建的二进制文件匹配时使用预构建的二进制文件，将错误的二进制文件烧录到开发板上可能会导致开发板无法正常工作。
 
 1. 按照上一节中的描述安装 `esptool.py`。无需安装 Rust 工具链和其他 ESP32 工具。
 
 2. 从 [发布页面](https://github.com/windoze/esparrier/releases) 下载二进制文件。
 
 3. 从压缩包中提取二进制文件。压缩包中有一些为特定型号开发板预构建的二进制文件，选择适合您开发板的那一个。
-    * `merged-esparrier-generic.bin` - 适用于大多数具有原生 USB-OTG 端口的通用 ESP32S3 开发板，但不支持状态指示功能。
-    * `merged-esparrier-m5atoms3-lite.bin` - 适用于 [M5Atom S3 Lite](https://docs.m5stack.com/zh_CN/core/AtomS3%20Lite)。
+    * `merged-esparrier-generic.bin` - 适用于大多数具有原生 USB-OTG 端口的通用 ESP32S3 开发板，但不支持状态指示和剪贴板功能。
+    * `merged-esparrier-m5atoms3-lite.bin` - 适用于 [M5Atom S3 Lite](https://docs.m5stack.com/zh_CN/core/AtomS3%20Lite) 和 [M5AtomS3U](https://docs.m5stack.com/zh_CN/core/AtomS3U)。
     * `merged-esparrier-m5atoms3.bin` - 适用于 [M5Atom S3](https://docs.m5stack.com/zh_CN/core/AtomS3)。
     * `merged-esparrier-m5atoms3r.bin` - 适用于 [M5Atom S3R](https://docs.m5stack.com/zh_CN/core/AtomS3R)。
     * `merged-esparrier-xiao-esp32s3.bin` - 适用于 [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)。
