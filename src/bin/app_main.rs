@@ -20,12 +20,12 @@ use esp_hal::{
 use esp_hal_embassy::main;
 use esp_println::println;
 use esp_wifi::{
+    EspWifiController,
     config::PowerSaveMode,
     wifi::{
         ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
         WifiState,
     },
-    EspWifiController,
 };
 use fugit::ExtU64;
 use log::{debug, error, info, warn};
@@ -34,8 +34,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    mk_static, set_indicator_status, start_barrier_client, start_hid_task, start_indicator_task,
-    AppConfig, IndicatorStatus, UsbActuator,
+    AppConfig, IndicatorStatus, UsbActuator, mk_static, set_indicator_status, start_barrier_client,
+    start_hid_task, start_indicator_task,
 };
 
 #[main]
