@@ -17,20 +17,20 @@ type IndicatorSender = embassy_sync::channel::Sender<
     'static,
     embassy_sync::blocking_mutex::raw::NoopRawMutex,
     IndicatorStatus,
-    3,
+    8,
 >;
 
 type IndicatorChannel = embassy_sync::channel::Channel<
     embassy_sync::blocking_mutex::raw::NoopRawMutex,
     IndicatorStatus,
-    3,
+    8,
 >;
 
 type IndicatorReceiver = embassy_sync::channel::Receiver<
     'static,
     embassy_sync::blocking_mutex::raw::NoopRawMutex,
     IndicatorStatus,
-    3,
+    8,
 >;
 
 cfg_if::cfg_if! {
