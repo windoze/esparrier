@@ -87,6 +87,8 @@ pub const SCREEN_WIDTH: u16 = 1920;
 #[from_env]
 pub const SCREEN_HEIGHT: u16 = 1080;
 #[from_env]
+pub const JIGGLE_INTERVAL: u16 = 60;
+#[from_env]
 pub const REVERSED_WHEEL: bool = false;
 
 cfg_if::cfg_if! {

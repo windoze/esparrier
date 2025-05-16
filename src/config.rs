@@ -70,6 +70,8 @@ pub struct AppConfig {
     pub screen_height: u16,
     #[serde(default)]
     pub flip_wheel: bool,
+    #[serde(default = "get_default_jiggle_interval")]
+    pub jiggle_interval: u16,
 
     // Indicator brightness, used by both SmartLED and graphical indicators
     #[serde(default = "get_default_brightness")]
@@ -109,6 +111,10 @@ fn get_default_screen_height() -> u16 {
     SCREEN_HEIGHT
 }
 
+fn get_default_jiggle_interval() -> u16 {
+    JIGGLE_INTERVAL
+}
+
 fn get_default_brightness() -> u8 {
     BRIGHTNESS
 }
@@ -142,6 +148,7 @@ impl Default for AppConfig {
             screen_name: String::from_str(SCREEN_NAME).unwrap(),
             screen_width: SCREEN_WIDTH,
             screen_height: SCREEN_HEIGHT,
+            jiggle_interval: JIGGLE_INTERVAL,
             flip_wheel: REVERSED_WHEEL,
             brightness: BRIGHTNESS,
             ip_addr: None,

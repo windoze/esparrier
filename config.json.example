@@ -16,6 +16,8 @@
     "screen_height": 1080,
     // Set to `true` to reverse the direction of the mouse wheels, optional, default value is false
     "flip_wheel": false,
+    // The interval between two jiggles, optional, default value is 10 seconds
+    "jiggle_interval": 10,
     // Brightness, optional, 1-100, default value is 30, applied to both SmartLED and Graphical indicators.
     // CAUTION: Higher value can consume more power and may cause overheat or being blocked by the host USB port, but too low value may cause the indicators not visible, especially to the graphics indicator on TFT LCD. Usually 10~50 is good for SmartLED, and 30~60 is good for TFT LCD.
     "brightness": 30,

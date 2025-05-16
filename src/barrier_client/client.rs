@@ -23,6 +23,7 @@ pub enum ClipboardStage {
 pub async fn start_barrier_client<Actor: Actuator>(
     endpoint: IpEndpoint,
     device_name: &'static str,
+    jiggle_interval: u16,
     stack: Stack<'_>,
     mut actor: Actor,
 ) -> Result<(), BarrierError> {
@@ -75,7 +76,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
     let mut packet_stream = PacketStream::new(stream);
     loop {
         match with_timeout(
-            Duration::from_secs(10),
+            Duration::from_secs(jiggle_interval as u64),
             packet_stream.read(
                 #[cfg(feature = "clipboard")]
                 &mut clipboard_stage,

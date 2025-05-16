@@ -50,10 +50,10 @@ impl HidReport {
     }
 }
 
-pub type HidReportSender = Sender<'static, NoopRawMutex, HidReport, 16>;
+pub type HidReportSender = Sender<'static, NoopRawMutex, HidReport, 32>;
 
-type HidReportChannel = Channel<NoopRawMutex, HidReport, 16>;
-type HidReportReceiver = Receiver<'static, NoopRawMutex, HidReport, 16>;
+type HidReportChannel = Channel<NoopRawMutex, HidReport, 32>;
+type HidReportReceiver = Receiver<'static, NoopRawMutex, HidReport, 32>;
 
 trait HidReportWriter {
     fn write_report(&mut self, report: HidReport) -> impl Future<Output = ()>;

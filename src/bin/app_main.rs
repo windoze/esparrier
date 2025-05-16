@@ -138,6 +138,7 @@ async fn main(spawner: Spawner) {
         start_barrier_client(
             AppConfig::get().get_server_endpoint(),
             &AppConfig::get().screen_name,
+            AppConfig::get().jiggle_interval,
             stack,
             actuator,
         )
