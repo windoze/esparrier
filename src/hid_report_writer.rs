@@ -61,11 +61,16 @@ trait HidReportWriter {
 
 struct UsbHidReportWriter<'a> {
     hid_report_writer: ReportWriter<'a, 9>,
+    polling_interval: u8,
 }
 
 impl<'a> UsbHidReportWriter<'a> {
     pub fn new(hid_report_writer: ReportWriter<'a, 9>) -> Self {
-        Self { hid_report_writer }
+        let config = AppConfig::get();
+        Self {
+            hid_report_writer,
+            polling_interval: config.get_polling_interval(),
+        }
     }
 }
 
@@ -77,17 +82,19 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
             HidReport::Mouse(data) => data,
             HidReport::Consumer(data) => data,
         };
-        // As we asked the host to poll the device every 5 ms, we can safely assume
-        // that 20ms is already timed-out.
-        with_timeout(Duration::from_millis(20), async {
-            self.hid_report_writer
-                .write(data)
-                .await
-                .inspect_err(|e| {
-                    warn!("Error writing HID report: {:?}", e);
-                })
-                .ok();
-        })
+        // Assuming 3 * polling_interval is enough time for the host to poll the device.
+        with_timeout(
+            Duration::from_millis(self.polling_interval as u64 * 3),
+            async {
+                self.hid_report_writer
+                    .write(data)
+                    .await
+                    .inspect_err(|e| {
+                        warn!("Error writing HID report: {:?}", e);
+                    })
+                    .ok();
+            },
+        )
         .await
         .expect(
             // This can happen if the device is writing the report while unplugged.
@@ -221,7 +228,7 @@ pub fn start_hid_task(spawner: Spawner) {
     let config = embassy_usb::class::hid::Config {
         report_descriptor: SynergyHid::get_report_descriptor().1,
         request_handler: None,
-        poll_ms: 5,
+        poll_ms: app_config.get_polling_interval(),
         max_packet_size: 64,
     };
 

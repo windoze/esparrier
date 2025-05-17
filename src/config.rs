@@ -70,6 +70,8 @@ pub struct AppConfig {
     pub screen_height: u16,
     #[serde(default)]
     pub flip_wheel: bool,
+    #[serde(default = "get_default_polling_rate")]
+    pub polling_rate: u16,
     #[serde(default = "get_default_jiggle_interval")]
     pub jiggle_interval: u16,
 
@@ -111,6 +113,10 @@ fn get_default_screen_height() -> u16 {
     SCREEN_HEIGHT
 }
 
+fn get_default_polling_rate() -> u16 {
+    POLLING_RATE
+}
+
 fn get_default_jiggle_interval() -> u16 {
     JIGGLE_INTERVAL
 }
@@ -148,6 +154,7 @@ impl Default for AppConfig {
             screen_name: String::from_str(SCREEN_NAME).unwrap(),
             screen_width: SCREEN_WIDTH,
             screen_height: SCREEN_HEIGHT,
+            polling_rate: POLLING_RATE,
             jiggle_interval: JIGGLE_INTERVAL,
             flip_wheel: REVERSED_WHEEL,
             brightness: BRIGHTNESS,
@@ -204,6 +211,17 @@ impl AppConfig {
                 gateway: self.gateway.as_ref().map(|s| parse_addr(s)), // Gateway is optional if server is on the same subnet
             }),
             None => Config::dhcpv4(Default::default()),
+        }
+    }
+
+    pub fn get_polling_interval(&self) -> u8 {
+        let polling_interval = 1000 / self.polling_rate;
+        if polling_interval < 1 {
+            1
+        } else if polling_interval > 255 {
+            255
+        } else {
+            polling_interval as u8
         }
     }
 }
