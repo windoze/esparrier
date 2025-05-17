@@ -77,9 +77,9 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
             HidReport::Mouse(data) => data,
             HidReport::Consumer(data) => data,
         };
-        // As we asked the host to poll the device every 1 ms, we can safely assume
-        // that 5ms is already timed-out.
-        with_timeout(Duration::from_millis(5), async {
+        // As we asked the host to poll the device every 5 ms, we can safely assume
+        // that 20ms is already timed-out.
+        with_timeout(Duration::from_millis(20), async {
             self.hid_report_writer
                 .write(data)
                 .await
@@ -221,7 +221,7 @@ pub fn start_hid_task(spawner: Spawner) {
     let config = embassy_usb::class::hid::Config {
         report_descriptor: SynergyHid::get_report_descriptor().1,
         request_handler: None,
-        poll_ms: 1,
+        poll_ms: 5,
         max_packet_size: 64,
     };
 
