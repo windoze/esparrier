@@ -5,7 +5,7 @@ use core::{
 
 use embassy_executor::Spawner;
 use embassy_sync::{
-    blocking_mutex::raw::NoopRawMutex,
+    blocking_mutex::raw::CriticalSectionRawMutex,
     channel::{Channel, Receiver, Sender},
     once_lock::OnceLock,
 };
@@ -50,10 +50,10 @@ impl HidReport {
     }
 }
 
-pub type HidReportSender = Sender<'static, NoopRawMutex, HidReport, 32>;
+pub type HidReportSender = Sender<'static, CriticalSectionRawMutex, HidReport, 32>;
 
-type HidReportChannel = Channel<NoopRawMutex, HidReport, 32>;
-type HidReportReceiver = Receiver<'static, NoopRawMutex, HidReport, 32>;
+type HidReportChannel = Channel<CriticalSectionRawMutex, HidReport, 32>;
+type HidReportReceiver = Receiver<'static, CriticalSectionRawMutex, HidReport, 32>;
 
 trait HidReportWriter {
     fn write_report(&mut self, report: HidReport) -> impl Future<Output = ()>;

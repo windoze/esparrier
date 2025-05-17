@@ -15,20 +15,20 @@ pub enum IndicatorStatus {
 
 type IndicatorSender = embassy_sync::channel::Sender<
     'static,
-    embassy_sync::blocking_mutex::raw::NoopRawMutex,
+    embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
     IndicatorStatus,
     8,
 >;
 
 type IndicatorChannel = embassy_sync::channel::Channel<
-    embassy_sync::blocking_mutex::raw::NoopRawMutex,
+    embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
     IndicatorStatus,
     8,
 >;
 
 type IndicatorReceiver = embassy_sync::channel::Receiver<
     'static,
-    embassy_sync::blocking_mutex::raw::NoopRawMutex,
+    embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,
     IndicatorStatus,
     8,
 >;
