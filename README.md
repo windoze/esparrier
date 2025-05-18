@@ -4,6 +4,7 @@ Esparrier
 [![zh-cn](https://img.shields.io/badge/lang-zh--cn-green.svg)](https://github.com/windoze/esparrier/blob/main/README.zh-cn.md)
 ![CI](https://github.com/windoze/esparrier/actions/workflows/ci.yaml/badge.svg)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/windoze/esparrier?logo=GitHub)](https://github.com/windoze/esparrier/releases)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/windoze/esparrier)
 
 Esparrier is a [Barrier](https://github.com/debauchee/barrier)/[Deskflow](https://deskflow.org/) client for ESP32S3.
 
