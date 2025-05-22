@@ -42,13 +42,7 @@ embassy-net = { version = "0.7.0", features = [
     "medium-ethernet",
 ] }
 
-esp-wifi = { version = "0.13.0", default-features = false, features = [
-    "esp32s3",
-    # "utils",
-    "wifi",
-    "esp-alloc",
-    "log",
-] }
+esp-wifi = { version = "0.13.0", features = ["esp32s3", "wifi", "log"] }
 heapless = { version = "0.8.0", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
     "medium-ethernet",
