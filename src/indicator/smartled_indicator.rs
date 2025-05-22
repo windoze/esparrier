@@ -1,5 +1,5 @@
 use embassy_time::Duration;
-use esp_hal::{gpio::AnyPin, peripherals::RMT, rmt::Rmt, time::RateExtU32};
+use esp_hal::{gpio::AnyPin, peripherals::RMT, rmt::Rmt, time::Rate};
 use log::error;
 use smart_leds::{
     brightness, gamma,
@@ -128,7 +128,7 @@ impl Default for IndicatorConfig {
 }
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
-    let rmt = Rmt::new(config.rmt, 80.MHz()).unwrap();
+    let rmt = Rmt::new(config.rmt, Rate::from_mhz(80)).unwrap();
     let rmt_buffer = [0u32; SMART_LED_COUNT * 24 + 1];
     let mut led = SmartLedsAdapter::new(rmt.channel0, config.pin, rmt_buffer);
 

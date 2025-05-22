@@ -21,13 +21,9 @@ use esp_hal_embassy::main;
 use esp_println::println;
 use esp_wifi::{
     config::PowerSaveMode,
-    wifi::{
-        ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiStaDevice,
-        WifiState,
-    },
+    wifi::{ClientConfiguration, Configuration, WifiController, WifiDevice, WifiEvent, WifiState},
     EspWifiController,
 };
-use fugit::ExtU64;
 use log::{debug, error, info, warn};
 
 #[allow(unused_imports)]
@@ -53,7 +49,7 @@ async fn main(spawner: Spawner) {
 
     let peripherals = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
 
-    esp_alloc::heap_allocator!(160 * 1024);
+    esp_alloc::heap_allocator!(size: 160 * 1024);
 
     // Setup Embassy
     let systimer = SystemTimer::new(peripherals.SYSTIMER);
@@ -61,7 +57,7 @@ async fn main(spawner: Spawner) {
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let wdt1 = mk_static!(Wdt<TIMG1>, TimerGroup::new(peripherals.TIMG1).wdt);
-    wdt1.set_timeout(MwdtStage::Stage0, 1.secs());
+    wdt1.set_timeout(MwdtStage::Stage0, esp_hal::time::Duration::from_secs(1));
     wdt1.set_stage_action(MwdtStage::Stage0, MwdtStageAction::ResetSystem);
     wdt1.enable();
     wdt1.feed();
@@ -93,12 +89,11 @@ async fn main(spawner: Spawner) {
         esp_wifi::init(timg0.timer0, rng, peripherals.RADIO_CLK,).unwrap()
     );
 
-    let wifi = peripherals.WIFI;
-    let (wifi_interface, mut controller) =
-        esp_wifi::wifi::new_with_mode(init, wifi, WifiStaDevice).unwrap();
-
+    let (mut controller, interfaces) = esp_wifi::wifi::new(init, peripherals.WIFI).unwrap();
     // Disable power saving for maximum performance
     controller.set_power_saving(PowerSaveMode::None).ok();
+
+    let wifi_interface = interfaces.sta;
 
     // Init network stack
     let (stack, runner) = embassy_net::new(
@@ -195,6 +190,6 @@ async fn connection(mut controller: WifiController<'static>) {
 }
 
 #[embassy_executor::task]
-async fn net_task(mut runner: Runner<'static, WifiDevice<'static, WifiStaDevice>>) {
+async fn net_task(mut runner: Runner<'static, WifiDevice<'static>>) {
     runner.run().await
 }

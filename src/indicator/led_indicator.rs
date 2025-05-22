@@ -1,6 +1,6 @@
 use super::{IndicatorReceiver, IndicatorStatus};
 use embassy_time::Duration;
-use esp_hal::gpio::{AnyPin, Level, Output};
+use esp_hal::gpio::{AnyPin, Level, Output, OutputConfig};
 
 use crate::constants::LED_PIN;
 
@@ -49,7 +49,7 @@ impl Default for IndicatorConfig {
 }
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
-    let mut p = Output::new(config.pin, Level::Low);
+    let mut p = Output::new(config.pin, Level::Low, OutputConfig::default());
     let mut status = IndicatorStatus::WifiConnecting;
 
     loop {
