@@ -91,6 +91,7 @@ mipidsi = { version = "0.9.0", optional = true }
 display-interface-spi = { version = "0.5.0", optional = true }
 tinygif = { version = "0.0.4", optional = true }
 
+esp-hal-ota = { version = "0.4.0", features = ["esp32s3"] }
 
 [features]
 default = ["usb"]

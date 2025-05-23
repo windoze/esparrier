@@ -1,7 +1,9 @@
 use embassy_time::{with_timeout, Duration, TimeoutError};
 use embassy_usb_driver::{Endpoint, EndpointError, EndpointIn, EndpointOut};
 use esp_hal::otg_fs::asynch::Driver;
-use log::{info, warn};
+use esp_hal_ota::Ota;
+use esp_storage::FlashStorage;
+use log::{error, info, warn};
 
 use crate::{
     config::ConfigStoreError, get_running_state, running_state::get_running_state_mut, ConfigStore,
@@ -11,10 +13,12 @@ use crate::{
 type EpOut = <Driver<'static> as embassy_usb_driver::Driver<'static>>::EndpointOut;
 type EpIn = <Driver<'static> as embassy_usb_driver::Driver<'static>>::EndpointIn;
 
+#[derive(Debug)]
 enum Error {
     Endpoint,
     Timeout,
     InvalidConfig,
+    OtaFailure,
     UnknownCommand,
 }
 
@@ -49,6 +53,7 @@ enum ControlCommand {
     WriteConfig(u8),
     CommitConfig,
     KeepAwake(bool),
+    Ota(u32, u32), // Size, Checksum
     Reboot,
 }
 
@@ -61,6 +66,10 @@ impl ControlCommand {
             b'c' => Some(Self::CommitConfig),
             b'k' => Some(Self::KeepAwake(bytes[1] != 0)),
             b'b' => Some(Self::Reboot),
+            b'u' => Some(Self::Ota(
+                u32::from_le_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]),
+                u32::from_le_bytes([bytes[5], bytes[6], bytes[7], bytes[8]]),
+            )),
             _ => None,
         }
     }
@@ -93,7 +102,8 @@ impl ControlCommandResponse {
                 bytes[10] = state.server_connected as u8;
                 bytes[11] = state.active as u8;
                 bytes[12] = state.keep_awake as u8;
-                &bytes[..13]
+                bytes[13] = state.firmware_kind;
+                &bytes[..14]
             }
             Self::Config(value) => {
                 bytes[0] = b'r';
@@ -110,6 +120,7 @@ impl ControlCommandResponse {
                     Error::Endpoint => bytes[1] = b'e',
                     Error::Timeout => bytes[1] = b't',
                     Error::InvalidConfig => bytes[1] = b'i',
+                    Error::OtaFailure => bytes[1] = b'o',
                     Error::UnknownCommand => bytes[1] = b'u',
                 }
                 &bytes[..2]
@@ -186,6 +197,25 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                             .ok();
                     }
                 },
+                Some(ControlCommand::Ota(flash_size, checksum)) => {
+                    info!("OTA: size: {}, checksum: {}", flash_size, checksum);
+                    match ota_firmware(&mut read_ep, flash_size, checksum).await {
+                        Ok(_) => {
+                            write_response(&mut write_ep, ControlCommandResponse::Ok)
+                                .await
+                                .ok();
+                            info!("OTA completed, resetting in 1 second...");
+                            embassy_time::Timer::after(Duration::from_millis(1000)).await;
+                            esp_hal::system::software_reset();
+                        }
+                        Err(e) => {
+                            warn!("Error during OTA: {:?}", e);
+                            write_response(&mut write_ep, ControlCommandResponse::Error(e))
+                                .await
+                                .ok();
+                        }
+                    }
+                }
                 Some(ControlCommand::Reboot) => {
                     write_response(&mut write_ep, ControlCommandResponse::Ok)
                         .await
@@ -248,4 +278,28 @@ async fn receive_config(read_ep: &mut EpOut, blocks: usize) -> Result<ConfigStor
         offset += block_len;
     }
     Ok(store)
+}
+
+async fn ota_firmware(read_ep: &mut EpOut, flash_size: u32, target_crc: u32) -> Result<(), Error> {
+    let mut ota = Ota::new(FlashStorage::new()).expect("Cannot create ota");
+    ota.ota_begin(flash_size, target_crc).unwrap();
+
+    let mut data = [0; 64];
+    let mut offset = 0;
+    while offset < flash_size {
+        data.fill(0);
+        let block_len = with_timeout(Duration::from_millis(500), read_ep.read(&mut data))
+            .await
+            .map_err(|_| EndpointError::Disabled)??;
+        ota.ota_write_chunk(&data[..block_len]).map_err(|_| {
+            error!("Error writing chunk");
+            Error::OtaFailure
+        })?;
+        offset += block_len as u32;
+    }
+    ota.ota_flush(true, true).map_err(|_| {
+        error!("Error flushing OTA");
+        Error::OtaFailure
+    })?;
+    Ok(())
 }

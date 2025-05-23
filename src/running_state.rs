@@ -13,6 +13,7 @@ pub struct RunningState {
     pub server_connected: bool,
     pub active: bool,
     pub keep_awake: bool,
+    pub firmware_kind: u8,
 }
 
 impl RunningState {
@@ -26,6 +27,7 @@ impl RunningState {
             server_connected: false,
             active: false,
             keep_awake: false,
+            firmware_kind: FIRMWARE_KIND,
         }
     }
 
