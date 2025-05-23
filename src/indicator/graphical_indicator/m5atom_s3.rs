@@ -1,7 +1,7 @@
 use embedded_graphics::prelude::*;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
-    gpio::{AnyPin, GpioPin, Level, Output},
+    gpio::{AnyPin, GpioPin, Level, Output, OutputConfig},
     ledc::{
         channel::{self, ChannelIFace},
         timer::{self, TimerIFace},
@@ -12,7 +12,7 @@ use esp_hal::{
         master::{Config, Spi},
         AnySpi, Mode,
     },
-    time::RateExtU32,
+    time::Rate,
 };
 use mipidsi::{
     interface::SpiInterface,
@@ -84,7 +84,7 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
         .configure(timer::config::Config {
             duty: timer::config::Duty::Duty5Bit,
             clock_source: timer::LSClockSource::APBClk,
-            frequency: 500.Hz(),
+            frequency: Rate::from_hz(500),
         })
         .unwrap();
     let mut channel0 = ledc.channel(channel::Number::Channel0, config.backlight);
@@ -98,23 +98,23 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
 
     // Initialize the SPI bus
     let mut delay = esp_hal::delay::Delay::new();
-    let spi = Spi::new(config.spi, {
-        let mut config = Config::default();
-        config.frequency = 40.MHz();
-        config.mode = Mode::_0;
-        config
-    })
+    let spi = Spi::new(
+        config.spi,
+        Config::default()
+            .with_frequency(Rate::from_mhz(40))
+            .with_mode(Mode::_0),
+    )
     .unwrap()
     .with_sck(config.sck)
     .with_mosi(config.mosi);
 
-    let cs_output = Output::new(config.cs, Level::High);
+    let cs_output = Output::new(config.cs, Level::High, OutputConfig::default());
     let spi_device = ExclusiveDevice::new_no_delay(spi, cs_output).unwrap();
 
-    let dc = Output::new(config.dc, Level::Low);
+    let dc = Output::new(config.dc, Level::Low, OutputConfig::default());
     let buffer = mk_static!([u8; 1024], [0; 1024]);
     let di = SpiInterface::new(spi_device, dc, buffer);
-    let rst = Output::new(config.rst, Level::High);
+    let rst = Output::new(config.rst, Level::High, OutputConfig::default());
 
     // Define the display from the display interface and initialize it
     let mut display = Builder::new(ST7789, di)

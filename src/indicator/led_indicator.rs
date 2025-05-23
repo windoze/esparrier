@@ -1,6 +1,6 @@
 use super::{IndicatorReceiver, IndicatorStatus};
 use embassy_time::Duration;
-use esp_hal::gpio::{AnyPin, Level, Output};
+use esp_hal::gpio::{AnyPin, Level, Output, OutputConfig};
 
 use crate::constants::LED_PIN;
 
@@ -49,7 +49,7 @@ impl Default for IndicatorConfig {
 }
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
-    let mut p = Output::new(config.pin, Level::Low);
+    let mut led_pin = Output::new(config.pin, Level::Low, OutputConfig::default());
     let mut status = IndicatorStatus::WifiConnecting;
 
     loop {
@@ -60,9 +60,9 @@ pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceive
             // @see https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/
             // Turn on the LED
             if config.high_on {
-                p.set_high();
+                led_pin.set_high();
             } else {
-                p.set_low();
+                led_pin.set_low();
             }
             if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
                 status = s;
@@ -73,9 +73,9 @@ pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceive
         if interval.as_micros() > 0 {
             // Turn off the LED
             if config.high_on {
-                p.set_low();
+                led_pin.set_low();
             } else {
-                p.set_high();
+                led_pin.set_high();
             }
             if let Ok(s) = embassy_time::with_timeout(interval, receiver.receive()).await {
                 status = s;

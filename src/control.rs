@@ -171,7 +171,7 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                                 .ok();
                             info!("Config committed, resetting in 1 second...");
                             embassy_time::Timer::after(Duration::from_millis(1000)).await;
-                            esp_hal::reset::software_reset();
+                            esp_hal::system::software_reset();
                         }
                         Err(e) => {
                             warn!("Error committing config: {:?}", e);
@@ -193,7 +193,7 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                     // Wait for a short while to send the Ok response back
                     embassy_time::Timer::after(Duration::from_millis(100)).await;
                     info!("Rebooting...");
-                    esp_hal::reset::software_reset()
+                    esp_hal::system::software_reset()
                 }
                 None => {
                     write_response(&mut write_ep, Error::UnknownCommand.into())
