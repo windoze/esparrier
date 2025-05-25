@@ -58,7 +58,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
     debug!("Got hello {}:{}", major, minor);
 
     stream
-        .write_u32("Barrier".len() as u32 + 2 + 2 + 4 + device_name.bytes().len() as u32)
+        .write_u32("Barrier".len() as u32 + 2 + 2 + 4 + device_name.len() as u32)
         .await?;
     stream
         .write_all(b"Barrier")
