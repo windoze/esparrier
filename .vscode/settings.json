@@ -63,6 +63,7 @@
     "MSVC",
     "Mwdt",
     "nostartfiles",
+    "otadata",
     "pixelcolor",
     "println",
     "psram",
