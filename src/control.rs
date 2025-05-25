@@ -222,7 +222,7 @@ async fn send_config(write_ep: &mut EpIn) -> Result<(), Error> {
     let mut data = [0; 64];
     let store = ConfigStore::current();
     info!("Config len: {}", store.len());
-    let blocks = (store.len() + 63) / 64;
+    let blocks = store.len().div_ceil(64);
     write_response(write_ep, ControlCommandResponse::Config(blocks as u8)).await?;
 
     for i in 0..blocks {
