@@ -9,7 +9,7 @@ use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
 use esp_hal::{
     clock::CpuClock,
-    peripheral::Peripheral,
+    otg_fs::Usb,
     peripherals::TIMG1,
     rng::Rng,
     timer::{
@@ -66,7 +66,8 @@ async fn main(spawner: Spawner) {
     spawner.must_spawn(watchdog_task(wdt1));
 
     // Setup HID task
-    start_hid_task(spawner);
+    let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
+    start_hid_task(spawner, usb);
 
     // Setup paste button task
     #[cfg(feature = "clipboard")]
@@ -150,7 +151,7 @@ async fn main(spawner: Spawner) {
 }
 
 #[embassy_executor::task]
-async fn watchdog_task(watchdog: &'static mut Wdt<<TIMG1 as Peripheral>::P>) {
+async fn watchdog_task(watchdog: &'static mut Wdt<TIMG1<'static>>) {
     loop {
         watchdog.feed();
         Timer::after(Duration::from_millis(500)).await;
@@ -168,8 +169,8 @@ async fn connection(mut controller: WifiController<'static>) {
         }
         if !matches!(controller.is_started(), Ok(true)) {
             let client_config = Configuration::Client(ClientConfiguration {
-                ssid: AppConfig::get().ssid.clone(),
-                password: AppConfig::get().password.clone().into(),
+                ssid: AppConfig::get().ssid.as_str().into(),
+                password: AppConfig::get().password.as_ref().into(),
                 ..Default::default()
             });
             controller.set_configuration(&client_config).unwrap();

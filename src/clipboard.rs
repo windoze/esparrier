@@ -66,7 +66,7 @@ pub async fn set_clipboard(data: heapless::Vec<u8, MAX_CLIPBOARD_SIZE>) {
 
 #[embassy_executor::task]
 pub async fn button_task() {
-    let button = unsafe { esp_hal::gpio::GpioPin::<PASTE_BUTTON_PIN>::steal() };
+    let button = unsafe { esp_hal::gpio::AnyPin::steal(PASTE_BUTTON_PIN) };
     use embedded_hal_async::digital::Wait;
     let input = esp_hal::gpio::Input::new(
         button,
