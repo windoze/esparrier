@@ -35,14 +35,14 @@ fn get_led_config(status: IndicatorStatus) -> LedConfig {
 }
 
 pub struct IndicatorConfig {
-    pub pin: AnyPin,
+    pub pin: AnyPin<'static>,
     pub high_on: bool,
 }
 
 impl Default for IndicatorConfig {
     fn default() -> Self {
         Self {
-            pin: unsafe { esp_hal::gpio::GpioPin::<LED_PIN>::steal() }.into(),
+            pin: unsafe { esp_hal::gpio::AnyPin::steal(LED_PIN) },
             high_on: false,
         }
     }

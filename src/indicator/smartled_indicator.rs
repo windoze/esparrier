@@ -112,8 +112,8 @@ async fn fade_in_out<const N: usize>(
 }
 
 pub struct IndicatorConfig {
-    pub rmt: RMT,
-    pub pin: AnyPin,
+    pub rmt: RMT<'static>,
+    pub pin: AnyPin<'static>,
     pub max_brightness: u8,
 }
 
@@ -121,7 +121,7 @@ impl Default for IndicatorConfig {
     fn default() -> Self {
         Self {
             rmt: unsafe { RMT::steal() },
-            pin: unsafe { esp_hal::gpio::GpioPin::<SMART_LED_PIN>::steal() }.into(),
+            pin: unsafe { esp_hal::gpio::AnyPin::steal(SMART_LED_PIN) },
             max_brightness: crate::AppConfig::get().brightness,
         }
     }

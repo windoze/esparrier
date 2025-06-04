@@ -12,26 +12,26 @@ license = "MIT"
 keywords = ["esparrier", "esp32s3", "usb", "hid", "embedded", "wifi", "barrier"]
 
 [dependencies]
-esp-backtrace = { version = "0.15.1", features = [
+esp-backtrace = { version = "0.16.0", features = [
     "esp32s3",
     "exception-handler",
     "panic-handler",
     "println",
 ] }
 
-esp-hal = { version = "1.0.0-beta.0", features = ["esp32s3", "unstable"] }
-esp-println = { version = "0.13.0", default-features = false, features = [
+esp-hal = { version = "1.0.0-beta.1", features = ["esp32s3", "unstable"] }
+esp-println = { version = "0.14.0", default-features = false, features = [
     "colors",
     "critical-section",
     "esp32s3",
-    "log",
+    "log-04",
     "uart",
 ] }
 log = { version = "0.4", features = [
     "max_level_debug",
     "release_max_level_info",
 ] }
-esp-alloc = { version = "0.7.0" }
+esp-alloc = { version = "0.8.0" }
 embedded-io = "0.6.1"
 
 embedded-io-async = "0.6.1"
@@ -42,7 +42,7 @@ embassy-net = { version = "0.7.0", features = [
     "medium-ethernet",
 ] }
 
-esp-wifi = { version = "0.13.0", features = ["esp32s3", "wifi", "log"] }
+esp-wifi = { version = "0.14.0", features = ["esp32s3", "wifi", "log-04"] }
 heapless = { version = "0.8.0", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
     "medium-ethernet",
@@ -53,7 +53,7 @@ smoltcp = { version = "0.12.0", default-features = false, features = [
 ] }
 embassy-executor = { version = "0.7.0", features = ["task-arena-size-65536"] }
 embassy-time = { version = "0.4.0", features = ["generic-queue-8"] }
-esp-hal-embassy = { version = "0.7.0", features = ["esp32s3"] }
+esp-hal-embassy = { version = "0.8.0", features = ["esp32s3"] }
 static_cell = { version = "2.1.0", features = ["nightly"] }
 critical-section = "1.2.0"
 
@@ -64,7 +64,7 @@ serde = { version = "1.0", default-features = false, features = [
 ] }
 serde-json-core = { version = "0.6.0" }
 embedded-storage = "0.3.1"
-esp-storage = { version = "0.5.0", features = ["esp32s3"] }
+esp-storage = { version = "0.6.0", features = ["esp32s3"] }
 thiserror-no-std = "2.0.2"
 fugit = "0.3.7"
 
@@ -79,7 +79,7 @@ usbd-hid = "0.8.2"
 cfg-if = "1.0.0"
 const-str = "0.6.2"
 
-embassy-sync = "0.6.2"
+embassy-sync = "0.7.0"
 smart-leds-trait = { version = "0.3.0", optional = true }
 smart-leds = { version = "0.4.0", optional = true }
 async-debounce = { version = "0.2.0", optional = true }

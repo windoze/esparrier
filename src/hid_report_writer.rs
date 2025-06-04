@@ -14,11 +14,7 @@ use embassy_usb::{
     class::hid::HidWriter,
     msos::{self, windows_version},
 };
-use esp_hal::{
-    gpio::GpioPin,
-    otg_fs::{asynch::Driver, Usb},
-    peripherals::USB0,
-};
+use esp_hal::otg_fs::{asynch::Driver, Usb};
 use log::{debug, info, warn};
 
 use crate::{constants::DEVICE_INTERFACE_GUIDS, mk_static, AppConfig, SynergyHid};
@@ -170,14 +166,8 @@ pub async fn send_hid_report(report: HidReport) {
     HID_REPORT_SENDER.get().await.send(report).await;
 }
 
-pub fn start_hid_task(spawner: Spawner) {
+pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
     let app_config = AppConfig::get();
-    // Create the driver, from the HAL.
-    let usb = Usb::new(
-        unsafe { USB0::steal() },
-        unsafe { GpioPin::<20>::steal() },
-        unsafe { GpioPin::<19>::steal() },
-    );
 
     let ep_out_buffer = mk_static!([u8; 1024], [0u8; 1024]);
     let config = esp_hal::otg_fs::asynch::Config::default();

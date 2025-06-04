@@ -2,7 +2,7 @@
 //! with RGB LEDs and use the convenience functions of the
 //! [`smart-leds`](https://crates.io/crates/smart-leds) crate.
 //!
-//! This is a simple implementation where every LED is adressed in an
+//! This is a simple implementation where every LED is addressed in an
 //! individual RMT operation. This is working perfectly fine in blocking mode,
 //! but in case this is used in combination with interrupts that might disturb
 //! the sequential sending, an alternative implementation (addressing the LEDs
@@ -23,8 +23,7 @@ use core::{fmt::Debug, slice::IterMut};
 
 use esp_hal::{
     clock::Clocks,
-    gpio::{Level, OutputPin},
-    peripheral::Peripheral,
+    gpio::{interconnect::PeripheralOutput, Level},
     rmt::{Error as RmtError, PulseCode, TxChannel, TxChannelConfig, TxChannelCreator},
 };
 use smart_leds_trait::{SmartLedsWrite, RGB8};
@@ -80,14 +79,13 @@ where
     TX: TxChannel,
 {
     /// Create a new adapter object that drives the pin using the RMT channel.
-    pub fn new<C, O>(
+    pub fn new<C>(
         channel: C,
-        pin: impl Peripheral<P = O> + 'd,
+        pin: impl PeripheralOutput<'d>,
         rmt_buffer: [u32; BUFFER_SIZE],
     ) -> SmartLedsAdapter<TX, BUFFER_SIZE>
     where
-        O: OutputPin + 'd,
-        C: TxChannelCreator<'d, TX, O>,
+        C: TxChannelCreator<'d, TX>,
     {
         let config = TxChannelConfig::default()
             .with_clk_divider(1)
