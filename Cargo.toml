@@ -2,7 +2,7 @@
 name = "esparrier"
 version = "0.5.1"
 edition = "2021"
-rust-version = "1.84"
+rust-version = "1.86"
 authors = ["Chen Xu <windoze@0d0a.com>"]
 description = "Esparrier is an ESP32-S3 based Barrier client."
 homepage = "https://github.com/windoze/esparrier"
