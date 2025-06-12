@@ -14,7 +14,10 @@ use embassy_usb::{
     class::hid::HidWriter,
     msos::{self, windows_version},
 };
-use esp_hal::otg_fs::{asynch::Driver, Usb};
+use esp_hal::{
+    otg_fs::{asynch::Driver, Usb},
+    system,
+};
 use log::{debug, info, warn};
 
 use crate::{constants::DEVICE_INTERFACE_GUIDS, mk_static, AppConfig, SynergyHid};
@@ -80,7 +83,7 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
         };
         // Assuming 3 * polling_interval is enough time for the host to poll the device, but not too short or too long.
         let timeout = Duration::from_millis((self.polling_interval as u64 * 3).clamp(10, 100));
-        with_timeout(timeout, async {
+        if with_timeout(timeout, async {
             self.hid_report_writer
                 .write(data)
                 .await
@@ -90,7 +93,8 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
                 .ok();
         })
         .await
-        .expect(
+        .is_err()
+        {
             // This can happen if the device is writing the report while unplugged.
             // Some board doesn't really support `self_powered` because the VBUS pin
             // in USB-OTG port is not solely powered by the host, or, it has not
@@ -106,8 +110,9 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
             // There is no way we can resume the USB stack, so we just panic here, and
             // the watchdog will reset the board.
             // @see https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/api-reference/peripherals/usb_device.html#self-powered-device
-            "Timeout writing HID report",
-        );
+            warn!("Timeout writing HID report, resetting the system.");
+            system::software_reset()
+        }
     }
 }
 
