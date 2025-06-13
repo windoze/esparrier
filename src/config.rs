@@ -102,6 +102,10 @@ pub struct AppConfig {
     pub product: String<64>,
     #[serde(default = "get_default_serial_number")]
     pub serial_number: String<64>,
+
+    #[cfg(feature = "webusb")]
+    #[serde(default = "get_default_landing_url")]
+    pub landing_url: String<256>,
 }
 
 // Kinda stupid
@@ -145,6 +149,11 @@ fn get_default_serial_number() -> String<64> {
     String::from_str(USB_SERIAL_NUMBER).unwrap()
 }
 
+#[cfg(feature = "webusb")]
+fn get_default_landing_url() -> String<256> {
+    String::from_str(LANDING_URL).unwrap()
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
@@ -166,6 +175,8 @@ impl Default for AppConfig {
             manufacturer: String::from_str(USB_MANUFACTURER).unwrap(),
             product: String::from_str(USB_PRODUCT).unwrap(),
             serial_number: String::from_str(USB_SERIAL_NUMBER).unwrap(),
+            #[cfg(feature = "webusb")]
+            landing_url: String::from_str(LANDING_URL).unwrap(),
         }
     }
 }

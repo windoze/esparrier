@@ -42,7 +42,7 @@ embassy-net = { version = "0.7.0", features = [
     "medium-ethernet",
 ] }
 
-esp-wifi = { version = "0.14.0", features = ["esp32s3", "wifi", "log-04"] }
+esp-wifi = { version = "0.14.1", features = ["esp32s3", "wifi", "log-04"] }
 heapless = { version = "0.8.0", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
     "medium-ethernet",
@@ -53,7 +53,7 @@ smoltcp = { version = "0.12.0", default-features = false, features = [
 ] }
 embassy-executor = { version = "0.7.0", features = ["task-arena-size-65536"] }
 embassy-time = { version = "0.4.0", features = ["generic-queue-8"] }
-esp-hal-embassy = { version = "0.8.0", features = ["esp32s3"] }
+esp-hal-embassy = { version = "0.8.1", features = ["esp32s3"] }
 static_cell = { version = "2.1.0", features = ["nightly"] }
 critical-section = "1.2.0"
 
@@ -76,7 +76,7 @@ embassy-usb = { version = "0.4.0", features = [
 embassy-usb-driver = "0.1.0"
 usbd-hid = "0.8.2"
 
-cfg-if = "1.0.0"
+cfg-if = "1.0.1"
 const-str = "0.6.2"
 
 embassy-sync = "0.7.0"
@@ -93,7 +93,7 @@ tinygif = { version = "0.0.4", optional = true }
 
 
 [features]
-default = ["usb"]
+default = ["webusb"]
 clipboard = ["async-debounce", "embedded-hal-async"]
 usb = []
 indicator = []
@@ -107,6 +107,7 @@ graphics = [
     "display-interface-spi",
     "tinygif",
 ]
+webusb = ["usb"]
 
 # Features for the ESP32-S3 boards
 generic = []

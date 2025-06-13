@@ -86,6 +86,7 @@
     "usbd",
     "Vbus",
     "wakeup",
+    "webusb",
     "WINUSB",
     "XIAO",
     "xtensa"

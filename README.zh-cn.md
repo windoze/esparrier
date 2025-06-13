@@ -52,6 +52,8 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 **新的配置工具**[esparrier-config](https://github.com/windoze/esparrier-config)现已推出，您可以使用它来更新配置，而无需重新编译和烧录固件。
 
+您也可以**使用浏览器来更新配置**。只需在支持WebUSB功能的浏览器比如 Chrome 或 Edge 中打开 [Esparrier配置工具](https://esparrier.0d0a.com) 页面，连接到开发板，然后按照说明操作即可。
+
 以下是原有的手动更新配置的方法，该方法依然有效：
 
 首先，您需要安装 `esptool.py`，可以使用 `pip install esptool` 安装。有关更多信息，请参阅 [官方文档](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html)。

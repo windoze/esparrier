@@ -246,6 +246,27 @@ pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
     drop(function);
     spawner.must_spawn(crate::control::control_task(read_ep, write_ep));
 
+    #[cfg(feature = "webusb")]
+    {
+        // Configure the WebUSB capability.
+        // This is a W3C standard that allows a web page to communicate with USB devices
+        let webusb_state = mk_static!(
+            embassy_usb::class::web_usb::State<'static>,
+            embassy_usb::class::web_usb::State::new()
+        );
+        let webusb_config = mk_static!(
+            embassy_usb::class::web_usb::Config<'static>,
+            embassy_usb::class::web_usb::Config {
+                max_packet_size: 64,
+                vendor_code: 1,
+                // If defined, shows a landing page which the device manufacturer would like the user to visit in order to control their device. Suggest the user to navigate to this URL when the device is connected.
+                landing_url: Some(embassy_usb::class::web_usb::Url::new(
+                    &app_config.landing_url
+                )),
+            }
+        );
+        embassy_usb::class::web_usb::WebUsb::configure(&mut builder, webusb_state, webusb_config);
+    }
     // // Run the USB device.
     spawner.must_spawn(usb_task(builder));
 

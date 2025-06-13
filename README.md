@@ -52,6 +52,8 @@ The safest option is to get an official development board from Espressif, such a
 
 **A new configuration tool** is available at [esparrier-config](https://github.com/windoze/esparrier-config), you can use it to update the configurations on the board without manually re-flashing. Checkout the repo and follow the instructions to build and run the tool.
 
+**WebUSB is also available**, you can use it to update the configurations on the board via a web browser. You can access it by visiting [Esparrier Configure Tool](https://esparrier.0d0a.com) in a web browser that supports WebUSB, such as Chrome or Edge.
+
 Below is the old way to update configurations, it's still valid but not recommended.
 
 First, you need to install `esptool.py`, which can be installed with `pip install esptool`. Refer to the [official documentation](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html) for more information.
