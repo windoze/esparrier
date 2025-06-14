@@ -212,9 +212,11 @@ async fn write_response(
 ) -> Result<(), Error> {
     let mut data = [0; 64];
     let response_bytes = response.to_bytes(&mut data);
-    write_ep.write(response_bytes).await.inspect_err(|e| {
-        info!("Error writing: {:?}", e);
-    })?;
+    with_timeout(Duration::from_millis(500), write_ep.write(response_bytes))
+        .await
+        .inspect_err(|e| {
+            info!("Error sending config: {:?}", e);
+        })??;
     Ok(())
 }
 
@@ -228,9 +230,9 @@ async fn send_config(write_ep: &mut EpIn) -> Result<(), Error> {
     for i in 0..blocks {
         data.fill(0);
         store.read_block(i * 64, &mut data);
-        write_ep.write(&data).await.inspect_err(|e| {
-            info!("Error writing: {:?}", e);
-        })?;
+        with_timeout(Duration::from_millis(500), write_ep.write(&data))
+            .await
+            .map_err(|_| EndpointError::Disabled)??;
     }
     Ok(())
 }
