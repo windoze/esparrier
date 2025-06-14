@@ -221,33 +221,41 @@ async fn write_response(
 }
 
 async fn send_config(write_ep: &mut EpIn) -> Result<(), Error> {
-    let mut data = [0; 64];
-    let store = ConfigStore::current();
-    info!("Config len: {}", store.len());
-    let blocks = store.len().div_ceil(64);
-    write_response(write_ep, ControlCommandResponse::Config(blocks as u8)).await?;
+    with_timeout(Duration::from_millis(1000), async {
+        let mut data = [0; 64];
+        let store = ConfigStore::current();
+        info!("Config len: {}", store.len());
+        let blocks = store.len().div_ceil(64);
+        write_response(write_ep, ControlCommandResponse::Config(blocks as u8)).await?;
 
-    for i in 0..blocks {
-        data.fill(0);
-        store.read_block(i * 64, &mut data);
-        with_timeout(Duration::from_millis(500), write_ep.write(&data))
-            .await
-            .map_err(|_| EndpointError::Disabled)??;
-    }
-    Ok(())
+        for i in 0..blocks {
+            data.fill(0);
+            store.read_block(i * 64, &mut data);
+            write_ep
+                .write(&data)
+                .await
+                .map_err(|_| EndpointError::Disabled)?;
+        }
+        Result::<(), Error>::Ok(())
+    })
+    .await?
 }
 
 async fn receive_config(read_ep: &mut EpOut, blocks: usize) -> Result<ConfigStore, Error> {
-    let mut store = ConfigStore::new();
-    let mut data = [0; 64];
-    let mut offset = 0;
-    for _ in 0..blocks {
-        data.fill(0);
-        let block_len = with_timeout(Duration::from_millis(500), read_ep.read(&mut data))
-            .await
-            .map_err(|_| EndpointError::Disabled)??;
-        store.write_block(offset, &data);
-        offset += block_len;
-    }
-    Ok(store)
+    with_timeout(Duration::from_millis(1000), async {
+        let mut store = ConfigStore::new();
+        let mut data = [0; 64];
+        let mut offset = 0;
+        for _ in 0..blocks {
+            data.fill(0);
+            let block_len = read_ep
+                .read(&mut data)
+                .await
+                .map_err(|_| EndpointError::Disabled)?;
+            store.write_block(offset, &data);
+            offset += block_len;
+        }
+        Result::<ConfigStore, Error>::Ok(store)
+    })
+    .await?
 }
