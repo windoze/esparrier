@@ -260,13 +260,18 @@ pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
                 max_packet_size: 64,
                 vendor_code: 1,
                 // If defined, shows a landing page which the device manufacturer would like the user to visit in order to control their device. Suggest the user to navigate to this URL when the device is connected.
-                landing_url: Some(embassy_usb::class::web_usb::Url::new(
-                    &app_config.landing_url
-                )),
+                landing_url: if app_config.landing_url.is_empty() {
+                    None
+                } else {
+                    Some(embassy_usb::class::web_usb::Url::new(
+                        &app_config.landing_url,
+                    ))
+                },
             }
         );
         embassy_usb::class::web_usb::WebUsb::configure(&mut builder, webusb_state, webusb_config);
     }
+
     // // Run the USB device.
     spawner.must_spawn(usb_task(builder));
 
