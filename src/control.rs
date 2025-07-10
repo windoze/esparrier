@@ -78,22 +78,8 @@ impl ControlCommandResponse {
         match &self {
             Self::State(state) => {
                 bytes[0] = b's';
-                bytes[1] = state.version_major;
-                bytes[2] = state.version_minor;
-                bytes[3] = state.version_patch;
-                bytes[4] = state.feature_flags;
-                let octets = state
-                    .ip_address
-                    .map_or([0, 0, 0, 0], |ip| ip.address().octets());
-                bytes[5] = octets[0];
-                bytes[6] = octets[1];
-                bytes[7] = octets[2];
-                bytes[8] = octets[3];
-                bytes[9] = state.ip_address.map_or(0, |ip| ip.prefix_len());
-                bytes[10] = state.server_connected as u8;
-                bytes[11] = state.active as u8;
-                bytes[12] = state.keep_awake as u8;
-                &bytes[..13]
+                let len = state.to_bytes(&mut bytes[1..]).len();
+                &bytes[..len + 1]
             }
             Self::Config(value) => {
                 bytes[0] = b'r';

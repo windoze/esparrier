@@ -1,6 +1,6 @@
 [package]
 name = "esparrier"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 rust-version = "1.86"
 authors = ["Chen Xu <windoze@0d0a.com>"]
@@ -9,7 +9,16 @@ homepage = "https://github.com/windoze/esparrier"
 categories = ["embedded", "hardware-support"]
 repository = "https://github.com/windoze/esparrier.git"
 license = "MIT"
-keywords = ["esparrier", "esp32s3", "usb", "hid", "embedded", "wifi", "barrier"]
+keywords = [
+    "esparrier",
+    "esp32s3",
+    "usb",
+    "hid",
+    "embedded",
+    "wifi",
+    "ethernet",
+    "barrier",
+]
 
 [dependencies]
 esp-bootloader-esp-idf = "0.1.0"

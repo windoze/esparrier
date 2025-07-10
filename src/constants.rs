@@ -7,6 +7,27 @@ pub const VERSION_MINOR: u8 = parse!(VERSION_SEGMENTS[1], u8);
 pub const VERSION_PATCH: u8 = parse!(VERSION_SEGMENTS[2], u8);
 
 cfg_if::cfg_if! {
+    if #[cfg(feature = "m5atoms3-lite")] {
+        pub const MODEL_ID: u8 = 1;
+    } else if #[cfg(feature = "m5atoms3")] {
+        pub const MODEL_ID: u8 = 2;
+    } else if #[cfg(feature = "m5atoms3r")] {
+        pub const MODEL_ID: u8 = 3;
+    } else if #[cfg(feature = "devkitc-1_0")] {
+        pub const MODEL_ID: u8 = 4;
+    } else if #[cfg(feature = "devkitc-1_1")] {
+        pub const MODEL_ID: u8 = 5;
+    } else if #[cfg(feature = "xiao-esp32s3")] {
+        pub const MODEL_ID: u8 = 6;
+    } else if #[cfg(feature = "esp32-s3-eth")] {
+        pub const MODEL_ID: u8 = 7;
+    } else {
+        #[from_env]
+        pub const MODEL_ID: u8 = 255; // Generic ESP32 S3 Device
+    }
+}
+
+cfg_if::cfg_if! {
     if #[cfg(feature = "led")] {
         const INDICATOR_FLAGS: u8 = 0b0000_0001;
     }
