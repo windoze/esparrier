@@ -22,6 +22,16 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 ## 如何构建
 
+* 发布页面为部分ESP32S3开发板提供了预构建固件，若您的开发板在下列列表中可直接使用：
+    * 配备原生USB-OTG端口的通用ESP32S3开发板：不支持状态指示灯功能，剪贴板功能默认禁用
+    * [M5Atom S3 Lite](https://docs.m5stack.com/zh_CN/core/AtomS3%20Lite)与[M5AtomS3U](https://docs.m5stack.com/zh_CN/core/AtomS3U)：启用SmartLED智能灯效与剪贴板功能
+    * [M5Atom S3](https://docs.m5stack.com/zh_CN/core/AtomS3)：启用剪贴板功能，状态指示灯通过内置LCD屏显示表情动画
+    * [M5Atom S3R](https://docs.m5stack.com/zh_CN/core/AtomS3R)：启用剪贴板功能，状态指示灯通过内置LCD屏显示表情动画
+    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/cn/xiao_esp32s3_getting_started/)：使用板载LED作为状态指示灯，因缺少用户按键禁用剪贴板功能
+    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html)：启用SmartLED功能，因缺少用户按键禁用剪贴板功能
+    * (未实测) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.1.html)：启用SmartLED功能，因缺少用户按键禁用剪贴板功能
+    * [Waveshare ESP32-S3-ETH](https://www.waveshare.net/wiki/ESP32-S3-ETH)：启用SmartLED功能，因缺少用户按键禁用剪贴板功能，网络连接采用W5500以太网芯片替代Wi-Fi
+
 1. 安装 Rust 工具链。
 2. 安装 Rust ESP32 工具：
     * `espup` - https://github.com/esp-rs/espup
@@ -129,6 +139,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
     * `merged-esparrier-xiao-esp32s3.bin` - 适用于 [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)。
     * `merged-esparrier-esp32s3-devkitc-1-v1_0.bin` - 适用于 [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
     * `merged-esparrier-esp32s3-devkitc-1-v1_1.bin` - 适用于 [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).
+    * `merged-esparrier-esp32-s3-eth.bin` - 适用于 [Waveshare ESP32-S3-ETH](https://www.waveshare.net/wiki/ESP32-S3-ETH).
 
 4. 按照上一节中的描述准备 `config.json` 文件。
 

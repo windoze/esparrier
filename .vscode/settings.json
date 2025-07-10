@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
   "rust-analyzer.cargo.allTargets": false,
+  "rust-analyzer.cargo.features": ["usb", "wifi"],
   "rust-analyzer.cargo.target": "xtensa-esp32s3-none-elf",
   "cSpell.words": [
     "asynch",
@@ -21,6 +22,7 @@
     "datasheet",
     "DCLP",
     "Debouncer",
+    "defmt",
     "Deskflow",
     "devkitc",
     "dhcpv",
@@ -56,6 +58,7 @@
     "LEDC",
     "libudev",
     "libusb",
+    "linkall",
     "lstimer",
     "mipidsi",
     "mosi",
@@ -86,7 +89,9 @@
     "usbd",
     "Vbus",
     "wakeup",
+    "Waveshare",
     "WINUSB",
+    "wiznet",
     "XIAO",
     "xtensa"
   ],

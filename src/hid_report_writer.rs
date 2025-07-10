@@ -81,8 +81,8 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
             HidReport::Mouse(data) => data,
             HidReport::Consumer(data) => data,
         };
-        // Assuming 3 * polling_interval is enough time for the host to poll the device, but not too short or too long.
-        let timeout = Duration::from_millis((self.polling_interval as u64 * 3).clamp(10, 100));
+        // Assuming 10 * polling_interval is enough time for the host to poll the device, but not too short or too long.
+        let timeout = Duration::from_millis((self.polling_interval as u64 * 10).clamp(100, 200));
         if with_timeout(timeout, async {
             self.hid_report_writer
                 .write(data)

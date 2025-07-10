@@ -13,6 +13,7 @@ pub struct RunningState {
     pub server_connected: bool,
     pub active: bool,
     pub keep_awake: bool,
+    pub model_id: u8,
 }
 
 impl RunningState {
@@ -26,6 +27,7 @@ impl RunningState {
             server_connected: false,
             active: false,
             keep_awake: false,
+            model_id: MODEL_ID,
         }
     }
 
@@ -34,6 +36,29 @@ impl RunningState {
             ip_address,
             ..self.clone()
         }
+    }
+
+    pub fn to_bytes<'a>(&self, bytes: &'a mut [u8]) -> &'a [u8] {
+        bytes[0] = self.version_major;
+        bytes[1] = self.version_minor;
+        bytes[2] = self.version_patch;
+        bytes[3] = self.feature_flags;
+        if let Some(ip) = self.ip_address {
+            let octets = ip.address().octets();
+            bytes[4] = octets[0];
+            bytes[5] = octets[1];
+            bytes[6] = octets[2];
+            bytes[7] = octets[3];
+            bytes[8] = ip.prefix_len();
+        } else {
+            bytes[4..9].fill(0);
+        }
+        bytes[9] = self.server_connected as u8;
+        bytes[10] = self.active as u8;
+        bytes[11] = self.keep_awake as u8;
+        bytes[12] = self.model_id;
+
+        &bytes[..13]
     }
 }
 
