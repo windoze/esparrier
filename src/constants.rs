@@ -46,6 +46,8 @@ cfg_if::cfg_if! {
         pub const SMART_LED_PIN: u8 = 48;
     } else if #[cfg(feature = "devkitc-1_1")] {
         pub const SMART_LED_PIN: u8 = 38;
+    } else if #[cfg(feature = "esp32-s3-eth")] {
+        pub const SMART_LED_PIN: u8 = 21;
     } else if #[cfg(feature = "smartled")] {
         #[from_env]
         pub const SMART_LED_PIN: u8 = 0;
@@ -117,3 +119,27 @@ pub const USB_PRODUCT: &str = "Esparrier KVM";
 pub const USB_SERIAL_NUMBER: &str = "88888888";
 
 pub const DEVICE_INTERFACE_GUIDS: &[&str] = &["{4d36e96c-e325-11ce-bfc1-08002be10318}"];
+
+#[cfg(feature = "ethernet")]
+#[from_env]
+pub const W5500_MISO_PIN: u8 = 12;
+
+#[cfg(feature = "ethernet")]
+#[from_env]
+pub const W5500_MOSI_PIN: u8 = 11;
+
+#[cfg(feature = "ethernet")]
+#[from_env]
+pub const W5500_SCK_PIN: u8 = 13;
+
+#[cfg(feature = "ethernet")]
+#[from_env]
+pub const W5500_CS_PIN: u8 = 14;
+
+#[cfg(feature = "ethernet")]
+#[from_env]
+pub const W5500_INT_PIN: u8 = 10;
+
+#[cfg(feature = "ethernet")]
+#[from_env]
+pub const W5500_RESET_PIN: u8 = 9;

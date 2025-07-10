@@ -22,6 +22,16 @@ The safest option is to get an official development board from Espressif, such a
 
 ## How to build
 
+* The release page provides pre-built binaries for some ESP32S3 boards, you can use them directly if your board is listed.
+    * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, and the clipboard feature is disabled as well.
+    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) and [M5AtomS3U](https://docs.m5stack.com/en/core/AtomS3U), the SmartLED feature and the clipboard feature are enabled.
+    * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
+    * [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
+    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, and the clipboard feature is disabled due to the lack of a user button.
+    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
+    * (Untested) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
+    * [Waveshare ESP32-S3-ETH](https://www.waveshare.com/wiki/ESP32-S3-ETH), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button, and the W5500 Ethernet chip is used for the network connection instead of Wi-Fi.
+
 1. Install Rust toolchain.
 2. Install Rust ESP32 tools:
     * `espup` - https://github.com/esp-rs/espup
@@ -83,15 +93,6 @@ The program cannot "copy" content to the clipboard.
 NOTE: When you copied a large amount of text or big image from other screen then moved into the screen connected to the board, the board may stuck for a while, this is because the board is trying to discard the clipboard content. Even it will not parse and hold the whole content, still it needs to receive the whole content from the Barrier/Deskflow server as there is no way to skip a chunk in the middle of a TCP stream without actually reading it. The server sends the content synchronously so the keyboard and mouse will be completely unresponsive until the content has been fully transferred. Due to the low WiFi bandwidth of the ESP32-S3, the transferred could take several seconds or even minutes. [The Deskflow has a `clipboardSharingSize = N` option](https://github.com/deskflow/deskflow/wiki/Text-Config#list-of-options) which can limit the clipboard size to be shared, but this option is unavailable in Barrier.
 
 ## Build for other ESP32S3 boards
-
-* The release page provides pre-built binaries for some ESP32S3 boards, you can use them directly if your board is listed.
-    * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, and the clipboard feature is disabled as well.
-    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) and [M5AtomS3U](https://docs.m5stack.com/en/core/AtomS3U), the SmartLED feature and the clipboard feature are enabled.
-    * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
-    * [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
-    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, and the clipboard feature is disabled due to the lack of a user button.
-    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
-    * (Untested) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
 
 * It's recommended to erase the flash before the first time flashing the binary to the board, you can do this with `esptool.py` or `cargo-espflash`:
     ```bash
