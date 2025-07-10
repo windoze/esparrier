@@ -139,6 +139,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
     * `merged-esparrier-xiao-esp32s3.bin` - For [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/).
     * `merged-esparrier-esp32s3-devkitc-1-v1_0.bin` - For [ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html).
     * `merged-esparrier-esp32s3-devkitc-1-v1_1.bin` - For [ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html).
+    * `merged-esparrier-esp32-s3-eth.bin` - For [Waveshare ESP32-S3-ETH](https://www.waveshare.com/wiki/ESP32-S3-ETH).
 
 4. Prepare the `config.json` file as described in the previous section.
 
