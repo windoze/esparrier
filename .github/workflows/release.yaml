@@ -29,6 +29,7 @@ jobs:
             "xiao-esp32s3",
             "devkitc-1_0",
             "devkitc-1_1",
+            "esp32-s3-eth",
           ]
     steps:
       - name: Checkout repository
