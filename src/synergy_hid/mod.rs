@@ -10,7 +10,7 @@ use descriptors::COMPOSITE_REPORT_DESCRIPTOR;
 pub(super) use hid::KeyboardReport;
 pub(super) use hid::*;
 pub use keycodes::modifier_mask_to_synergy;
-pub(crate) use keycodes::{synergy_mouse_button, synergy_to_hid, KeyCode};
+pub(crate) use keycodes::{KeyCode, synergy_mouse_button, synergy_to_hid};
 
 use log::{debug, warn};
 
@@ -218,8 +218,8 @@ impl SynergyHid {
 #[cfg(test)]
 mod test {
     use crate::{
-        keycodes::{HID_KEY_A, HID_KEY_B},
         ReportType,
+        keycodes::{HID_KEY_A, HID_KEY_B},
     };
 
     #[test]
