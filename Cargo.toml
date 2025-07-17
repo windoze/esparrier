@@ -122,7 +122,6 @@ graphics = [
     "mipidsi",
     "display-interface-spi",
     "tinygif",
-    "embedded-hal-bus",
 ]
 wifi = ["esp-wifi"]
 ethernet = ["embassy-net-wiznet", "embedded-hal-1", "embedded-hal-bus"]
@@ -135,7 +134,7 @@ m5atoms3r = ["graphics", "clipboard", "wifi"]
 xiao-esp32s3 = ["led", "wifi"]
 devkitc-1_0 = ["smartled", "wifi"]
 devkitc-1_1 = ["smartled", "wifi"]
-esp32-s3-eth = ["smartled", "ethernet"]
+esp32-s3-eth = ["smartled", "embedded-hal-bus", "ethernet"]
 
 [profile.dev]
 # Rust debug is too slow.
