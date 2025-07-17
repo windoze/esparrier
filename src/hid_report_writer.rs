@@ -75,7 +75,7 @@ impl<'a> UsbHidReportWriter<'a> {
 
 impl HidReportWriter for UsbHidReportWriter<'_> {
     async fn write_report(&mut self, report: HidReport) {
-        debug!("Sending report: {:?}", report);
+        debug!("Sending report: {report:?}");
         let data: &[u8] = match &report {
             HidReport::Keyboard(data) => data,
             HidReport::Mouse(data) => data,
@@ -88,7 +88,7 @@ impl HidReportWriter for UsbHidReportWriter<'_> {
                 .write(data)
                 .await
                 .inspect_err(|e| {
-                    warn!("Error writing HID report: {:?}", e);
+                    warn!("Error writing HID report: {e:?}");
                 })
                 .ok();
         })
@@ -150,7 +150,7 @@ impl embassy_usb::Handler for MyDeviceHandler {
 
     fn addressed(&mut self, addr: u8) {
         self.configured.store(false, Ordering::Relaxed);
-        info!("USB address set to: {}", addr);
+        info!("USB address set to: {addr}");
     }
 
     fn configured(&mut self, configured: bool) {

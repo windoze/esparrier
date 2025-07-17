@@ -96,21 +96,18 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                 let seq_num = chunk.read_u32().await?;
                 let mark = chunk.read_u8().await?;
                 limit -= 6;
-                debug!(
-                    "Clipboard id: {}, seq: {}, mark: {}, payload size: {}",
-                    id, seq_num, mark, limit
-                );
+                debug!("Clipboard id: {id}, seq: {seq_num}, mark: {mark}, payload size: {limit}");
 
                 // mark 1 is the total length string in ASCII
                 // mark 2 is the actual data and is split into chunks
                 // mark 3 is an empty chunk
-                debug!("Current Clipboard stage: {:?}", clipboard_stage);
+                debug!("Current Clipboard stage: {clipboard_stage:?}");
                 *clipboard_stage = match mark {
                     1 => match clipboard_stage {
                         ClipboardStage::None => ClipboardStage::Mark1,
                         ClipboardStage::Mark3 => ClipboardStage::Mark1,
                         _ => {
-                            warn!("Unexpected clipboard stage: {:?}", clipboard_stage);
+                            warn!("Unexpected clipboard stage: {clipboard_stage:?}");
                             ClipboardStage::None
                         }
                     },
@@ -119,19 +116,19 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                         ClipboardStage::Mark1 => ClipboardStage::Mark2(0),
                         ClipboardStage::Mark2(idx) => ClipboardStage::Mark2(*idx + 1),
                         _ => {
-                            warn!("Unexpected clipboard stage: {:?}", clipboard_stage);
+                            warn!("Unexpected clipboard stage: {clipboard_stage:?}");
                             ClipboardStage::None
                         }
                     },
                     3 => match clipboard_stage {
                         ClipboardStage::Mark2(_) => ClipboardStage::Mark3,
                         _ => {
-                            warn!("Unexpected clipboard stage: {:?}", clipboard_stage);
+                            warn!("Unexpected clipboard stage: {clipboard_stage:?}");
                             ClipboardStage::None
                         }
                     },
                     _ => {
-                        warn!("Unexpected clipboard mark: {}", mark);
+                        warn!("Unexpected clipboard mark: {mark}");
                         ClipboardStage::None
                     }
                 };
@@ -222,7 +219,7 @@ impl<S: PacketReader + PacketWriter> PacketStream<S> {
                     limit -= 4;
                     let value = chunk.read_u32().await?;
                     limit -= 4;
-                    debug!("Option: {:?}, value: {}", buf, value);
+                    debug!("Option: {buf:?}, value: {value}");
                 }
                 Packet::ClientNoOp
             }

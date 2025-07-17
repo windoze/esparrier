@@ -32,7 +32,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
 
-    debug!("Connecting to {}", endpoint);
+    debug!("Connecting to {endpoint}");
     let mut stream = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
     stream.set_keep_alive(Some(Duration::from_secs(1)));
     stream.set_timeout(Some(Duration::from_secs(3)));
@@ -40,7 +40,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
     stream
         .connect(endpoint)
         .await
-        .inspect_err(|e| error!("Failed to connect: {:?}", e))
+        .inspect_err(|e| error!("Failed to connect: {e:?}"))
         .map_err(|_| BarrierError::Disconnected)?;
     debug!("Connected");
 
@@ -55,7 +55,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
     }
     let major = stream.read_u16().await?;
     let minor = stream.read_u16().await?;
-    debug!("Got hello {}:{}", major, minor);
+    debug!("Got hello {major}:{minor}");
 
     stream
         .write_u32("Barrier".len() as u32 + 2 + 2 + 4 + device_name.len() as u32)
@@ -92,7 +92,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
                 }
             }
             Ok(Err(e)) => {
-                error!("Error: {:?}", e);
+                error!("Error: {e:?}");
                 break;
             }
             Ok(Ok(packet)) => {
@@ -175,14 +175,11 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         actor.leave().await?;
                     }
                     Packet::GrabClipboard { id, seq_num } => {
-                        debug!("Grab clipboard: id:{}, seq_num:{}", id, seq_num);
+                        debug!("Grab clipboard: id:{id}, seq_num:{seq_num}");
                     }
                     #[cfg(feature = "clipboard")]
                     Packet::SetClipboard { id, seq_num, data } => {
-                        debug!(
-                            "Set clipboard: id:{}, seq_num:{}, data:{:?}",
-                            id, seq_num, data
-                        );
+                        debug!("Set clipboard: id:{id}, seq_num:{seq_num}, data:{data:?}");
                         if let Some(data) = data {
                             actor.set_clipboard(data).await?;
                         }
@@ -210,7 +207,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         break;
                     }
                     Packet::IncompatibleVersion { major, minor } => {
-                        error!("Incompatible version: {}:{}", major, minor);
+                        error!("Incompatible version: {major}:{minor}");
                         break;
                     }
                     Packet::Unknown(cmd) => {

@@ -113,7 +113,7 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
         let mut new_config = None;
         while let Ok(n) = read_ep.read(&mut data).await {
             let cmd = ControlCommand::from_bytes(&data[0..n]);
-            info!("Got command: {:?}", cmd);
+            info!("Got command: {cmd:?}");
             match cmd {
                 Some(ControlCommand::GetState) => {
                     write_response(
@@ -160,7 +160,7 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                             esp_hal::system::software_reset();
                         }
                         Err(e) => {
-                            warn!("Error committing config: {:?}", e);
+                            warn!("Error committing config: {e:?}");
                             write_response(&mut write_ep, ControlCommandResponse::Error(e.into()))
                                 .await
                                 .ok();
@@ -201,7 +201,7 @@ async fn write_response(
     with_timeout(Duration::from_millis(500), write_ep.write(response_bytes))
         .await
         .inspect_err(|e| {
-            info!("Error sending config: {:?}", e);
+            info!("Error sending config: {e:?}");
         })??;
     Ok(())
 }

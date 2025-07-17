@@ -9,8 +9,8 @@ use esp_hal::{
     },
     peripherals::{LEDC, SPI3},
     spi::{
-        master::{Config, Spi},
-        AnySpi, Mode,
+        master::{AnySpi, Config, Spi},
+        Mode,
     },
     time::Rate,
 };

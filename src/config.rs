@@ -190,7 +190,7 @@ impl AppConfig {
         serde_json_core::from_slice(bytes)
             .map(|(c, _)| c)
             .inspect_err(|e| {
-                warn!("Failed to load config, using default, error: {:?}", e);
+                warn!("Failed to load config, using default, error: {e:?}");
                 debug!(
                     "Config content (first 16 bytes): {:?}",
                     &bytes[0..min(16, bytes.len())]

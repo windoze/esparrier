@@ -78,7 +78,7 @@ async fn main(spawner: Spawner) {
     #[cfg(feature = "clipboard")]
     spawner
         .spawn(esparrier::button_task())
-        .inspect_err(|e| error!("Failed to start button task: {:?}", e))
+        .inspect_err(|e| error!("Failed to start button task: {e:?}"))
         .unwrap();
 
     // Setup indicator
@@ -96,12 +96,12 @@ async fn main(spawner: Spawner) {
         let timg0 = TimerGroup::new(peripherals.TIMG0);
         let init = &*mk_static!(
             EspWifiController<'static>,
-            esp_wifi::init(timg0.timer0, rng, peripherals.RADIO_CLK,).unwrap()
+            esp_wifi::init(timg0.timer0, rng).unwrap()
         );
 
         let (mut controller, interfaces) = esp_wifi::wifi::new(init, peripherals.WIFI)
             .inspect_err(|e| {
-                error!("Failed to initialize WiFi: {:?}", e);
+                error!("Failed to initialize WiFi: {e:?}");
             })
             .unwrap();
         // Disable power saving for maximum performance
@@ -173,7 +173,7 @@ async fn main(spawner: Spawner) {
         )
         .await
         .inspect_err(|e| {
-            error!("Failed to initialize W5500: {:?}", e);
+            error!("Failed to initialize W5500: {e:?}");
         })
         .unwrap();
         // Launch ethernet task
@@ -225,10 +225,7 @@ async fn main(spawner: Spawner) {
         )
         .await
         .inspect_err(|e| {
-            warn!(
-                "Disconnected from Barrier, error: {:?}, reconnecting in 5 seconds...",
-                e
-            )
+            warn!("Disconnected from Barrier, error: {e:?}, reconnecting in 5 seconds...")
         })
         .ok();
         Timer::after(Duration::from_millis(5000)).await;
@@ -271,7 +268,7 @@ async fn wifi_task(mut controller: esp_wifi::wifi::WifiController<'static>) {
         match controller.connect_async().await {
             Ok(_) => info!("Wifi connected!"),
             Err(e) => {
-                error!("Failed to connect to wifi, retrying in 5 seconds: {:?}", e);
+                error!("Failed to connect to wifi, retrying in 5 seconds: {e:?}");
                 Timer::after(Duration::from_millis(5000)).await
             }
         }

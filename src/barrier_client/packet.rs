@@ -146,7 +146,7 @@ impl Packet {
                 Ok(())
             }
             _ => {
-                warn!("{:?} not yet implemented", self);
+                warn!("{self:?} not yet implemented");
                 Ok(())
             }
         }

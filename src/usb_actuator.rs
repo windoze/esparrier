@@ -118,10 +118,7 @@ impl Actuator for UsbActuator {
         button: u16,
         count: u16,
     ) -> Result<(), BarrierError> {
-        debug!(
-            "Key repeat on key: {}, mask: {}, button: {}, count: {}",
-            key, mask, button, count
-        );
+        debug!("Key repeat on key: {key}, mask: {mask}, button: {button}, count: {count}");
         Ok(())
     }
 
@@ -156,7 +153,7 @@ impl Actuator for UsbActuator {
     }
 
     async fn enter(&mut self, x: u16, y: u16, mask: u16) -> Result<(), BarrierError> {
-        info!("Entering, x: {}, y: {}, mask: {:#018b}", x, y, mask);
+        info!("Entering, x: {x}, y: {y}, mask: {mask:#018b}");
         // Server sends cursor position on entering, client should move the cursor
         self.set_cursor_position(x, y).await?;
         // Server sends modifier mask on entering, client should press the keys
