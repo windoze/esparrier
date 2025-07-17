@@ -109,7 +109,7 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     .with_mosi(config.mosi);
 
     let cs_output = Output::new(config.cs, Level::High, OutputConfig::default());
-    let spi_device = ExclusiveDevice::new_no_delay(spi, cs_output);
+    let spi_device = ExclusiveDevice::new_no_delay(spi, cs_output).unwrap();
 
     let dc = Output::new(config.dc, Level::Low, OutputConfig::default());
     let buffer = mk_static!([u8; 1024], [0; 1024]);
