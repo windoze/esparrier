@@ -45,7 +45,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install libudev-dev libusb-dev wget unzip
-          wget 'https://github.com/esp-rs/espflash/releases/download/v3.3.0/cargo-espflash-x86_64-unknown-linux-musl.zip'
+          wget 'https://github.com/esp-rs/espflash/releases/download/v4.0.1/cargo-espflash-x86_64-unknown-linux-musl.zip'
           unzip cargo-espflash-x86_64-unknown-linux-musl.zip
           mv cargo-espflash ~/.cargo/bin/
       - name: Enable caching
