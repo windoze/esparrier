@@ -98,9 +98,10 @@ jobs:
           mkdir -p "$dirname"
           cp $(pwd)/*.bin "$dirname"
           tar -czf "$dirname.tar.gz" "$dirname"
-          echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
+          # echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Publish Release
-        uses: softprops/action-gh-release@v1
+        uses: svenstaro/upload-release-action@v2
         with:
-          files: |
-            ${{ env.ASSET }}
+          file: "*.tar.gz"
+          file_glob: true
+          tag: ${{ github.ref }}
