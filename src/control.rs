@@ -1,11 +1,11 @@
-use embassy_time::{with_timeout, Duration, TimeoutError};
+use embassy_time::{Duration, TimeoutError, with_timeout};
 use embassy_usb_driver::{Endpoint, EndpointError, EndpointIn, EndpointOut};
 use esp_hal::otg_fs::asynch::Driver;
 use log::{info, warn};
 
 use crate::{
-    config::ConfigStoreError, get_running_state, running_state::get_running_state_mut, ConfigStore,
-    RunningState,
+    ConfigStore, RunningState, config::ConfigStoreError, get_running_state,
+    running_state::get_running_state_mut,
 };
 
 type EpOut = <Driver<'static> as embassy_usb_driver::Driver<'static>>::EndpointOut;

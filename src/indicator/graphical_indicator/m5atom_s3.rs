@@ -3,22 +3,22 @@ use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     gpio::{AnyPin, Level, Output, OutputConfig},
     ledc::{
+        LSGlobalClkSource, Ledc, LowSpeed,
         channel::{self, ChannelIFace},
         timer::{self, TimerIFace},
-        LSGlobalClkSource, Ledc, LowSpeed,
     },
     peripherals::{LEDC, SPI3},
     spi::{
-        master::{AnySpi, Config, Spi},
         Mode,
+        master::{AnySpi, Config, Spi},
     },
     time::Rate,
 };
 use mipidsi::{
+    Builder,
     interface::SpiInterface,
     models::ST7789,
     options::{ColorInversion, ColorOrder},
-    Builder,
 };
 
 use crate::mk_static;

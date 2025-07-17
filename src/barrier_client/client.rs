@@ -1,13 +1,13 @@
-use embassy_net::{tcp::TcpSocket, IpEndpoint, Stack};
-use embassy_time::{with_timeout, Duration, TimeoutError};
+use embassy_net::{IpEndpoint, Stack, tcp::TcpSocket};
+use embassy_time::{Duration, TimeoutError, with_timeout};
 use embedded_io_async::Write;
 use log::{debug, error, info, warn};
 
 use crate::get_running_state;
 
 use super::{
-    packet::Packet, packet_io::PacketReader, packet_io::PacketWriter, packet_stream::PacketStream,
-    Actuator, BarrierError,
+    Actuator, BarrierError, packet::Packet, packet_io::PacketReader, packet_io::PacketWriter,
+    packet_stream::PacketStream,
 };
 
 #[cfg(feature = "clipboard")]

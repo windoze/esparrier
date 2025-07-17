@@ -1,4 +1,4 @@
-use embassy_time::{with_timeout, Duration};
+use embassy_time::{Duration, with_timeout};
 use embedded_graphics::image::ImageDrawable;
 use tinygif::Gif;
 

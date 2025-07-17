@@ -18,9 +18,9 @@ pub use barrier_client::*;
 #[cfg(feature = "clipboard")]
 pub use clipboard::{button_task, set_clipboard};
 pub use config::{AppConfig, ConfigStore};
-pub use hid_report_writer::{send_hid_report, start_hid_task, HidReport};
+pub use hid_report_writer::{HidReport, send_hid_report, start_hid_task};
 pub use indicator::*;
-pub use running_state::{get_running_state, RunningState};
+pub use running_state::{RunningState, get_running_state};
 pub use synergy_hid::{ReportType, SynergyHid};
 pub use usb_actuator::UsbActuator;
 

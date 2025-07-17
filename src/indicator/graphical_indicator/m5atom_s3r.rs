@@ -5,17 +5,16 @@ use esp_hal::{
     i2c::master::{AnyI2c, Config, I2c},
     peripherals::{I2C1, SPI3},
     spi::{
-        self,
+        self, Mode,
         master::{AnySpi, Spi},
-        Mode,
     },
     time::Rate,
 };
 use mipidsi::{
+    Builder,
     interface::SpiInterface,
     models::ST7789,
     options::{ColorInversion, ColorOrder},
-    Builder,
 };
 
 use crate::mk_static;

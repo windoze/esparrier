@@ -9,18 +9,18 @@ use embassy_sync::{
     channel::{Channel, Receiver, Sender},
     once_lock::OnceLock,
 };
-use embassy_time::{with_timeout, Duration};
+use embassy_time::{Duration, with_timeout};
 use embassy_usb::{
     class::hid::HidWriter,
     msos::{self, windows_version},
 };
 use esp_hal::{
-    otg_fs::{asynch::Driver, Usb},
+    otg_fs::{Usb, asynch::Driver},
     system,
 };
 use log::{debug, info, warn};
 
-use crate::{constants::DEVICE_INTERFACE_GUIDS, mk_static, AppConfig, SynergyHid};
+use crate::{AppConfig, SynergyHid, constants::DEVICE_INTERFACE_GUIDS, mk_static};
 
 type ReportWriter<'a, const N: usize> = HidWriter<'a, Driver<'a>, N>;
 

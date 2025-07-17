@@ -2,14 +2,13 @@ use embassy_time::Duration;
 use esp_hal::{gpio::AnyPin, peripherals::RMT, rmt::Rmt, time::Rate};
 use log::error;
 use smart_leds::{
-    brightness, gamma,
-    hsv::{hsv2rgb, Hsv},
-    SmartLedsWriteAsync,
+    SmartLedsWriteAsync, brightness, gamma,
+    hsv::{Hsv, hsv2rgb},
 };
 
 use crate::{
     constants::*,
-    esp_hal_smartled::{buffer_size_async, SmartLedsAdapterAsync},
+    esp_hal_smartled::{SmartLedsAdapterAsync, buffer_size_async},
 };
 
 use super::{IndicatorReceiver, IndicatorStatus};

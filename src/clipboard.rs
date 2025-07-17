@@ -1,7 +1,7 @@
 use embassy_time::Duration;
 use log::{debug, info};
 
-use crate::{constants::*, send_hid_report, HidReport};
+use crate::{HidReport, constants::*, send_hid_report};
 
 static CLIPBOARD_STORAGE: embassy_sync::mutex::Mutex<
     embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex,

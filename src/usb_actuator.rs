@@ -1,9 +1,9 @@
 use log::{debug, info, warn};
 
 use crate::{
-    send_hid_report, set_indicator_status,
-    synergy_hid::{modifier_mask_to_synergy, ReportType, SynergyHid},
-    Actuator, AppConfig, BarrierError, HidReport, IndicatorStatus,
+    Actuator, AppConfig, BarrierError, HidReport, IndicatorStatus, send_hid_report,
+    set_indicator_status,
+    synergy_hid::{ReportType, SynergyHid, modifier_mask_to_synergy},
 };
 
 pub struct UsbActuator {

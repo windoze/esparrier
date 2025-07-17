@@ -25,8 +25,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    mk_static, set_indicator_status, start_barrier_client, start_hid_task, start_indicator_task,
-    AppConfig, IndicatorStatus, UsbActuator,
+    AppConfig, IndicatorStatus, UsbActuator, mk_static, set_indicator_status, start_barrier_client,
+    start_hid_task, start_indicator_task,
 };
 
 // This creates a default app-descriptor required by the esp-idf bootloader.
@@ -91,7 +91,7 @@ async fn main(spawner: Spawner) {
 
     #[cfg(feature = "wifi")]
     let stack = {
-        use esp_wifi::{config::PowerSaveMode, EspWifiController};
+        use esp_wifi::{EspWifiController, config::PowerSaveMode};
 
         let timg0 = TimerGroup::new(peripherals.TIMG0);
         let init = &*mk_static!(

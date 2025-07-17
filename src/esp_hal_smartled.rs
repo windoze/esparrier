@@ -36,15 +36,15 @@
 use core::{fmt::Debug, slice::IterMut};
 
 use esp_hal::{
+    Async, Blocking,
     clock::Clocks,
-    gpio::{interconnect::PeripheralOutput, Level},
+    gpio::{Level, interconnect::PeripheralOutput},
     rmt::{
         Channel, Error as RmtError, PulseCode, TxChannel, TxChannelAsync, TxChannelConfig,
         TxChannelCreator,
     },
-    Async, Blocking,
 };
-use smart_leds_trait::{SmartLedsWrite, SmartLedsWriteAsync, RGB8};
+use smart_leds_trait::{RGB8, SmartLedsWrite, SmartLedsWriteAsync};
 
 // Required RMT RAM to drive one LED.
 // number of channels (r,g,b -> 3) * pulses per channel 8)
