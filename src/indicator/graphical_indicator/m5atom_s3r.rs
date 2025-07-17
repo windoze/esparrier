@@ -2,10 +2,13 @@ use embedded_graphics::prelude::*;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     gpio::{AnyPin, Level, Output, OutputConfig},
-    i2c::master::{Config, I2c},
-    i2c::AnyI2c,
+    i2c::master::{AnyI2c, Config, I2c},
     peripherals::{I2C1, SPI3},
-    spi::{self, master::Spi, AnySpi, Mode},
+    spi::{
+        self,
+        master::{AnySpi, Spi},
+        Mode,
+    },
     time::Rate,
 };
 use mipidsi::{

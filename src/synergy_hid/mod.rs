@@ -73,14 +73,14 @@ impl SynergyHid {
         button: u16,
         report: &'a mut [u8],
     ) -> (ReportType, &'a [u8]) {
-        debug!("Key down {} {} {}", key, mask, button);
+        debug!("Key down {key} {mask} {button}");
         self.server_buttons[button as usize] = key;
         let hid = synergy_to_hid(key);
         // debug!("Key Down {:#04x} -> Keycode: {:?}", key, hid);
         match hid {
             KeyCode::None => {
                 if key != 0 {
-                    warn!("Keycode {} not found", key);
+                    warn!("Keycode {key} not found");
                 }
                 report[0] = ReportType::Keyboard as u8;
                 report[1..9].copy_from_slice(&self.keyboard_report.clear());
@@ -106,7 +106,7 @@ impl SynergyHid {
         button: u16,
         report: &'a mut [u8],
     ) -> (ReportType, &'a [u8]) {
-        debug!("Key up {} {} {}", key, mask, button);
+        debug!("Key up {key} {mask} {button}");
         let key = self.server_buttons[button as usize];
         let hid = if self.server_buttons[button as usize] != 0 {
             // debug!("Key {key} up");
@@ -123,7 +123,7 @@ impl SynergyHid {
         match hid {
             KeyCode::None => {
                 if key != 0 {
-                    warn!("Keycode {} not found", key);
+                    warn!("Keycode {key} not found");
                 }
                 report[0] = ReportType::Keyboard as u8;
                 report[1..9].copy_from_slice(&self.keyboard_report.clear());

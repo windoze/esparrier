@@ -4,11 +4,13 @@ use log::error;
 use smart_leds::{
     brightness, gamma,
     hsv::{hsv2rgb, Hsv},
-    SmartLedsWrite,
+    SmartLedsWriteAsync,
 };
 
-use crate::constants::*;
-use crate::esp_hal_smartled::SmartLedsAdapter;
+use crate::{
+    constants::*,
+    esp_hal_smartled::{buffer_size_async, SmartLedsAdapterAsync},
+};
 
 use super::{IndicatorReceiver, IndicatorStatus};
 
@@ -47,7 +49,7 @@ async fn wait_for_duration(
 }
 
 async fn do_fade_in_out<const N: usize>(
-    led: &mut SmartLedsAdapter<esp_hal::rmt::Channel<esp_hal::Blocking, 0>, N>,
+    led: &mut SmartLedsAdapterAsync<'_, esp_hal::rmt::ChannelCreator<esp_hal::Async, 0>, N>,
     color: Hsv,
     receiver: IndicatorReceiver,
     min_brightness: u8,
@@ -58,6 +60,10 @@ async fn do_fade_in_out<const N: usize>(
         gamma([hsv2rgb(color); SMART_LED_COUNT].into_iter()),
         min_brightness,
     ))
+    .await
+    .inspect_err(|e| {
+        error!("Error writing to LED: {e:?}");
+    })
     .unwrap();
     let delta = (max_brightness - min_brightness) as usize;
     let step = if delta < step { 1usize } else { delta / step };
@@ -74,8 +80,9 @@ async fn do_fade_in_out<const N: usize>(
                 gamma([hsv2rgb(color); SMART_LED_COUNT].into_iter()),
                 b,
             ))
+            .await
             .inspect_err(|e| {
-                error!("Error writing to LED: {:?}", e);
+                error!("Error writing to LED: {e:?}");
             })
             .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
@@ -85,8 +92,9 @@ async fn do_fade_in_out<const N: usize>(
                 gamma([hsv2rgb(color); SMART_LED_COUNT].into_iter()),
                 b,
             ))
+            .await
             .inspect_err(|e| {
-                error!("Error writing to LED: {:?}", e);
+                error!("Error writing to LED: {e:?}");
             })
             .unwrap();
             wait_for_duration(Duration::from_millis(100), receiver).await?;
@@ -95,7 +103,7 @@ async fn do_fade_in_out<const N: usize>(
 }
 
 async fn fade_in_out<const N: usize>(
-    led: &mut SmartLedsAdapter<esp_hal::rmt::Channel<esp_hal::Blocking, 0>, N>,
+    led: &mut SmartLedsAdapterAsync<'_, esp_hal::rmt::ChannelCreator<esp_hal::Async, 0>, N>,
     color: Hsv,
     receiver: IndicatorReceiver,
     min_brightness: u8,
@@ -129,8 +137,8 @@ impl Default for IndicatorConfig {
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
     let rmt = Rmt::new(config.rmt, Rate::from_mhz(80)).unwrap();
-    let rmt_buffer = [0u32; SMART_LED_COUNT * 24 + 1];
-    let mut led = SmartLedsAdapter::new(rmt.channel0, config.pin, rmt_buffer);
+    let rmt_buffer = [0u32; buffer_size_async(SMART_LED_COUNT)];
+    let mut led = SmartLedsAdapterAsync::new(rmt.into_async().channel0, config.pin, rmt_buffer);
 
     let mut status = IndicatorStatus::WifiConnecting;
 
