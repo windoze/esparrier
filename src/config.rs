@@ -4,7 +4,9 @@ use core::{
 };
 
 use embassy_net::{Config, IpEndpoint, Ipv4Address, Ipv4Cidr, StaticConfigV4};
-use embassy_sync::once_lock::OnceLock;
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex, once_lock::OnceLock, rwlock::RwLock,
+};
 use embedded_storage::{ReadStorage, Storage};
 use esp_storage::FlashStorage;
 use heapless::{String, Vec};
@@ -44,7 +46,7 @@ impl<const N: usize> FromStr for Secret<N> {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(String::from_str(s)?))
+        Ok(Self(String::from_str(s).map_err(|_| ())?))
     }
 }
 
@@ -171,16 +173,25 @@ impl Default for AppConfig {
 }
 
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
+static FLASH_STORAGE: OnceLock<RwLock<CriticalSectionRawMutex, FlashStorage>> = OnceLock::new();
 
 impl AppConfig {
-    pub fn get() -> &'static Self {
-        CONFIG.get_or_init(Self::load)
+    pub async fn init(flash: esp_hal::peripherals::FLASH<'static>) {
+        FLASH_STORAGE.get_or_init(|| RwLock::new(FlashStorage::new(flash)));
+        let config = Self::load().await;
+        CONFIG.init(config).expect("Config already initialized");
+        debug!("Config initialized: {:?}", Self::get());
     }
 
-    fn load() -> Self {
+    pub fn get() -> &'static Self {
+        // CONFIG.get_or_init(Self::load)
+        CONFIG.try_get().expect("Config not initialized")
+    }
+
+    async fn load() -> Self {
         // TODO: Use proper way to read the config
         let mut bytes = [0u8; MAX_CONFIG_SIZE];
-        let mut flash = FlashStorage::new();
+        let mut flash = FLASH_STORAGE.get().await.write().await;
         // Default NVS partition address
         // @see partition_single_app.csv
         let flash_addr = NVS_PARTITION_ADDRESS;
@@ -335,7 +346,7 @@ impl ConfigStore {
         Ok(())
     }
 
-    pub fn commit(&mut self) -> Result<(), ConfigStoreError> {
+    pub async fn commit(&mut self) -> Result<(), ConfigStoreError> {
         self.size = json_range(&self.data).len();
         // Fill the rest with 0
         for i in self.size..self.data.len() {
@@ -343,7 +354,7 @@ impl ConfigStore {
         }
         // Write to flash
         warn!("Writing config to flash...");
-        let mut flash = FlashStorage::new();
+        let mut flash = FLASH_STORAGE.get().await.write().await;
         // Default NVS partition address
         // @see partition_single_app.csv
         let flash_addr = NVS_PARTITION_ADDRESS;

@@ -27,29 +27,32 @@ cfg_if::cfg_if! {
     }
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "led")] {
-        const INDICATOR_FLAGS: u8 = 0b0000_0001;
-    }
-    else if #[cfg(feature = "smartled")] {
-        const INDICATOR_FLAGS: u8 = 0b0000_0010;
-    }
-    else if #[cfg(feature = "graphics")] {
-        const INDICATOR_FLAGS: u8 = 0b0000_0100;
-    }
-    else {
-        const INDICATOR_FLAGS: u8 = 0b0000_0000;
-    }
-}
-cfg_if::cfg_if! {
-    if #[cfg(feature = "clipboard")] {
-        const CLIPBOARD_FLAG: u8 = 0b1000_0000;
-    }
-    else {
-        const CLIPBOARD_FLAG: u8 = 0b0000_0000;
-    }
-}
-pub const FEATURE_FLAGS: u8 = INDICATOR_FLAGS | CLIPBOARD_FLAG;
+const LED_INDICATOR_FLAG: u8 = if cfg!(feature = "led") {
+    0b0000_0001
+} else {
+    0b0000_0000
+};
+
+const SMARTLED_INDICATOR_FLAG: u8 = if cfg!(feature = "smartled") {
+    0b0000_0010
+} else {
+    0b0000_0000
+};
+
+const GRAPHICS_INDICATOR_FLAG: u8 = if cfg!(feature = "graphics") {
+    0b0000_0100
+} else {
+    0b0000_0000
+};
+
+const CLIPBOARD_FLAG: u8 = if cfg!(feature = "graphics") {
+    0b1000_0000
+} else {
+    0b0000_0000
+};
+
+pub const FEATURE_FLAGS: u8 =
+    LED_INDICATOR_FLAG | SMARTLED_INDICATOR_FLAG | GRAPHICS_INDICATOR_FLAG | CLIPBOARD_FLAG;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "xiao-esp32s3")] {

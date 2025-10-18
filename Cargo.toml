@@ -1,8 +1,8 @@
 [package]
 name = "esparrier"
-version = "0.6.2"
+version = "0.6.3"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.89"
 authors = ["Chen Xu <windoze@0d0a.com>"]
 description = "Esparrier is an ESP32-S3 based Barrier client."
 homepage = "https://github.com/windoze/esparrier"
@@ -21,16 +21,15 @@ keywords = [
 ]
 
 [dependencies]
-esp-bootloader-esp-idf = { version = "0.2.0", features = ["esp32s3"] }
-esp-backtrace = { version = "0.17.0", features = [
+esp-bootloader-esp-idf = { version = "0.3.0", features = ["esp32s3"] }
+esp-backtrace = { version = "0.18.0", features = [
     "esp32s3",
-    "exception-handler",
     "panic-handler",
     "println",
 ] }
 
-esp-hal = { version = "1.0.0-rc.0", features = ["esp32s3", "unstable"] }
-esp-println = { version = "0.15.0", default-features = false, features = [
+esp-hal = { version = "1.0.0-rc.1", features = ["esp32s3", "unstable"] }
+esp-println = { version = "0.16.0", default-features = false, features = [
     "colors",
     "critical-section",
     "esp32s3",
@@ -41,23 +40,21 @@ log = { version = "0.4", features = [
     "max_level_debug",
     "release_max_level_info",
 ] }
-esp-alloc = { version = "0.8.0" }
-embedded-io = "0.6.1"
-
+esp-alloc = { version = "0.9.0" }
+embedded-io = "0.7.1"
 embedded-io-async = "0.6.1"
-embassy-net = { version = "0.7.0", features = [
+embassy-net = { version = "0.7.1", features = [
     "tcp",
     "udp",
     "dhcpv4",
     "medium-ethernet",
 ] }
-
-esp-wifi = { version = "0.15.0", features = [
+esp-radio = { version = "0.16.0", features = [
     "esp32s3",
     "wifi",
     "log-04",
 ], optional = true }
-heapless = { version = "0.8.0", default-features = false, features = ["serde"] }
+heapless = { version = "0.9.1", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
     "medium-ethernet",
     "proto-dhcpv4",
@@ -65,9 +62,14 @@ smoltcp = { version = "0.12.0", default-features = false, features = [
     "socket-dhcpv4",
     "socket-tcp",
 ] }
-embassy-executor = { version = "0.7.0", features = ["task-arena-size-65536"] }
-embassy-time = { version = "0.4.0", features = ["generic-queue-8"] }
-esp-hal-embassy = { version = "0.9.0", features = ["esp32s3"] }
+embassy-executor = { version = "0.9.1" }
+embassy-time = { version = "0.5.0", features = ["generic-queue-8"] }
+esp-rtos = { version = "0.1.1", features = [
+    "esp32s3",
+    "embassy",
+    "esp-radio",
+    "log-04",
+] }
 static_cell = { version = "2.1.1", features = ["nightly"] }
 critical-section = "1.2.0"
 
@@ -78,25 +80,25 @@ serde = { version = "1.0", default-features = false, features = [
 ] }
 serde-json-core = { version = "0.6.0" }
 embedded-storage = "0.3.1"
-esp-storage = { version = "0.7.0", features = ["esp32s3"] }
+esp-storage = { version = "0.8.0", features = ["esp32s3"] }
 thiserror-no-std = "2.0.2"
 fugit = "0.3.7"
 
-embassy-futures = "0.1.1"
-embassy-usb = { version = "0.4.0", features = [
+embassy-futures = "0.1.2"
+embassy-usb = { version = "0.5.1", features = [
     "max-handler-count-4",
     "max-interface-count-4",
 ] }
-embassy-usb-driver = "0.1.0"
+embassy-usb-driver = "0.2.0"
 usbd-hid = "0.8.2"
 
-cfg-if = "1.0.1"
-const-str = "0.6.3"
+cfg-if = "1.0.4"
+const-str = "0.7.0"
 
-embassy-sync = "0.7.0"
-smart-leds-trait = { version = "0.3.0", optional = true }
+embassy-sync = "0.7.2"
+smart-leds-trait = { version = "0.3.2", optional = true }
 smart-leds = { version = "0.4.0", optional = true }
-async-debounce = { version = "0.2.0", optional = true }
+async-debounce = { version = "0.3.0", optional = true }
 embedded-hal-async = { version = "1.0.0", optional = true }
 
 embedded-hal-bus = { version = "0.3.0", features = ["async"], optional = true }
@@ -104,8 +106,9 @@ embedded-graphics = { version = "0.8.1", optional = true }
 mipidsi = { version = "0.9.0", optional = true }
 display-interface-spi = { version = "0.5.0", optional = true }
 tinygif = { version = "0.0.4", optional = true }
+rgb = "0.8.52"
 
-embassy-net-wiznet = { version = "0.2.0", optional = true }
+embassy-net-wiznet = { version = "0.2.1", optional = true }
 embedded-hal-1 = { package = "embedded-hal", version = "1.0", optional = true }
 
 [features]
@@ -123,7 +126,7 @@ graphics = [
     "display-interface-spi",
     "tinygif",
 ]
-wifi = ["esp-wifi"]
+wifi = ["esp-radio"]
 ethernet = ["embassy-net-wiznet", "embedded-hal-1", "embedded-hal-bus"]
 
 # Features for the ESP32-S3 boards

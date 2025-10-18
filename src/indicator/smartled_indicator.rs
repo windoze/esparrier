@@ -1,5 +1,10 @@
 use embassy_time::Duration;
-use esp_hal::{gpio::AnyPin, peripherals::RMT, rmt::Rmt, time::Rate};
+use esp_hal::{
+    gpio::AnyPin,
+    peripherals::RMT,
+    rmt::{PulseCode, Rmt},
+    time::Rate,
+};
 use log::error;
 use smart_leds::{
     SmartLedsWriteAsync, brightness, gamma,
@@ -47,8 +52,8 @@ async fn wait_for_duration(
     }
 }
 
-async fn do_fade_in_out<const N: usize>(
-    led: &mut SmartLedsAdapterAsync<'_, esp_hal::rmt::ChannelCreator<esp_hal::Async, 0>, N>,
+async fn do_fade_in_out<'a, const N: usize>(
+    led: &mut SmartLedsAdapterAsync<'a, N>,
     color: Hsv,
     receiver: IndicatorReceiver,
     min_brightness: u8,
@@ -101,8 +106,8 @@ async fn do_fade_in_out<const N: usize>(
     }
 }
 
-async fn fade_in_out<const N: usize>(
-    led: &mut SmartLedsAdapterAsync<'_, esp_hal::rmt::ChannelCreator<esp_hal::Async, 0>, N>,
+async fn fade_in_out<'a, const N: usize>(
+    led: &mut SmartLedsAdapterAsync<'a, N>,
     color: Hsv,
     receiver: IndicatorReceiver,
     min_brightness: u8,
@@ -136,7 +141,7 @@ impl Default for IndicatorConfig {
 
 pub async fn start_indicator(config: IndicatorConfig, receiver: IndicatorReceiver) {
     let rmt = Rmt::new(config.rmt, Rate::from_mhz(80)).unwrap();
-    let rmt_buffer = [0u32; buffer_size_async(SMART_LED_COUNT)];
+    let rmt_buffer = [PulseCode(0); buffer_size_async(SMART_LED_COUNT)];
     let mut led = SmartLedsAdapterAsync::new(rmt.into_async().channel0, config.pin, rmt_buffer);
 
     let mut status = IndicatorStatus::WifiConnecting;

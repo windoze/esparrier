@@ -12,13 +12,10 @@ use esp_hal::{
     otg_fs::Usb,
     peripherals::TIMG1,
     rng::Rng,
-    timer::{
-        systimer::SystemTimer,
-        timg::{MwdtStage, MwdtStageAction, TimerGroup, Wdt},
-    },
+    timer::timg::{MwdtStage, MwdtStageAction, TimerGroup, Wdt},
 };
-use esp_hal_embassy::main;
 use esp_println::println;
+use esp_rtos::main;
 use log::{debug, error, info, warn};
 
 #[allow(unused_imports)]
@@ -49,16 +46,18 @@ async fn main(spawner: Spawner) {
         env!("CARGO_PKG_VERSION")
     );
 
-    // Load the configuration
-    println!("Config: {:?}", AppConfig::get());
-
     let peripherals = esp_hal::init(esp_hal::Config::default().with_cpu_clock(CpuClock::max()));
 
     esp_alloc::heap_allocator!(size: 160 * 1024);
 
     // Setup Embassy
-    let systimer = SystemTimer::new(peripherals.SYSTIMER);
-    esp_hal_embassy::init(systimer.alarm0);
+    // let systimer = SystemTimer::new(peripherals.SYSTIMER);
+    let timg0 = TimerGroup::new(peripherals.TIMG0);
+    esp_rtos::start(timg0.timer0);
+
+    // Load the configuration
+    AppConfig::init(peripherals.FLASH).await;
+    println!("Config: {:?}", AppConfig::get());
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let wdt1 = mk_static!(Wdt<TIMG1>, TimerGroup::new(peripherals.TIMG1).wdt);
@@ -86,24 +85,21 @@ async fn main(spawner: Spawner) {
     set_indicator_status(IndicatorStatus::WifiConnecting).await;
 
     // Initialize network
-    let mut rng = Rng::new(peripherals.RNG);
+    let rng = Rng::new();
     let seed: u64 = ((rng.random() as u64) << 32) | (rng.random() as u64);
 
     #[cfg(feature = "wifi")]
     let stack = {
-        use esp_wifi::{EspWifiController, config::PowerSaveMode};
+        use esp_radio::{Controller, wifi::PowerSaveMode};
 
-        let timg0 = TimerGroup::new(peripherals.TIMG0);
-        let init = &*mk_static!(
-            EspWifiController<'static>,
-            esp_wifi::init(timg0.timer0, rng).unwrap()
-        );
+        let esp_radio_ctrl = &*mk_static!(Controller<'static>, esp_radio::init().unwrap());
 
-        let (mut controller, interfaces) = esp_wifi::wifi::new(init, peripherals.WIFI)
-            .inspect_err(|e| {
-                error!("Failed to initialize WiFi: {e:?}");
-            })
-            .unwrap();
+        let (mut controller, interfaces) =
+            esp_radio::wifi::new(esp_radio_ctrl, peripherals.WIFI, Default::default())
+                .inspect_err(|e| {
+                    error!("Failed to initialize WiFi: {e:?}");
+                })
+                .unwrap();
         // Disable power saving for maximum performance
         controller.set_power_saving(PowerSaveMode::None).ok();
 
@@ -242,23 +238,23 @@ async fn watchdog_task(watchdog: &'static mut Wdt<TIMG1<'static>>) {
 
 #[cfg(feature = "wifi")]
 #[embassy_executor::task]
-async fn wifi_task(mut controller: esp_wifi::wifi::WifiController<'static>) {
-    use esp_wifi::wifi::{ClientConfiguration, Configuration, WifiEvent, WifiState};
+async fn wifi_task(mut controller: esp_radio::wifi::WifiController<'static>) {
+    use esp_radio::wifi::{ClientConfig, ModeConfig, WifiEvent, WifiStaState};
 
     debug!("start connection task");
     loop {
-        if esp_wifi::wifi::wifi_state() == WifiState::StaConnected {
+        if esp_radio::wifi::sta_state() == WifiStaState::Connected {
             // wait until we're no longer connected
             controller.wait_for_event(WifiEvent::StaDisconnected).await;
             Timer::after(Duration::from_millis(5000)).await
         }
         if !matches!(controller.is_started(), Ok(true)) {
-            let client_config = Configuration::Client(ClientConfiguration {
-                ssid: AppConfig::get().ssid.as_str().into(),
-                password: AppConfig::get().password.as_ref().into(),
-                ..Default::default()
-            });
-            controller.set_configuration(&client_config).unwrap();
+            let client_config = ModeConfig::Client(
+                ClientConfig::default()
+                    .with_ssid(AppConfig::get().ssid.as_str().into())
+                    .with_password(AppConfig::get().password.as_ref().into()),
+            );
+            controller.set_config(&client_config).unwrap();
             info!("Starting wifi");
             controller.start_async().await.unwrap();
             info!("Wifi started!");
@@ -298,7 +294,7 @@ async fn ethernet_task(
 async fn net_task(
     #[cfg(feature = "wifi")] mut runner: embassy_net::Runner<
         'static,
-        esp_wifi::wifi::WifiDevice<'static>,
+        esp_radio::wifi::WifiDevice<'static>,
     >,
     #[cfg(feature = "ethernet")] mut runner: embassy_net::Runner<
         'static,

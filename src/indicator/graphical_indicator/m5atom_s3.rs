@@ -1,7 +1,7 @@
 use embedded_graphics::prelude::*;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
-    gpio::{AnyPin, Level, Output, OutputConfig},
+    gpio::{self, AnyPin, Level, Output, OutputConfig},
     ledc::{
         LSGlobalClkSource, Ledc, LowSpeed,
         channel::{self, ChannelIFace},
@@ -92,7 +92,7 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
         .configure(channel::config::Config {
             timer: &lstimer0,
             duty_pct: config.max_brightness,
-            pin_config: channel::config::PinConfig::PushPull,
+            drive_mode: gpio::DriveMode::PushPull,
         })
         .unwrap();
 

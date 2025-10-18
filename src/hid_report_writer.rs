@@ -241,8 +241,8 @@ pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
     ));
     let mut interface = function.interface();
     let mut alt = interface.alt_setting(0xFF, 0x0D, 0x0A, None);
-    let read_ep = alt.endpoint_bulk_out(64);
-    let write_ep = alt.endpoint_bulk_in(64);
+    let read_ep = alt.endpoint_bulk_out(None, 64);
+    let write_ep = alt.endpoint_bulk_in(None, 64);
     drop(function);
     spawner.must_spawn(crate::control::control_task(read_ep, write_ep));
 

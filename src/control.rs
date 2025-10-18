@@ -150,7 +150,7 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                     }
                 }
                 Some(ControlCommand::CommitConfig) => match &mut new_config {
-                    Some(config) => match config.commit() {
+                    Some(config) => match config.commit().await {
                         Ok(_) => {
                             write_response(&mut write_ep, ControlCommandResponse::Ok)
                                 .await
