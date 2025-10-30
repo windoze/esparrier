@@ -1038,7 +1038,7 @@ dependencies = [
 
 [[package]]
 name = "esparrier"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "async-debounce",
  "cfg-if",
