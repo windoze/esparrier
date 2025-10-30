@@ -21,15 +21,15 @@ keywords = [
 ]
 
 [dependencies]
-esp-bootloader-esp-idf = { version = "0.3.0", features = ["esp32s3"] }
-esp-backtrace = { version = "0.18.0", features = [
+esp-bootloader-esp-idf = { version = "0.4.0", features = ["esp32s3"] }
+esp-backtrace = { version = "0.18.1", features = [
     "esp32s3",
     "panic-handler",
     "println",
 ] }
 
-esp-hal = { version = "1.0.0-rc.1", features = ["esp32s3", "unstable"] }
-esp-println = { version = "0.16.0", default-features = false, features = [
+esp-hal = { version = "1.0.0", features = ["esp32s3", "unstable"] }
+esp-println = { version = "0.16.1", default-features = false, features = [
     "colors",
     "critical-section",
     "esp32s3",
@@ -49,7 +49,7 @@ embassy-net = { version = "0.7.1", features = [
     "dhcpv4",
     "medium-ethernet",
 ] }
-esp-radio = { version = "0.16.0", features = [
+esp-radio = { version = "0.17.0", features = [
     "esp32s3",
     "wifi",
     "log-04",
@@ -64,7 +64,7 @@ smoltcp = { version = "0.12.0", default-features = false, features = [
 ] }
 embassy-executor = { version = "0.9.1" }
 embassy-time = { version = "0.5.0", features = ["generic-queue-8"] }
-esp-rtos = { version = "0.1.1", features = [
+esp-rtos = { version = "0.2.0", features = [
     "esp32s3",
     "embassy",
     "esp-radio",
@@ -80,7 +80,7 @@ serde = { version = "1.0", default-features = false, features = [
 ] }
 serde-json-core = { version = "0.6.0" }
 embedded-storage = "0.3.1"
-esp-storage = { version = "0.8.0", features = ["esp32s3"] }
+esp-storage = { version = "0.8.1", features = ["esp32s3"] }
 thiserror-no-std = "2.0.2"
 fugit = "0.3.7"
 
