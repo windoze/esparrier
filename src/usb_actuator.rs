@@ -6,6 +6,9 @@ use crate::{
     synergy_hid::{ReportType, SynergyHid, modifier_mask_to_synergy},
 };
 
+#[cfg(feature = "ble")]
+use crate::ble::publish_report as publish_ble_report;
+
 pub struct UsbActuator {
     width: u16,
     height: u16,
@@ -37,6 +40,8 @@ impl UsbActuator {
                 send_hid_report(HidReport::Consumer(report.1.try_into().unwrap())).await;
             }
         }
+        #[cfg(feature = "ble")]
+        publish_ble_report(report);
     }
 }
 

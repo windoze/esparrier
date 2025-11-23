@@ -89,10 +89,11 @@ async fn main(spawner: Spawner) {
     let seed: u64 = ((rng.random() as u64) << 32) | (rng.random() as u64);
 
     #[cfg(feature = "wifi")]
-    let stack = {
-        use esp_radio::{Controller, wifi::PowerSaveMode};
+    let esp_radio_ctrl = &*mk_static!(esp_radio::Controller<'static>, esp_radio::init().unwrap());
 
-        let esp_radio_ctrl = &*mk_static!(Controller<'static>, esp_radio::init().unwrap());
+    #[cfg(feature = "wifi")]
+    let stack = {
+        use esp_radio::wifi::PowerSaveMode;
 
         let (mut controller, interfaces) =
             esp_radio::wifi::new(esp_radio_ctrl, peripherals.WIFI, Default::default())
@@ -189,6 +190,12 @@ async fn main(spawner: Spawner) {
 
         stack
     };
+
+    #[cfg(feature = "ble")]
+    {
+        let bluetooth = peripherals.BT;
+        esparrier::start_ble(spawner, esp_radio_ctrl, bluetooth);
+    }
 
     info!("Waiting for net link up...");
     loop {

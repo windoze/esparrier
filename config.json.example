@@ -40,5 +40,7 @@
     // Optional, default value is "Esparrier KVM"
     "product": "Esparrier KVM",
     // Optional, default value is "88888888"
-    "serial_number": "88888888"
+    "serial_number": "88888888",
+    // Optional, overrides the BLE advertising name exposed by the HID service.
+    "ble_device_name": "Esparrier BLE"
 }

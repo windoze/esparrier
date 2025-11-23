@@ -53,6 +53,13 @@ esp-radio = { version = "0.17.0", features = [
     "esp32s3",
     "wifi",
     "log-04",
+    "unstable",
+], optional = true }
+trouble-host = { version = "0.5.0", default-features = false, features = [
+    "default-packet-pool-mtu-255",
+    "peripheral",
+    "gatt",
+    "derive",
 ], optional = true }
 heapless = { version = "0.9.1", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
@@ -90,7 +97,7 @@ embassy-usb = { version = "0.5.1", features = [
     "max-interface-count-4",
 ] }
 embassy-usb-driver = "0.2.0"
-usbd-hid = "0.8.2"
+usbd-hid = "0.9.0"
 
 cfg-if = "1.0.4"
 const-str = "0.7.0"
@@ -125,6 +132,12 @@ graphics = [
     "mipidsi",
     "display-interface-spi",
     "tinygif",
+]
+ble = [
+    "wifi",
+    "trouble-host",
+    "esp-radio/ble",
+    "esp-radio/coex",
 ]
 wifi = ["esp-radio"]
 ethernet = ["embassy-net-wiznet", "embedded-hal-1", "embedded-hal-bus"]

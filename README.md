@@ -48,6 +48,7 @@ The safest option is to get an official development board from Espressif, such a
         * `export SCREEN_NAME="SCREEN_NAME"`
     2. Put your board in the download mode, then build and flash with `cargo run --release`. On M5Atom S3 Lite, you need to hold the reset button until the green LED turns on, then release the button. And you need to press the reset button again after flashing to exit the download mode.
     3. If you skip the first step, the program will use default configurations, and it won't be able to connect to WiFi and Barrier/Deskflow server, you need to [update the configurations](#update-configurations) to make it work.
+    4. (Optional) Enable the experimental BLE HID path by building with `cargo run --release --features ble`. Set `ble_device_name` in the configuration file to control the advertised Bluetooth device name. BLE currently runs alongside Wi-Fi, so keep the Wi-Fi feature enabled.
 
 ## Run
 
@@ -57,6 +58,7 @@ The safest option is to get an official development board from Espressif, such a
 4. When Barrier/Deskflow enters the screen, the LED turns bright green, and when Barrier/Deskflow leaves the screen, the LED turns dim yellow.
 5. The board emulates a standard keyboard and an absolute mouse, it should work in any OS.
 6. USB HID boot protocol is used, so you should be able to use the board as a USB keyboard/mouse in BIOS/EFI or even if the OS doesn't have a driver for it.
+7. When compiled with the `ble` feature, the device also exposes a BLE HID profile that mirrors the Barrier input stream, so you can pair it wirelessly in addition to the USB connection.
 
 ## Update Configurations
 
@@ -68,7 +70,7 @@ First, you need to install `esptool.py`, which can be installed with `pip instal
 
 ### Prepare and Update Configurations
 
-1. Create a JSON file, refer to [config.json.example](config.json.example) for the format.
+1. Create a JSON file, refer to [config.json.example](config.json.example) for the format. Besides the Wi-Fi and Barrier settings you can override `ble_device_name` to change the BLE advertising name when the `ble` feature is enabled.
 2. Put the board into the download mode, then use `esptool.py` to flash the NVS partition.
     ```bash
     # Erase the NVS partition
@@ -213,7 +215,8 @@ If the board stops working after flashing and/or upgrading the program, you may 
 - [ ] Support TLS
 - [ ] NVS encryption
 - [ ] OTA update
-- [ ] BLE HID support, and then support ESP32 and ESP32C3/C6
+- [x] BLE HID support on ESP32-S3 (experimental)
+- [ ] Extend BLE HID support to ESP32 and ESP32C3/C6
 
 ## Licenses and Copyrights
 

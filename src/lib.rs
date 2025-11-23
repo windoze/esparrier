@@ -1,6 +1,8 @@
 #![no_std]
 
 mod barrier_client;
+#[cfg(feature = "ble")]
+mod ble;
 #[cfg(feature = "clipboard")]
 mod clipboard;
 mod config;
@@ -15,6 +17,8 @@ mod usb_actuator;
 
 pub mod constants;
 pub use barrier_client::*;
+#[cfg(feature = "ble")]
+pub use ble::start_ble;
 #[cfg(feature = "clipboard")]
 pub use clipboard::{button_task, set_clipboard};
 pub use config::{AppConfig, ConfigStore};

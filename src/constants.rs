@@ -1,4 +1,4 @@
-use const_env::from_env;
+use const_env::env_item;
 use const_str::{parse, split};
 
 const VERSION_SEGMENTS: [&str; 3] = split!(env!("CARGO_PKG_VERSION"), ".");
@@ -22,7 +22,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "esp32-s3-eth")] {
         pub const MODEL_ID: u8 = 7;
     } else {
-        #[from_env]
+        #[env_item]
         pub const MODEL_ID: u8 = 255; // Generic ESP32 S3 Device
     }
 }
@@ -58,7 +58,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "xiao-esp32s3")] {
         pub const LED_PIN: u8 = 21;
     } else if #[cfg(feature = "led")] {
-        #[from_env]
+        #[env_item]
         pub const LED_PIN: u8 = 0;
     }
 }
@@ -73,13 +73,13 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "esp32-s3-eth")] {
         pub const SMART_LED_PIN: u8 = 21;
     } else if #[cfg(feature = "smartled")] {
-        #[from_env]
+        #[env_item]
         pub const SMART_LED_PIN: u8 = 0;
     }
 }
 
 #[cfg(feature = "smartled")]
-#[from_env]
+#[env_item]
 pub const SMART_LED_COUNT: usize = 1;
 
 cfg_if::cfg_if! {
@@ -90,80 +90,80 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "m5atoms3-lite")] {
         pub const PASTE_BUTTON_PIN: u8 = 41;
     } else if #[cfg(feature = "clipboard")] {
-        #[from_env]
+        #[env_item]
         pub const PASTE_BUTTON_PIN: u8 = 0;
     }
 }
 
 #[cfg(feature = "clipboard")]
-#[from_env]
+#[env_item]
 pub const MAX_CLIPBOARD_SIZE: usize = 1024;
 
 // Default config settings
-#[from_env]
+#[env_item]
 pub const WIFI_SSID: &str = "my-ssid";
-#[from_env]
+#[env_item]
 pub const WIFI_PASSWORD: &str = "my-password";
-#[from_env]
+#[env_item]
 pub const BARRIER_SERVER: &str = "192.168.100.200:24800";
-#[from_env]
+#[env_item]
 pub const SCREEN_NAME: &str = "my-screen";
-#[from_env]
+#[env_item]
 pub const SCREEN_WIDTH: u16 = 1920;
-#[from_env]
+#[env_item]
 pub const SCREEN_HEIGHT: u16 = 1080;
-#[from_env]
+#[env_item]
 pub const JIGGLE_INTERVAL: u16 = 60;
-#[from_env]
+#[env_item]
 pub const POLLING_RATE: u16 = 200;
-#[from_env]
+#[env_item]
 pub const REVERSED_WHEEL: bool = false;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "graphics")] {
         // 30 is too dim for LCD display
-        #[from_env]
+        #[env_item]
         pub const BRIGHTNESS: u8 = 50;
     } else {
         // But is good for SmartLED
-        #[from_env]
+        #[env_item]
         pub const BRIGHTNESS: u8 = 30;
     }
 }
 
-#[from_env]
+#[env_item]
 pub const USB_VID: u16 = 0x0d0a;
-#[from_env]
+#[env_item]
 pub const USB_PID: u16 = 0xc0de;
-#[from_env]
+#[env_item]
 pub const USB_MANUFACTURER: &str = "0d0a.com";
-#[from_env]
+#[env_item]
 pub const USB_PRODUCT: &str = "Esparrier KVM";
-#[from_env]
+#[env_item]
 pub const USB_SERIAL_NUMBER: &str = "88888888";
 
 pub const DEVICE_INTERFACE_GUIDS: &[&str] = &["{4d36e96c-e325-11ce-bfc1-08002be10318}"];
 
 #[cfg(feature = "ethernet")]
-#[from_env]
+#[env_item]
 pub const W5500_MISO_PIN: u8 = 12;
 
 #[cfg(feature = "ethernet")]
-#[from_env]
+#[env_item]
 pub const W5500_MOSI_PIN: u8 = 11;
 
 #[cfg(feature = "ethernet")]
-#[from_env]
+#[env_item]
 pub const W5500_SCK_PIN: u8 = 13;
 
 #[cfg(feature = "ethernet")]
-#[from_env]
+#[env_item]
 pub const W5500_CS_PIN: u8 = 14;
 
 #[cfg(feature = "ethernet")]
-#[from_env]
+#[env_item]
 pub const W5500_INT_PIN: u8 = 10;
 
 #[cfg(feature = "ethernet")]
-#[from_env]
+#[env_item]
 pub const W5500_RESET_PIN: u8 = 9;
