@@ -202,7 +202,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 * USB 远程唤醒可能无法工作，因为USB标准禁止挂起设备消耗过多电流，但此程序需要比标准规定的更多电流来保持 Wi-Fi 连接。我尚未找到在电流 <2.5mA 的情况下保持程序运行的方法。当然，您可以选择带有外部电源（如电池）的开发板，但这似乎有点小题大做。
 * 开发板只有在成功连接到 WiFi 和 Barrier/Deskflow 服务器后才能接受输入，这段延迟可能已经超过了电脑启动时进入 BIOS/EFI 设置的时限，一些主板上带有“始终供电”的USB口也许能避免这个问题，但未经测试，或者您可以使用一个即使主机关闭也能供电的 USB 集线器。
 * 该程序经测试与Windows/Linux/macOS完全兼容，其中键盘功能应该在所有操作系统中正常工作，但鼠标功能可能在某些操作系统中不完全正常，因为鼠标被设置为绝对定位模式而非常见的相对定位模式。已知Android和iOS/iPadOS不支持绝对定位模式。
-* 程序内建的剪贴板共享功能并不完整，但完整功能可以通过 [ClipSync 应用](https://github.com/windoze/clip-sync) 或操作系统内置的剪贴板共享功能实现，例如 [Windows 上的 Clip Sync](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) 或 [macOS 上的通用剪贴板](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac)。
+* 程序内建的剪贴板共享功能并不完整，但完整功能可以通过 [Clipper 应用](https://clipper.unwritten.codes) 或操作系统内置的剪贴板共享功能实现，例如 [Windows 上的 Clip Sync](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) 或 [macOS 上的通用剪贴板](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac)。
 
 ## 待办事项：
 
