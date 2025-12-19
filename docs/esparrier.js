@@ -99,6 +99,66 @@ class EsparrierDevice {
             ]
         });
 
+        await this._openAndClaim();
+    }
+
+    /**
+     * Connect to an already paired device without user interaction
+     * @param {USBDevice} usbDevice - A previously paired USB device
+     */
+    async connectToDevice(usbDevice) {
+        if (!EsparrierDevice.isSupported()) {
+            throw new Error('WebUSB is not supported in this browser');
+        }
+
+        this.device = usbDevice;
+        await this._openAndClaim();
+    }
+
+    /**
+     * Get list of already paired Esparrier devices
+     * @param {number} [customVid] - Optional custom Vendor ID to filter
+     * @param {number} [customPid] - Optional custom Product ID to filter
+     * @returns {Promise<USBDevice[]>} Array of paired devices
+     */
+    static async getPairedDevices(customVid, customPid) {
+        if (!EsparrierDevice.isSupported()) {
+            return [];
+        }
+
+        const devices = await navigator.usb.getDevices();
+
+        // Filter by VID/PID if specified, otherwise return devices matching default or with vendor interface
+        return devices.filter(device => {
+            // Check VID/PID match
+            const vid = customVid !== undefined ? customVid : ESPARRIER_VID;
+            const pid = customPid !== undefined ? customPid : ESPARRIER_PID;
+
+            if (device.vendorId === vid && device.productId === pid) {
+                return true;
+            }
+
+            // Also check for vendor interface class
+            if (device.configuration) {
+                for (const iface of device.configuration.interfaces) {
+                    for (const alt of iface.alternates) {
+                        if (alt.interfaceClass === VENDOR_CLASS &&
+                            alt.interfaceSubclass === VENDOR_SUBCLASS &&
+                            alt.interfaceProtocol === VENDOR_PROTOCOL) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        });
+    }
+
+    /**
+     * Internal method to open device and claim interface
+     */
+    async _openAndClaim() {
         await this.device.open();
 
         // Find the vendor-specific interface

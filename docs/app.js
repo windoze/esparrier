@@ -554,12 +554,62 @@ function init() {
         e.preventDefault();
     });
 
-    // Check for already paired devices
-    navigator.usb.getDevices().then(devices => {
-        if (devices.length > 0) {
-            logInfo(i18n.t('logFoundDevices', { count: devices.length }));
+    // Auto-reconnect to previously paired device
+    tryAutoReconnect();
+}
+
+/**
+ * Try to auto-reconnect to a previously paired device
+ */
+async function tryAutoReconnect() {
+    try {
+        const pairedDevices = await EsparrierDevice.getPairedDevices();
+
+        if (pairedDevices.length === 0) {
+            return;
         }
-    });
+
+        logInfo(i18n.t('logFoundDevices', { count: pairedDevices.length }));
+
+        // Try to connect to the first available paired device
+        const usbDevice = pairedDevices[0];
+        logInfo(i18n.t('logAutoReconnecting'));
+
+        statusIndicator.className = 'status-dot connecting';
+        statusText.textContent = i18n.t('connecting');
+
+        await device.connectToDevice(usbDevice);
+        logSuccess(i18n.t('logConnected'));
+
+        // Get device info from USB descriptors
+        const info = device.getDeviceInfo();
+        if (info) {
+            logInfo(`${i18n.t('logDevice')} ${info.productName || i18n.t('logUnknown')} (${info.vendorId}:${info.productId})`);
+        }
+
+        updateConnectionUI(true);
+
+        // Set up disconnect handler
+        device.onDisconnect = () => {
+            logWarning(i18n.t('logDeviceDisconnected'));
+            updateConnectionUI(false);
+            currentState = null;
+            currentConfig = null;
+        };
+
+        // Automatically read state and check firmware version
+        await handleRefreshStatus();
+
+        // Only read config if firmware is compatible
+        if (currentState && checkFirmwareVersion(currentState)) {
+            await handleReadConfig();
+        }
+
+    } catch (error) {
+        // Auto-reconnect failed silently - user can manually connect
+        logWarning(`${i18n.t('logAutoReconnectFailed')} ${error.message}`);
+        updateConnectionUI(false);
+    }
 }
 
 // Start the app

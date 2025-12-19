@@ -139,6 +139,8 @@ const translations = {
         logRebootSent: 'Reboot command sent. Device is restarting...',
         logRebootFailed: 'Failed to reboot:',
         logFoundDevices: 'Found {count} previously paired device(s)',
+        logAutoReconnecting: 'Auto-reconnecting to paired device...',
+        logAutoReconnectFailed: 'Auto-reconnect failed:',
         logInvalidVid: 'Invalid Vendor ID (must be hexadecimal)',
         logInvalidPid: 'Invalid Product ID (must be hexadecimal)',
 
@@ -288,6 +290,8 @@ const translations = {
         logRebootSent: '重启命令已发送。设备正在重启...',
         logRebootFailed: '重启失败：',
         logFoundDevices: '发现 {count} 个已配对的设备',
+        logAutoReconnecting: '正在自动重连已配对的设备...',
+        logAutoReconnectFailed: '自动重连失败：',
         logInvalidVid: '无效的厂商 ID（必须为十六进制）',
         logInvalidPid: '无效的产品 ID（必须为十六进制）',
 
