@@ -125,6 +125,16 @@ header h1 {
     color: #78350f;
 }
 
+.warning-card a {
+    color: #92400e;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.warning-card a:hover {
+    color: #78350f;
+}
+
 @media (prefers-color-scheme: dark) {
     .warning-card {
         background: #451a03;
@@ -137,6 +147,14 @@ header h1 {
     }
 
     .warning-card p {
+        color: #fde68a;
+    }
+
+    .warning-card a {
+        color: #fcd34d;
+    }
+
+    .warning-card a:hover {
         color: #fde68a;
     }
 }
@@ -302,6 +320,11 @@ legend {
     margin-bottom: 6px;
     font-weight: 500;
     font-size: 0.9rem;
+}
+
+.form-group label.required::after {
+    content: ' *';
+    color: var(--danger-color);
 }
 
 .form-group input[type="text"],

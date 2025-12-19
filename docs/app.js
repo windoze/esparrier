@@ -35,12 +35,28 @@ const clearLogBtn = document.getElementById('clear-log-btn');
 
 const langSelector = document.getElementById('lang-selector');
 
+const firmwareWarning = document.getElementById('firmware-warning');
+const webusbUrlGroup = document.getElementById('webusb-url-group');
+
 // Device instance
 const device = new EsparrierDevice();
 
 // Current state
 let currentState = null;
 let currentConfig = null;
+
+/**
+ * Version comparison helpers
+ */
+function compareVersion(major, minor, patch, targetMajor, targetMinor, targetPatch) {
+    if (major !== targetMajor) return major - targetMajor;
+    if (minor !== targetMinor) return minor - targetMinor;
+    return patch - targetPatch;
+}
+
+function isVersionAtLeast(state, major, minor, patch = 0) {
+    return compareVersion(state.versionMajor, state.versionMinor, state.versionPatch, major, minor, patch) >= 0;
+}
 
 /**
  * Logging functions
@@ -77,6 +93,8 @@ function updateConnectionUI(connected) {
         disconnectBtn.disabled = true;
         deviceInfoSection.classList.add('hidden');
         configSection.classList.add('hidden');
+        firmwareWarning.classList.add('hidden');
+        webusbUrlGroup.classList.remove('hidden');
     }
 }
 
@@ -90,6 +108,44 @@ function updateDeviceInfo(state) {
     deviceActive.textContent = state.active ? i18n.t('yes') : i18n.t('no');
     deviceActive.style.color = state.active ? 'var(--success-color)' : '';
     keepAwake.textContent = state.keepAwake ? i18n.t('enabled') : i18n.t('disabled');
+}
+
+/**
+ * Check firmware version and update UI accordingly
+ * Returns true if firmware is compatible (>= 0.6.0), false otherwise
+ */
+function checkFirmwareVersion(state) {
+    // Hide WebUSB URL option if firmware < 0.7.0
+    if (!isVersionAtLeast(state, 0, 7, 0)) {
+        webusbUrlGroup.classList.add('hidden');
+    } else {
+        webusbUrlGroup.classList.remove('hidden');
+    }
+
+    // Show error and hide config if firmware < 0.6.0
+    if (!isVersionAtLeast(state, 0, 6, 0)) {
+        firmwareWarning.classList.remove('hidden');
+        configSection.classList.add('hidden');
+        logError(i18n.t('logFirmwareTooOld', { version: state.version }));
+        return false;
+    }
+
+    firmwareWarning.classList.add('hidden');
+    return true;
+}
+
+/**
+ * Validate required fields and update Write Config button state
+ */
+function validateRequiredFields() {
+    const ssid = document.getElementById('ssid').value.trim();
+    const password = document.getElementById('password').value;
+    const server = document.getElementById('server').value.trim();
+    const screenName = document.getElementById('screen_name').value.trim();
+
+    const isValid = ssid !== '' && password !== '' && server !== '' && screenName !== '';
+    writeConfigBtn.disabled = !isValid;
+    return isValid;
 }
 
 function populateConfigForm(config) {
@@ -121,6 +177,9 @@ function populateConfigForm(config) {
     document.getElementById('product').value = config.product || '';
     document.getElementById('serial_number').value = config.serial_number || '';
     document.getElementById('webusb_url').value = config.webusb_url || '';
+
+    // Validate required fields after populating form
+    validateRequiredFields();
 }
 
 function getConfigFromForm() {
@@ -200,9 +259,13 @@ async function handleConnect() {
             currentConfig = null;
         };
 
-        // Automatically read state and config
+        // Automatically read state and check firmware version
         await handleRefreshStatus();
-        await handleReadConfig();
+
+        // Only read config if firmware is compatible
+        if (currentState && checkFirmwareVersion(currentState)) {
+            await handleReadConfig();
+        }
 
     } catch (error) {
         logError(`${i18n.t('logConnectionFailed')} ${error.message}`);
@@ -227,6 +290,7 @@ async function handleRefreshStatus() {
         logInfo(i18n.t('logReadingStatus'));
         currentState = await device.getState();
         updateDeviceInfo(currentState);
+        checkFirmwareVersion(currentState);
         logSuccess(i18n.t('logStatusUpdated'));
     } catch (error) {
         logError(`${i18n.t('logStatusFailed')} ${error.message}`);
@@ -389,6 +453,15 @@ function init() {
     brightnessInput.addEventListener('input', () => {
         brightnessValue.textContent = brightnessInput.value;
     });
+
+    // Required field validation - listen for input changes
+    const requiredFields = ['ssid', 'password', 'server', 'screen_name'];
+    requiredFields.forEach(fieldId => {
+        document.getElementById(fieldId).addEventListener('input', validateRequiredFields);
+    });
+
+    // Initially disable write button until fields are validated
+    writeConfigBtn.disabled = true;
 
     // Prevent form submission
     configForm.addEventListener('submit', (e) => {

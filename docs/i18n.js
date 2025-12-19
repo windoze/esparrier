@@ -47,6 +47,8 @@ const translations = {
         wifiSsid: 'WiFi SSID',
         wifiPassword: 'WiFi Password',
         wifiPasswordHint: 'Required - public WiFi not supported',
+        ssidPlaceholder: 'Enter WiFi network name',
+        passwordPlaceholder: 'Enter WiFi password',
         staticIp: 'Static IP (CIDR, optional)',
         staticIpPlaceholder: 'e.g., 192.168.1.100/24',
         gateway: 'Gateway (optional)',
@@ -57,6 +59,7 @@ const translations = {
         serverAddress: 'Server Address',
         serverAddressPlaceholder: 'e.g., 192.168.1.50:24800',
         screenName: 'Screen Name',
+        screenNamePlaceholder: 'Enter screen name',
 
         // Screen settings
         screenSettings: 'Screen Settings',
@@ -133,7 +136,13 @@ const translations = {
 
         // Confirm dialogs
         confirmSaveAndReboot: 'Configuration validated. Save to flash and reboot device?',
-        confirmReboot: 'Are you sure you want to reboot the device?'
+        confirmReboot: 'Are you sure you want to reboot the device?',
+
+        // Firmware version warnings
+        firmwareOutdated: '⚠️ Firmware Outdated',
+        firmwareWarningText: 'Your firmware version is too old to use this configuration tool. Please upgrade to version 0.6.0 or later.',
+        downloadLatestFirmware: 'Download Latest Firmware',
+        logFirmwareTooOld: 'Firmware version {version} is too old. Please upgrade to 0.6.0 or later.'
     },
     zh: {
         // Page title and header
@@ -179,6 +188,8 @@ const translations = {
         wifiSsid: 'WiFi SSID',
         wifiPassword: 'WiFi 密码',
         wifiPasswordHint: '必填 - 不支持开放网络',
+        ssidPlaceholder: '输入 WiFi 网络名称',
+        passwordPlaceholder: '输入 WiFi 密码',
         staticIp: '静态 IP（CIDR 格式，可选）',
         staticIpPlaceholder: '例如：192.168.1.100/24',
         gateway: '网关（可选）',
@@ -189,6 +200,7 @@ const translations = {
         serverAddress: '服务器地址',
         serverAddressPlaceholder: '例如：192.168.1.50:24800',
         screenName: '屏幕名称',
+        screenNamePlaceholder: '输入屏幕名称',
 
         // Screen settings
         screenSettings: '屏幕设置',
@@ -265,7 +277,13 @@ const translations = {
 
         // Confirm dialogs
         confirmSaveAndReboot: '配置验证通过。是否保存到闪存并重启设备？',
-        confirmReboot: '确定要重启设备吗？'
+        confirmReboot: '确定要重启设备吗？',
+
+        // Firmware version warnings
+        firmwareOutdated: '⚠️ 固件版本过旧',
+        firmwareWarningText: '您的固件版本过旧，无法使用此配置工具。请升级到 0.6.0 或更高版本。',
+        downloadLatestFirmware: '下载最新固件',
+        logFirmwareTooOld: '固件版本 {version} 过旧。请升级到 0.6.0 或更高版本。'
     }
 };
 
