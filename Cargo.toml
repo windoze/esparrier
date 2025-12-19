@@ -1,6 +1,6 @@
 [package]
 name = "esparrier"
-version = "0.6.4"
+version = "0.7.0"
 edition = "2024"
 rust-version = "1.89"
 authors = ["Chen Xu <windoze@0d0a.com>"]
@@ -54,7 +54,7 @@ esp-radio = { version = "0.17.0", features = [
     "wifi",
     "log-04",
 ], optional = true }
-heapless = { version = "0.9.1", default-features = false, features = ["serde"] }
+heapless = { version = "0.9.2", default-features = false, features = ["serde"] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
     "medium-ethernet",
     "proto-dhcpv4",

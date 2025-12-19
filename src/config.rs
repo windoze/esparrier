@@ -104,6 +104,11 @@ pub struct AppConfig {
     pub product: String<64>,
     #[serde(default = "get_default_serial_number")]
     pub serial_number: String<64>,
+
+    // WebUSB landing page URL, optional
+    // If set, browsers will show a notification when the device is plugged in
+    #[serde(default)]
+    pub webusb_url: Option<String<128>>,
 }
 
 // Kinda stupid
@@ -168,6 +173,7 @@ impl Default for AppConfig {
             manufacturer: String::from_str(USB_MANUFACTURER).unwrap(),
             product: String::from_str(USB_PRODUCT).unwrap(),
             serial_number: String::from_str(USB_SERIAL_NUMBER).unwrap(),
+            webusb_url: None,
         }
     }
 }

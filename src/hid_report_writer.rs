@@ -12,6 +12,7 @@ use embassy_sync::{
 use embassy_time::{Duration, with_timeout};
 use embassy_usb::{
     class::hid::HidWriter,
+    class::web_usb::{Config as WebUsbConfig, State as WebUsbState, Url as WebUsbUrl},
     msos::{self, windows_version},
 };
 use esp_hal::{
@@ -230,6 +231,24 @@ pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
         hid_dev_state,
         config,
     );
+
+    // Configure WebUSB support (optional, based on config)
+    // If webusb_url is set, browsers will show a notification when the device is plugged in
+    let webusb_landing_url: Option<WebUsbUrl<'static>> =
+        app_config.webusb_url.as_ref().map(|url| {
+            let url_str = mk_static!(heapless::String<128>, url.clone());
+            WebUsbUrl::new(url_str.as_str())
+        });
+    let webusb_config = mk_static!(
+        WebUsbConfig<'static>,
+        WebUsbConfig {
+            max_packet_size: 64,
+            landing_url: webusb_landing_url,
+            vendor_code: 0x01, // Vendor code for WebUSB requests
+        }
+    );
+    let webusb_state = mk_static!(WebUsbState<'static>, WebUsbState::new());
+    embassy_usb::class::web_usb::WebUsb::configure(&mut builder, webusb_state, webusb_config);
 
     // Add a vendor-specific function (class 0xFF), and corresponding interface,
     // that uses our custom handler.

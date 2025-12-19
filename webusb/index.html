@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esparrier WebUSB Configuration</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Esparrier Configuration</h1>
+            <p class="subtitle">WebUSB-based device configuration tool</p>
+        </header>
+
+        <section id="connection-section" class="card">
+            <h2>Device Connection</h2>
+            <div class="connection-status">
+                <span id="status-indicator" class="status-dot disconnected"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+            <div class="button-group">
+                <button id="connect-btn" class="btn btn-primary">Connect Device</button>
+                <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+            </div>
+        </section>
+
+        <section id="device-info-section" class="card hidden">
+            <h2>Device Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Firmware Version</label>
+                    <span id="firmware-version">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Model ID</label>
+                    <span id="model-id">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Features</label>
+                    <span id="feature-flags">--</span>
+                </div>
+                <div class="info-item">
+                    <label>IP Address</label>
+                    <span id="ip-address">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Server Connected</label>
+                    <span id="server-connected">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Active</label>
+                    <span id="device-active">--</span>
+                </div>
+                <div class="info-item">
+                    <label>Keep Awake</label>
+                    <span id="keep-awake">--</span>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="refresh-status-btn" class="btn btn-secondary">Refresh Status</button>
+                <button id="toggle-awake-btn" class="btn btn-secondary">Toggle Keep Awake</button>
+            </div>
+        </section>
+
+        <section id="config-section" class="card hidden">
+            <h2>Configuration</h2>
+            <form id="config-form">
+                <fieldset>
+                    <legend>Network Settings</legend>
+                    <div class="form-group">
+                        <label for="ssid">WiFi SSID</label>
+                        <input type="text" id="ssid" name="ssid" maxlength="32" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">WiFi Password</label>
+                        <input type="password" id="password" name="password" maxlength="64" required>
+                        <small>Required - public WiFi not supported</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="ip_addr">Static IP (CIDR, optional)</label>
+                        <input type="text" id="ip_addr" name="ip_addr" maxlength="20" placeholder="e.g., 192.168.1.100/24">
+                    </div>
+                    <div class="form-group">
+                        <label for="gateway">Gateway (optional)</label>
+                        <input type="text" id="gateway" name="gateway" maxlength="16" placeholder="e.g., 192.168.1.1">
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Barrier/Deskflow Server</legend>
+                    <div class="form-group">
+                        <label for="server">Server Address</label>
+                        <input type="text" id="server" name="server" maxlength="64" placeholder="e.g., 192.168.1.50:24800" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="screen_name">Screen Name</label>
+                        <input type="text" id="screen_name" name="screen_name" maxlength="64" required>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Screen Settings</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="screen_width">Screen Width</label>
+                            <input type="number" id="screen_width" name="screen_width" min="640" max="7680" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="screen_height">Screen Height</label>
+                            <input type="number" id="screen_height" name="screen_height" min="480" max="4320" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="flip_wheel" name="flip_wheel">
+                            <span>Flip Mouse Wheel Direction</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Performance Settings</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="polling_rate">Polling Rate (Hz)</label>
+                            <input type="number" id="polling_rate" name="polling_rate" min="50" max="1000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="jiggle_interval">Jiggle Interval (sec)</label>
+                            <input type="number" id="jiggle_interval" name="jiggle_interval" min="0" max="3600" required>
+                            <small>0 to disable</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="brightness">Indicator Brightness</label>
+                        <input type="range" id="brightness" name="brightness" min="0" max="255">
+                        <span id="brightness-value">128</span>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>USB HID Identity</legend>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="vid">Vendor ID (hex)</label>
+                            <input type="text" id="vid" name="vid" pattern="[0-9a-fA-F]{4}" maxlength="4" placeholder="0d0a">
+                        </div>
+                        <div class="form-group">
+                            <label for="pid">Product ID (hex)</label>
+                            <input type="text" id="pid" name="pid" pattern="[0-9a-fA-F]{4}" maxlength="4" placeholder="c0de">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="manufacturer">Manufacturer</label>
+                        <input type="text" id="manufacturer" name="manufacturer" maxlength="64">
+                    </div>
+                    <div class="form-group">
+                        <label for="product">Product Name</label>
+                        <input type="text" id="product" name="product" maxlength="64">
+                    </div>
+                    <div class="form-group">
+                        <label for="serial_number">Serial Number</label>
+                        <input type="text" id="serial_number" name="serial_number" maxlength="64">
+                    </div>
+                    <div class="form-group">
+                        <label for="webusb_url">WebUSB Landing URL (optional)</label>
+                        <input type="url" id="webusb_url" name="webusb_url" maxlength="128" placeholder="https://example.com/config/">
+                        <small>Leave empty to disable browser popup on device connect</small>
+                    </div>
+                </fieldset>
+
+                <div class="button-group">
+                    <button type="button" id="read-config-btn" class="btn btn-secondary">Read Config</button>
+                    <button type="button" id="write-config-btn" class="btn btn-primary">Write Config</button>
+                    <button type="button" id="reboot-btn" class="btn btn-warning">Reboot Device</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="log-section" class="card">
+            <h2>Log</h2>
+            <div id="log-output" class="log-output"></div>
+            <button id="clear-log-btn" class="btn btn-secondary btn-small">Clear Log</button>
+        </section>
+
+        <footer>
+            <p>Esparrier WebUSB Configuration Tool</p>
+            <p><a href="https://github.com/windoze/esparrier" target="_blank">GitHub Repository</a></p>
+        </footer>
+    </div>
+
+    <script src="esparrier.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
