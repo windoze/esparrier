@@ -33,6 +33,8 @@ const brightnessValue = document.getElementById('brightness-value');
 const logOutput = document.getElementById('log-output');
 const clearLogBtn = document.getElementById('clear-log-btn');
 
+const langSelector = document.getElementById('lang-selector');
+
 // Device instance
 const device = new EsparrierDevice();
 
@@ -63,14 +65,14 @@ function logError(message) { log(message, 'error'); }
 function updateConnectionUI(connected) {
     if (connected) {
         statusIndicator.className = 'status-dot connected';
-        statusText.textContent = 'Connected';
+        statusText.textContent = i18n.t('connected');
         connectBtn.disabled = true;
         disconnectBtn.disabled = false;
         deviceInfoSection.classList.remove('hidden');
         configSection.classList.remove('hidden');
     } else {
         statusIndicator.className = 'status-dot disconnected';
-        statusText.textContent = 'Disconnected';
+        statusText.textContent = i18n.t('disconnected');
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
         deviceInfoSection.classList.add('hidden');
@@ -81,13 +83,13 @@ function updateConnectionUI(connected) {
 function updateDeviceInfo(state) {
     firmwareVersion.textContent = state.version;
     modelId.textContent = state.modelName;
-    featureFlags.textContent = state.features.length > 0 ? state.features.join(', ') : 'None';
+    featureFlags.textContent = state.features.length > 0 ? state.features.join(', ') : i18n.t('none');
     ipAddress.textContent = state.ipAddressStr;
-    serverConnected.textContent = state.serverConnected ? 'Yes' : 'No';
+    serverConnected.textContent = state.serverConnected ? i18n.t('yes') : i18n.t('no');
     serverConnected.style.color = state.serverConnected ? 'var(--success-color)' : 'var(--danger-color)';
-    deviceActive.textContent = state.active ? 'Yes' : 'No';
+    deviceActive.textContent = state.active ? i18n.t('yes') : i18n.t('no');
     deviceActive.style.color = state.active ? 'var(--success-color)' : '';
-    keepAwake.textContent = state.keepAwake ? 'Enabled' : 'Disabled';
+    keepAwake.textContent = state.keepAwake ? i18n.t('enabled') : i18n.t('disabled');
 }
 
 function populateConfigForm(config) {
@@ -171,28 +173,28 @@ function getConfigFromForm() {
  */
 async function handleConnect() {
     if (!EsparrierDevice.isSupported()) {
-        logError('WebUSB is not supported in this browser. Please use Chrome, Edge, or Opera.');
+        logError(i18n.t('logWebUsbNotSupported'));
         return;
     }
 
     statusIndicator.className = 'status-dot connecting';
-    statusText.textContent = 'Connecting...';
+    statusText.textContent = i18n.t('connecting');
 
     try {
         await device.connect();
-        logSuccess('Connected to device');
+        logSuccess(i18n.t('logConnected'));
 
         // Get device info from USB descriptors
         const info = device.getDeviceInfo();
         if (info) {
-            logInfo(`Device: ${info.productName || 'Unknown'} (${info.vendorId}:${info.productId})`);
+            logInfo(`${i18n.t('logDevice')} ${info.productName || i18n.t('logUnknown')} (${info.vendorId}:${info.productId})`);
         }
 
         updateConnectionUI(true);
 
         // Set up disconnect handler
         device.onDisconnect = () => {
-            logWarning('Device disconnected');
+            logWarning(i18n.t('logDeviceDisconnected'));
             updateConnectionUI(false);
             currentState = null;
             currentConfig = null;
@@ -203,7 +205,7 @@ async function handleConnect() {
         await handleReadConfig();
 
     } catch (error) {
-        logError(`Connection failed: ${error.message}`);
+        logError(`${i18n.t('logConnectionFailed')} ${error.message}`);
         updateConnectionUI(false);
     }
 }
@@ -211,9 +213,9 @@ async function handleConnect() {
 async function handleDisconnect() {
     try {
         await device.disconnect();
-        logInfo('Disconnected from device');
+        logInfo(i18n.t('logDisconnected'));
     } catch (error) {
-        logError(`Disconnect failed: ${error.message}`);
+        logError(`${i18n.t('logDisconnectFailed')} ${error.message}`);
     }
     updateConnectionUI(false);
     currentState = null;
@@ -222,40 +224,40 @@ async function handleDisconnect() {
 
 async function handleRefreshStatus() {
     try {
-        logInfo('Reading device status...');
+        logInfo(i18n.t('logReadingStatus'));
         currentState = await device.getState();
         updateDeviceInfo(currentState);
-        logSuccess('Status updated');
+        logSuccess(i18n.t('logStatusUpdated'));
     } catch (error) {
-        logError(`Failed to read status: ${error.message}`);
+        logError(`${i18n.t('logStatusFailed')} ${error.message}`);
     }
 }
 
 async function handleToggleAwake() {
     if (!currentState) {
-        logError('Please refresh status first');
+        logError(i18n.t('logRefreshFirst'));
         return;
     }
 
     try {
         const newState = !currentState.keepAwake;
-        logInfo(`Setting keep awake to ${newState ? 'enabled' : 'disabled'}...`);
+        logInfo(`${i18n.t('logSettingKeepAwake')} ${newState ? i18n.t('enabled') : i18n.t('disabled')}...`);
         await device.setKeepAwake(newState);
-        logSuccess('Keep awake updated');
+        logSuccess(i18n.t('logKeepAwakeUpdated'));
         await handleRefreshStatus();
     } catch (error) {
-        logError(`Failed to toggle keep awake: ${error.message}`);
+        logError(`${i18n.t('logKeepAwakeFailed')} ${error.message}`);
     }
 }
 
 async function handleReadConfig() {
     try {
-        logInfo('Reading configuration...');
+        logInfo(i18n.t('logReadingConfig'));
         currentConfig = await device.readConfig();
         populateConfigForm(currentConfig);
-        logSuccess('Configuration loaded');
+        logSuccess(i18n.t('logConfigLoaded'));
     } catch (error) {
-        logError(`Failed to read configuration: ${error.message}`);
+        logError(`${i18n.t('logConfigReadFailed')} ${error.message}`);
     }
 }
 
@@ -264,52 +266,52 @@ async function handleWriteConfig() {
 
     // Basic validation
     if (!config.ssid) {
-        logError('WiFi SSID is required');
+        logError(i18n.t('logSsidRequired'));
         return;
     }
     if (!config.password) {
-        logError('WiFi password is required (public WiFi not supported)');
+        logError(i18n.t('logPasswordRequired'));
         return;
     }
     if (!config.server) {
-        logError('Server address is required');
+        logError(i18n.t('logServerRequired'));
         return;
     }
     if (!config.screen_name) {
-        logError('Screen name is required');
+        logError(i18n.t('logScreenNameRequired'));
         return;
     }
 
     try {
-        logInfo('Writing configuration...');
+        logInfo(i18n.t('logWritingConfig'));
         await device.writeConfig(config);
-        logSuccess('Configuration written (not yet saved to flash)');
+        logSuccess(i18n.t('logConfigWritten'));
 
         // Ask user to confirm commit
-        if (confirm('Configuration validated. Save to flash and reboot device?')) {
-            logInfo('Committing configuration to flash...');
+        if (confirm(i18n.t('confirmSaveAndReboot'))) {
+            logInfo(i18n.t('logCommitting'));
             await device.commitConfig();
-            logSuccess('Configuration saved. Device is rebooting...');
-            logWarning('Please reconnect after the device restarts.');
+            logSuccess(i18n.t('logConfigSaved'));
+            logWarning(i18n.t('logReconnectAfterRestart'));
         } else {
-            logWarning('Configuration NOT saved to flash. It will be lost on reboot.');
+            logWarning(i18n.t('logConfigNotSaved'));
         }
     } catch (error) {
-        logError(`Failed to write configuration: ${error.message}`);
+        logError(`${i18n.t('logConfigWriteFailed')} ${error.message}`);
     }
 }
 
 async function handleReboot() {
-    if (!confirm('Are you sure you want to reboot the device?')) {
+    if (!confirm(i18n.t('confirmReboot'))) {
         return;
     }
 
     try {
-        logInfo('Rebooting device...');
+        logInfo(i18n.t('logRebooting'));
         await device.reboot();
-        logSuccess('Reboot command sent. Device is restarting...');
+        logSuccess(i18n.t('logRebootSent'));
     } catch (error) {
-        logError(`Failed to reboot: ${error.message}`);
+        logError(`${i18n.t('logRebootFailed')} ${error.message}`);
     }
 }
 
@@ -324,6 +326,29 @@ function init() {
     const browserWarning = document.getElementById('browser-warning');
     const browserWarningText = document.getElementById('browser-warning-text');
 
+    // Initialize language selector
+    langSelector.value = i18n.getCurrentLanguage();
+    langSelector.addEventListener('change', (e) => {
+        i18n.setLanguage(e.target.value);
+    });
+
+    // Update page with current language
+    i18n.updatePage();
+
+    // Listen for language changes to update dynamic content
+    i18n.onChange(() => {
+        // Re-update device info if we have state
+        if (currentState) {
+            updateDeviceInfo(currentState);
+        }
+        // Update connection status text
+        if (device.isConnected && device.isConnected()) {
+            statusText.textContent = i18n.t('connected');
+        } else {
+            statusText.textContent = i18n.t('disconnected');
+        }
+    });
+
     // Check WebUSB support
     if (!EsparrierDevice.isSupported()) {
         // Show warning banner
@@ -331,24 +356,24 @@ function init() {
 
         // Detect browser for more specific message
         const ua = navigator.userAgent;
-        let browserName = 'Your browser';
         if (ua.includes('Firefox')) {
-            browserName = 'Firefox';
-            browserWarningText.textContent = 'Firefox does not support WebUSB. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave) to use this tool.';
+            browserWarningText.setAttribute('data-i18n', 'browserWarningFirefox');
+            browserWarningText.textContent = i18n.t('browserWarningFirefox');
         } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
-            browserName = 'Safari';
-            browserWarningText.textContent = 'Safari does not support WebUSB. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave) to use this tool.';
+            browserWarningText.setAttribute('data-i18n', 'browserWarningSafari');
+            browserWarningText.textContent = i18n.t('browserWarningSafari');
         } else if (ua.includes('iPhone') || ua.includes('iPad') || ua.includes('Android')) {
-            browserWarningText.textContent = 'WebUSB is not supported on mobile devices. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave) on a desktop computer.';
+            browserWarningText.setAttribute('data-i18n', 'browserWarningMobile');
+            browserWarningText.textContent = i18n.t('browserWarningMobile');
         }
 
-        logError('WebUSB is not supported in this browser.');
-        logError('Please use Chrome, Edge, or Opera on desktop.');
+        logError(i18n.t('logWebUsbNotSupported'));
+        logError(i18n.t('logUseChrome'));
         connectBtn.disabled = true;
         return;
     }
 
-    logInfo('WebUSB is supported. Click "Connect Device" to begin.');
+    logInfo(i18n.t('logWebUsbSupported'));
 
     // Event listeners
     connectBtn.addEventListener('click', handleConnect);
@@ -373,7 +398,7 @@ function init() {
     // Check for already paired devices
     navigator.usb.getDevices().then(devices => {
         if (devices.length > 0) {
-            logInfo(`Found ${devices.length} previously paired device(s)`);
+            logInfo(i18n.t('logFoundDevices', { count: devices.length }));
         }
     });
 }
