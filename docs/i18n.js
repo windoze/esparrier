@@ -18,6 +18,8 @@ const translations = {
 
         // Connection section
         deviceConnection: 'Device Connection',
+        advancedSettings: 'Advanced',
+        customVidPidHint: 'Use custom VID/PID to connect to devices with modified USB identity',
         disconnected: 'Disconnected',
         connected: 'Connected',
         connecting: 'Connecting...',
@@ -48,9 +50,11 @@ const translations = {
         networkSettings: 'Network Settings',
         wifiSsid: 'WiFi SSID',
         wifiPassword: 'WiFi Password',
-        wifiPasswordHint: 'Required - public WiFi not supported',
+        wifiPasswordHint: 'Required - must re-enter when updating config (not readable for security)',
         ssidPlaceholder: 'Enter WiFi network name',
         passwordPlaceholder: 'Enter WiFi password',
+        showPassword: 'Show password',
+        hidePassword: 'Hide password',
         staticIp: 'Static IP (CIDR, optional)',
         staticIpPlaceholder: 'e.g., 192.168.1.100/24',
         gateway: 'Gateway (optional)',
@@ -135,6 +139,8 @@ const translations = {
         logRebootSent: 'Reboot command sent. Device is restarting...',
         logRebootFailed: 'Failed to reboot:',
         logFoundDevices: 'Found {count} previously paired device(s)',
+        logInvalidVid: 'Invalid Vendor ID (must be hexadecimal)',
+        logInvalidPid: 'Invalid Product ID (must be hexadecimal)',
 
         // Confirm dialogs
         confirmSaveAndReboot: 'Configuration validated. Save to flash and reboot device?',
@@ -161,6 +167,8 @@ const translations = {
 
         // Connection section
         deviceConnection: '设备连接',
+        advancedSettings: '高级',
+        customVidPidHint: '使用自定义 VID/PID 连接已修改 USB 标识的设备',
         disconnected: '未连接',
         connected: '已连接',
         connecting: '连接中...',
@@ -191,9 +199,11 @@ const translations = {
         networkSettings: '网络设置',
         wifiSsid: 'WiFi SSID',
         wifiPassword: 'WiFi 密码',
-        wifiPasswordHint: '必填 - 不支持开放网络',
+        wifiPasswordHint: '必填 - 更新配置时需重新输入（出于安全原因无法读取）',
         ssidPlaceholder: '输入 WiFi 网络名称',
         passwordPlaceholder: '输入 WiFi 密码',
+        showPassword: '显示密码',
+        hidePassword: '隐藏密码',
         staticIp: '静态 IP（CIDR 格式，可选）',
         staticIpPlaceholder: '例如：192.168.1.100/24',
         gateway: '网关（可选）',
@@ -278,6 +288,8 @@ const translations = {
         logRebootSent: '重启命令已发送。设备正在重启...',
         logRebootFailed: '重启失败：',
         logFoundDevices: '发现 {count} 个已配对的设备',
+        logInvalidVid: '无效的厂商 ID（必须为十六进制）',
+        logInvalidPid: '无效的产品 ID（必须为十六进制）',
 
         // Confirm dialogs
         confirmSaveAndReboot: '配置验证通过。是否保存到闪存并重启设备？',

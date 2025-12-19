@@ -78,16 +78,22 @@ class EsparrierDevice {
 
     /**
      * Request and connect to an Esparrier device
+     * @param {number} [customVid] - Optional custom Vendor ID
+     * @param {number} [customPid] - Optional custom Product ID
      */
-    async connect() {
+    async connect(customVid, customPid) {
         if (!EsparrierDevice.isSupported()) {
             throw new Error('WebUSB is not supported in this browser');
         }
 
+        // Use custom VID/PID if provided, otherwise use defaults
+        const vid = customVid !== undefined ? customVid : ESPARRIER_VID;
+        const pid = customPid !== undefined ? customPid : ESPARRIER_PID;
+
         // Request device with specific VID/PID
         this.device = await navigator.usb.requestDevice({
             filters: [
-                { vendorId: ESPARRIER_VID, productId: ESPARRIER_PID },
+                { vendorId: vid, productId: pid },
                 // Also allow any device with our vendor interface class
                 { classCode: VENDOR_CLASS, subclassCode: VENDOR_SUBCLASS, protocolCode: VENDOR_PROTOCOL }
             ]

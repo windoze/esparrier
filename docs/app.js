@@ -38,6 +38,11 @@ const langSelector = document.getElementById('lang-selector');
 const firmwareWarning = document.getElementById('firmware-warning');
 const webusbUrlGroup = document.getElementById('webusb-url-group');
 
+const advancedConnectionToggle = document.getElementById('advanced-connection-toggle');
+const advancedConnectionSettings = document.getElementById('advanced-connection-settings');
+const connectVidInput = document.getElementById('connect-vid');
+const connectPidInput = document.getElementById('connect-pid');
+
 // Device instance
 const device = new EsparrierDevice();
 
@@ -278,7 +283,30 @@ async function handleConnect() {
     statusText.textContent = i18n.t('connecting');
 
     try {
-        await device.connect();
+        // Get custom VID/PID if advanced settings is enabled
+        let customVid, customPid;
+        if (advancedConnectionToggle.checked) {
+            const vidStr = connectVidInput.value.trim();
+            const pidStr = connectPidInput.value.trim();
+            if (vidStr) {
+                customVid = parseInt(vidStr, 16);
+                if (isNaN(customVid)) {
+                    logError(i18n.t('logInvalidVid'));
+                    updateConnectionUI(false);
+                    return;
+                }
+            }
+            if (pidStr) {
+                customPid = parseInt(pidStr, 16);
+                if (isNaN(customPid)) {
+                    logError(i18n.t('logInvalidPid'));
+                    updateConnectionUI(false);
+                    return;
+                }
+            }
+        }
+
+        await device.connect(customVid, customPid);
         logSuccess(i18n.t('logConnected'));
 
         // Get device info from USB descriptors
@@ -490,6 +518,26 @@ function init() {
     // Brightness slider
     brightnessInput.addEventListener('input', () => {
         brightnessValue.textContent = brightnessInput.value;
+    });
+
+    // Advanced connection settings toggle
+    advancedConnectionToggle.addEventListener('change', () => {
+        if (advancedConnectionToggle.checked) {
+            advancedConnectionSettings.classList.remove('hidden');
+        } else {
+            advancedConnectionSettings.classList.add('hidden');
+        }
+    });
+
+    // Password visibility toggle
+    const togglePasswordBtn = document.getElementById('toggle-password-btn');
+    const passwordInput = document.getElementById('password');
+    togglePasswordBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        togglePasswordBtn.classList.toggle('showing', isPassword);
+        togglePasswordBtn.title = i18n.t(isPassword ? 'hidePassword' : 'showPassword');
+        togglePasswordBtn.setAttribute('data-i18n-title', isPassword ? 'hidePassword' : 'showPassword');
     });
 
     // Required field validation - listen for input changes
