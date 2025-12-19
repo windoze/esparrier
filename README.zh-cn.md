@@ -60,9 +60,19 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 ## 更新配置
 
-**新的配置工具**[esparrier-config](https://github.com/windoze/esparrier-config)现已推出，您可以使用它来更新配置，而无需重新编译和烧录固件。
+有多种方式可以更新设备配置：
 
-以下是原有的手动更新配置的方法，该方法依然有效：
+### 网页配置工具（推荐）
+
+最简单的配置方式是使用**网页配置工具** [https://0d0a.com/esparrier/](https://0d0a.com/esparrier/)。该工具使用 WebUSB 技术直接在浏览器中与设备通信，无需安装任何软件。只需通过 USB 连接设备，使用 Chromium 内核的浏览器（Chrome、Edge、Opera、Brave）打开页面，然后点击"Connect Device"即可。
+
+### 命令行配置工具
+
+命令行配置工具 [esparrier-config](https://github.com/windoze/esparrier-config) 也可使用，请参阅该仓库的说明进行构建和运行。
+
+### 手动配置（旧方法）
+
+以下是原有的手动更新配置的方法，该方法依然有效但不推荐使用：
 
 首先，您需要安装 `esptool.py`，可以使用 `pip install esptool` 安装。有关更多信息，请参阅 [官方文档](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html)。
 
@@ -163,7 +173,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
     espflash write-bin --chip esp32s3 --port /dev/ttyACM0 0x0000 /path/to/merged-esparrier-generic.bin
     ```
 
-6. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。此时可以使用 [esparrier-config-cli](https://github.com/windoze/esparrier-config) 更新配置，或者使用 [手动更新配置](#更新配置) 的方法写入配置文件。
+6. 退出下载模式并重置开发板，您应该会在主机上看到新的 USB HID 设备。此时可以使用[网页配置工具](https://0d0a.com/esparrier/)、[esparrier-config-cli](https://github.com/windoze/esparrier-config) 更新配置，或者使用[手动配置](#手动配置旧方法)的方法写入配置文件。
 
 ## 故障排除
 

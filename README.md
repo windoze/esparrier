@@ -60,7 +60,17 @@ The safest option is to get an official development board from Espressif, such a
 
 ## Update Configurations
 
-**A new configuration tool** is available at [esparrier-config](https://github.com/windoze/esparrier-config), you can use it to update the configurations on the board without manually re-flashing. Checkout the repo and follow the instructions to build and run the tool.
+There are multiple ways to update the device configuration:
+
+### Web-based Configuration Tool (Recommended)
+
+The easiest way to configure your device is using the **web-based configuration tool** at [https://0d0a.com/esparrier/](https://0d0a.com/esparrier/). This tool uses WebUSB to communicate with the device directly from your browser - no installation required. Simply connect your device via USB, open the page in a Chromium-based browser (Chrome, Edge, Opera, Brave), and click "Connect Device".
+
+### CLI Configuration Tool
+
+A CLI configuration tool is available at [esparrier-config](https://github.com/windoze/esparrier-config). Checkout the repo and follow the instructions to build and run the tool.
+
+### Manual Configuration (Legacy)
 
 Below is the old way to update configurations, it's still valid but not recommended.
 
@@ -162,7 +172,7 @@ NOTE: When you copied a large amount of text or big image from other screen then
     espflash write-bin --chip esp32s3 --port /dev/ttyACM0 0x0000 /path/to/merged-esparrier-generic.bin
     ```
 
-6. Exit the download mode and reset the board, you should see the new USB HID device on your host. Now the board is ready to be configured by the [esparrier-config-cli](https://github.com/windoze/esparrier-config), or by the [manual update configuration](#update-configurations) method.
+6. Exit the download mode and reset the board, you should see the new USB HID device on your host. Now the board is ready to be configured using the [web-based configuration tool](https://0d0a.com/esparrier/), the [esparrier-config-cli](https://github.com/windoze/esparrier-config), or by the [manual update configuration](#manual-configuration-legacy) method.
 
 ## Troubleshooting
 

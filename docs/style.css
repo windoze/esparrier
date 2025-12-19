@@ -54,14 +54,64 @@ header {
     margin-bottom: 30px;
 }
 
+.header-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
 header h1 {
     font-size: 2rem;
-    margin-bottom: 8px;
+    margin-bottom: 0;
+}
+
+.github-link {
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.github-link:hover {
+    color: var(--text-primary);
 }
 
 .subtitle {
     color: var(--text-secondary);
     font-size: 1rem;
+    margin-top: 8px;
+}
+
+/* Browser Warning */
+.warning-card {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+
+.warning-card h2 {
+    color: #92400e;
+    border-bottom-color: #fcd34d;
+}
+
+.warning-card p {
+    color: #78350f;
+}
+
+@media (prefers-color-scheme: dark) {
+    .warning-card {
+        background: #451a03;
+        border-color: #b45309;
+    }
+
+    .warning-card h2 {
+        color: #fcd34d;
+        border-bottom-color: #b45309;
+    }
+
+    .warning-card p {
+        color: #fde68a;
+    }
 }
 
 .card {

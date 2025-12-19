@@ -321,8 +321,27 @@ function handleClearLog() {
  * Initialize
  */
 function init() {
+    const browserWarning = document.getElementById('browser-warning');
+    const browserWarningText = document.getElementById('browser-warning-text');
+
     // Check WebUSB support
     if (!EsparrierDevice.isSupported()) {
+        // Show warning banner
+        browserWarning.classList.remove('hidden');
+
+        // Detect browser for more specific message
+        const ua = navigator.userAgent;
+        let browserName = 'Your browser';
+        if (ua.includes('Firefox')) {
+            browserName = 'Firefox';
+            browserWarningText.textContent = 'Firefox does not support WebUSB. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave) to use this tool.';
+        } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+            browserName = 'Safari';
+            browserWarningText.textContent = 'Safari does not support WebUSB. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave) to use this tool.';
+        } else if (ua.includes('iPhone') || ua.includes('iPad') || ua.includes('Android')) {
+            browserWarningText.textContent = 'WebUSB is not supported on mobile devices. Please use a Chromium-based browser (Chrome, Edge, Opera, Brave) on a desktop computer.';
+        }
+
         logError('WebUSB is not supported in this browser.');
         logError('Please use Chrome, Edge, or Opera on desktop.');
         connectBtn.disabled = true;
