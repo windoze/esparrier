@@ -269,6 +269,49 @@ header h1 {
     font-size: 0.85rem;
 }
 
+/* Toggle button for Keep Awake */
+.btn-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--secondary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-toggle:hover:not(:disabled) {
+    background: var(--secondary-hover);
+}
+
+.btn-toggle.active {
+    background: var(--success-color);
+}
+
+.btn-toggle.active:hover:not(:disabled) {
+    background: #059669;
+}
+
+.btn-icon {
+    flex-shrink: 0;
+}
+
+/* Light bulb icon states */
+.btn-toggle .btn-icon-on {
+    display: none;
+}
+
+.btn-toggle .btn-icon-off {
+    display: block;
+}
+
+.btn-toggle.active .btn-icon-on {
+    display: block;
+}
+
+.btn-toggle.active .btn-icon-off {
+    display: none;
+}
+
 /* Device Info Grid */
 .info-grid {
     display: grid;
@@ -345,6 +388,16 @@ legend {
     outline: none;
     border-color: var(--input-focus);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group input.input-error {
+    border-color: var(--danger-color);
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.form-group input.input-error:focus {
+    border-color: var(--danger-color);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .form-group input[type="range"] {

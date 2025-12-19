@@ -83,7 +83,15 @@
             </div>
             <div class="button-group">
                 <button id="refresh-status-btn" class="btn btn-secondary" data-i18n="refreshStatus">Refresh Status</button>
-                <button id="toggle-awake-btn" class="btn btn-secondary" data-i18n="toggleKeepAwake">Toggle Keep Awake</button>
+                <button id="toggle-awake-btn" class="btn btn-toggle">
+                    <svg class="btn-icon btn-icon-off" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M12 22q-.825 0-1.412-.587T10 20h4q0 .825-.587 1.413T12 22Zm-4-3v-2h8v2H8Zm.25-3q-1.725-1.025-2.737-2.75T4.5 9.5q0-3.125 2.188-5.312T12 2q3.125 0 5.313 2.188T19.5 9.5q0 2.025-1.012 3.75T15.75 16H8.25Zm.6-2h6.3q1.125-.8 1.738-1.975T17.5 9.5q0-2.3-1.6-3.9T12 4Q9.7 4 8.1 5.6T6.5 9.5q0 1.35.613 2.525T8.85 14Z"/>
+                    </svg>
+                    <svg class="btn-icon btn-icon-on" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M12 22q-.825 0-1.412-.587T10 20h4q0 .825-.587 1.413T12 22Zm-4-3v-2h8v2H8Zm.25-3q-1.725-1.025-2.737-2.75T4.5 9.5q0-3.125 2.188-5.312T12 2q3.125 0 5.313 2.188T19.5 9.5q0 2.025-1.012 3.75T15.75 16H8.25Z"/>
+                    </svg>
+                    <span data-i18n="keepAwakeOff">Keep Awake: Off</span>
+                </button>
             </div>
         </section>
 

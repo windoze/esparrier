@@ -95,6 +95,13 @@ function updateConnectionUI(connected) {
         configSection.classList.add('hidden');
         firmwareWarning.classList.add('hidden');
         webusbUrlGroup.classList.remove('hidden');
+        // Reset keep awake button to default state
+        toggleAwakeBtn.classList.remove('active');
+        const btnText = toggleAwakeBtn.querySelector('span');
+        if (btnText) {
+            btnText.textContent = i18n.t('keepAwakeOff');
+            btnText.setAttribute('data-i18n', 'keepAwakeOff');
+        }
     }
 }
 
@@ -108,6 +115,25 @@ function updateDeviceInfo(state) {
     deviceActive.textContent = state.active ? i18n.t('yes') : i18n.t('no');
     deviceActive.style.color = state.active ? 'var(--success-color)' : '';
     keepAwake.textContent = state.keepAwake ? i18n.t('enabled') : i18n.t('disabled');
+
+    // Update toggle button state
+    updateKeepAwakeButton(state.keepAwake);
+}
+
+/**
+ * Update the Keep Awake toggle button appearance
+ */
+function updateKeepAwakeButton(isAwake) {
+    const btnText = toggleAwakeBtn.querySelector('span');
+    if (isAwake) {
+        toggleAwakeBtn.classList.add('active');
+        btnText.textContent = i18n.t('keepAwakeOn');
+        btnText.setAttribute('data-i18n', 'keepAwakeOn');
+    } else {
+        toggleAwakeBtn.classList.remove('active');
+        btnText.textContent = i18n.t('keepAwakeOff');
+        btnText.setAttribute('data-i18n', 'keepAwakeOff');
+    }
 }
 
 /**
@@ -138,12 +164,24 @@ function checkFirmwareVersion(state) {
  * Validate required fields and update Write Config button state
  */
 function validateRequiredFields() {
-    const ssid = document.getElementById('ssid').value.trim();
-    const password = document.getElementById('password').value;
-    const server = document.getElementById('server').value.trim();
-    const screenName = document.getElementById('screen_name').value.trim();
+    const requiredFields = [
+        { id: 'ssid', value: document.getElementById('ssid').value.trim() },
+        { id: 'password', value: document.getElementById('password').value },
+        { id: 'server', value: document.getElementById('server').value.trim() },
+        { id: 'screen_name', value: document.getElementById('screen_name').value.trim() }
+    ];
 
-    const isValid = ssid !== '' && password !== '' && server !== '' && screenName !== '';
+    let isValid = true;
+    requiredFields.forEach(field => {
+        const input = document.getElementById(field.id);
+        if (field.value === '') {
+            input.classList.add('input-error');
+            isValid = false;
+        } else {
+            input.classList.remove('input-error');
+        }
+    });
+
     writeConfigBtn.disabled = !isValid;
     return isValid;
 }
