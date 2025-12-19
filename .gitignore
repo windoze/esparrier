@@ -14,7 +14,8 @@ target/
 .idea/
 .helix/
 .zed/
-
+.claude
+CLAUDE.md
 .envrc
 .env
 /test
