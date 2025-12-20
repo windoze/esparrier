@@ -56,7 +56,13 @@ jobs:
       - name: Run clippy
         run: cargo clippy --release --features=${{ matrix.models }} --workspace -- -D warnings
       - name: Build binary
-        run: cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv esparrier-${{ matrix.models }}.bin
+        run: |
+          if [ "${{ matrix.models }}" = "generic" ]; then
+            PARTITION_TABLE="partitions_single_app.csv"
+          else
+            PARTITION_TABLE="partitions_ota.csv"
+          fi
+          cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table $PARTITION_TABLE esparrier-${{ matrix.models }}.bin
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:

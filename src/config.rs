@@ -389,3 +389,14 @@ impl From<&AppConfig> for ConfigStore {
         ret
     }
 }
+
+/// Execute a closure with access to the flash storage.
+/// This allows OTA and other modules to access flash without owning it.
+#[cfg(feature = "ota")]
+pub async fn with_flash_storage<F, R>(f: F) -> R
+where
+    F: FnOnce(&mut FlashStorage) -> R,
+{
+    let mut flash = FLASH_STORAGE.get().await.write().await;
+    f(&mut flash)
+}

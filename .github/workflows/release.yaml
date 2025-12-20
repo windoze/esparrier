@@ -51,9 +51,25 @@ jobs:
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
       - name: Build binary
-        run: cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv esparrier-${{ matrix.models }}.bin
+        run: |
+          if [ "${{ matrix.models }}" = "generic" ]; then
+            PARTITION_TABLE="partitions_single_app.csv"
+            FLASH_SIZE="1mb"
+          else
+            PARTITION_TABLE="partitions_ota.csv"
+            FLASH_SIZE="4mb"
+          fi
+          cargo espflash save-image --chip esp32s3 --release --features ${{ matrix.models }} --partition-table $PARTITION_TABLE esparrier-${{ matrix.models }}.bin
       - name: Build merged binary
-        run: cargo espflash save-image --merge --chip esp32s3 --flash-size 1mb --release --features ${{ matrix.models }} --partition-table partitions_single_app.csv merged-esparrier-${{ matrix.models }}.bin
+        run: |
+          if [ "${{ matrix.models }}" = "generic" ]; then
+            PARTITION_TABLE="partitions_single_app.csv"
+            FLASH_SIZE="1mb"
+          else
+            PARTITION_TABLE="partitions_ota.csv"
+            FLASH_SIZE="4mb"
+          fi
+          cargo espflash save-image --merge --chip esp32s3 --flash-size $FLASH_SIZE --release --features ${{ matrix.models }} --partition-table $PARTITION_TABLE merged-esparrier-${{ matrix.models }}.bin
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:

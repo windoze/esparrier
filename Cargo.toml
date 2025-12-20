@@ -115,6 +115,7 @@ embedded-hal-1 = { package = "embedded-hal", version = "1.0", optional = true }
 default = ["usb"]
 clipboard = ["async-debounce", "embedded-hal-async"]
 usb = []
+ota = []
 indicator = []
 led = ["indicator"]
 smartled = ["indicator", "smart-leds", "smart-leds-trait"]
@@ -131,13 +132,13 @@ ethernet = ["embassy-net-wiznet", "embedded-hal-1", "embedded-hal-bus"]
 
 # Features for the ESP32-S3 boards
 generic = ["wifi"]
-m5atoms3-lite = ["smartled", "clipboard", "wifi"]
-m5atoms3 = ["graphics", "clipboard", "wifi"]
-m5atoms3r = ["graphics", "clipboard", "wifi"]
-xiao-esp32s3 = ["led", "wifi"]
-devkitc-1_0 = ["smartled", "wifi"]
-devkitc-1_1 = ["smartled", "wifi"]
-esp32-s3-eth = ["smartled", "embedded-hal-bus", "ethernet"]
+m5atoms3-lite = ["smartled", "clipboard", "wifi", "ota"]
+m5atoms3 = ["graphics", "clipboard", "wifi", "ota"]
+m5atoms3r = ["graphics", "clipboard", "wifi", "ota"]
+xiao-esp32s3 = ["led", "wifi", "ota"]
+devkitc-1_0 = ["smartled", "wifi", "ota"]
+devkitc-1_1 = ["smartled", "wifi", "ota"]
+esp32-s3-eth = ["smartled", "embedded-hal-bus", "ethernet", "ota"]
 
 [profile.dev]
 # Rust debug is too slow.

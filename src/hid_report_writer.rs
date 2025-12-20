@@ -122,6 +122,16 @@ async fn start_hid_report_writer(writer: ReportWriter<'static, 9>, receiver: Hid
     let mut writer = UsbHidReportWriter::new(writer);
     loop {
         let report = receiver.receive().await;
+
+        // Skip sending HID reports during OTA to prevent timeout panics.
+        // Flash writes are blocking and can take significant time, which would
+        // cause the HID report timeout to trigger and reset the system.
+        #[cfg(feature = "ota")]
+        if crate::ota::OTA_IN_PROGRESS.load(core::sync::atomic::Ordering::Relaxed) {
+            debug!("Skipping HID report during OTA");
+            continue;
+        }
+
         writer.write_report(report).await;
     }
 }

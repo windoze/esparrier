@@ -45,14 +45,20 @@ const GRAPHICS_INDICATOR_FLAG: u8 = if cfg!(feature = "graphics") {
     0b0000_0000
 };
 
-const CLIPBOARD_FLAG: u8 = if cfg!(feature = "graphics") {
+const CLIPBOARD_FLAG: u8 = if cfg!(feature = "clipboard") {
     0b1000_0000
 } else {
     0b0000_0000
 };
 
+const OTA_FLAG: u8 = if cfg!(feature = "ota") {
+    0b0100_0000
+} else {
+    0b0000_0000
+};
+
 pub const FEATURE_FLAGS: u8 =
-    LED_INDICATOR_FLAG | SMARTLED_INDICATOR_FLAG | GRAPHICS_INDICATOR_FLAG | CLIPBOARD_FLAG;
+    LED_INDICATOR_FLAG | SMARTLED_INDICATOR_FLAG | GRAPHICS_INDICATOR_FLAG | CLIPBOARD_FLAG | OTA_FLAG;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "xiao-esp32s3")] {
