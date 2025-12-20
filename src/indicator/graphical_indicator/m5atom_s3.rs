@@ -82,10 +82,11 @@ pub fn init_display<'a>(config: IndicatorConfig) -> Display<'a> {
     let mut lstimer0 = ledc.timer::<LowSpeed>(timer::Number::Timer0);
     lstimer0
         .configure(timer::config::Config {
-            duty: timer::config::Duty::Duty5Bit,
+            duty: timer::config::Duty::Duty10Bit,
             clock_source: timer::LSClockSource::APBClk,
             frequency: Rate::from_hz(500),
         })
+        .inspect_err(|e| log::error!("{:?}", e))
         .unwrap();
     let mut channel0 = ledc.channel(channel::Number::Channel0, config.backlight);
     channel0
