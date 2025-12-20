@@ -62,9 +62,12 @@
                 <span id="status-indicator" class="status-dot disconnected"></span>
                 <span id="status-text" data-i18n="disconnected">Disconnected</span>
             </div>
-            <div class="button-group">
+            <div class="button-group button-group-split">
                 <button id="connect-btn" class="btn btn-primary" data-i18n="connectDevice">Connect Device</button>
-                <button id="disconnect-btn" class="btn btn-secondary" disabled data-i18n="disconnect">Disconnect</button>
+                <div class="button-group-right">
+                    <button id="disconnect-btn" class="btn btn-secondary" disabled data-i18n="disconnect">Disconnect</button>
+                    <button id="forget-btn" class="btn btn-danger" disabled data-i18n="disconnectAndForget">Disconnect & Forget</button>
+                </div>
             </div>
         </section>
 

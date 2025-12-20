@@ -5,6 +5,7 @@
 // DOM Elements
 const connectBtn = document.getElementById('connect-btn');
 const disconnectBtn = document.getElementById('disconnect-btn');
+const forgetBtn = document.getElementById('forget-btn');
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = document.getElementById('status-text');
 
@@ -89,6 +90,7 @@ function updateConnectionUI(connected) {
         statusText.textContent = i18n.t('connected');
         connectBtn.disabled = true;
         disconnectBtn.disabled = false;
+        forgetBtn.disabled = false;
         deviceInfoSection.classList.remove('hidden');
         configSection.classList.remove('hidden');
     } else {
@@ -96,6 +98,7 @@ function updateConnectionUI(connected) {
         statusText.textContent = i18n.t('disconnected');
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
+        forgetBtn.disabled = true;
         deviceInfoSection.classList.add('hidden');
         configSection.classList.add('hidden');
         firmwareWarning.classList.add('hidden');
@@ -351,6 +354,22 @@ async function handleDisconnect() {
     currentConfig = null;
 }
 
+async function handleForget() {
+    if (!confirm(i18n.t('confirmForget'))) {
+        return;
+    }
+
+    try {
+        await device.forget();
+        logInfo(i18n.t('logDeviceForgotten'));
+    } catch (error) {
+        logError(`${i18n.t('logForgetFailed')} ${error.message}`);
+    }
+    updateConnectionUI(false);
+    currentState = null;
+    currentConfig = null;
+}
+
 async function handleRefreshStatus() {
     try {
         logInfo(i18n.t('logReadingStatus'));
@@ -508,6 +527,7 @@ function init() {
     // Event listeners
     connectBtn.addEventListener('click', handleConnect);
     disconnectBtn.addEventListener('click', handleDisconnect);
+    forgetBtn.addEventListener('click', handleForget);
     refreshStatusBtn.addEventListener('click', handleRefreshStatus);
     toggleAwakeBtn.addEventListener('click', handleToggleAwake);
     readConfigBtn.addEventListener('click', handleReadConfig);

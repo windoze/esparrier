@@ -25,6 +25,7 @@ const translations = {
         connecting: 'Connecting...',
         connectDevice: 'Connect Device',
         disconnect: 'Disconnect',
+        disconnectAndForget: 'Disconnect & Forget',
 
         // Device info section
         deviceInformation: 'Device Information',
@@ -141,12 +142,15 @@ const translations = {
         logFoundDevices: 'Found {count} previously paired device(s)',
         logAutoReconnecting: 'Auto-reconnecting to paired device...',
         logAutoReconnectFailed: 'Auto-reconnect failed:',
+        logDeviceForgotten: 'Device forgotten. You will need to pair again to reconnect.',
+        logForgetFailed: 'Failed to forget device:',
         logInvalidVid: 'Invalid Vendor ID (must be hexadecimal)',
         logInvalidPid: 'Invalid Product ID (must be hexadecimal)',
 
         // Confirm dialogs
         confirmSaveAndReboot: 'Configuration validated. Save to flash and reboot device?',
         confirmReboot: 'Are you sure you want to reboot the device?',
+        confirmForget: 'Are you sure you want to disconnect and forget this device? You will need to pair again to reconnect.',
 
         // Firmware version warnings
         firmwareOutdated: '⚠️ Firmware Outdated',
@@ -176,6 +180,7 @@ const translations = {
         connecting: '连接中...',
         connectDevice: '连接设备',
         disconnect: '断开连接',
+        disconnectAndForget: '断开并取消配对',
 
         // Device info section
         deviceInformation: '设备信息',
@@ -292,12 +297,15 @@ const translations = {
         logFoundDevices: '发现 {count} 个已配对的设备',
         logAutoReconnecting: '正在自动重连已配对的设备...',
         logAutoReconnectFailed: '自动重连失败：',
+        logDeviceForgotten: '设备已取消配对。重新连接需要再次配对。',
+        logForgetFailed: '取消配对失败：',
         logInvalidVid: '无效的厂商 ID（必须为十六进制）',
         logInvalidPid: '无效的产品 ID（必须为十六进制）',
 
         // Confirm dialogs
         confirmSaveAndReboot: '配置验证通过。是否保存到闪存并重启设备？',
         confirmReboot: '确定要重启设备吗？',
+        confirmForget: '确定要断开连接并取消配对吗？重新连接需要再次配对。',
 
         // Firmware version warnings
         firmwareOutdated: '⚠️ 固件版本过旧',

@@ -90,14 +90,20 @@ class EsparrierDevice {
         const vid = customVid !== undefined ? customVid : ESPARRIER_VID;
         const pid = customPid !== undefined ? customPid : ESPARRIER_PID;
 
-        // Request device with specific VID/PID
-        this.device = await navigator.usb.requestDevice({
-            filters: [
-                { vendorId: vid, productId: pid },
-                // Also allow any device with our vendor interface class
-                { classCode: VENDOR_CLASS, subclassCode: VENDOR_SUBCLASS, protocolCode: VENDOR_PROTOCOL }
-            ]
-        });
+        // Build filters based on whether custom VID/PID is specified
+        const filters = [{ vendorId: vid, productId: pid }];
+
+        // Only include vendor interface class fallback when using default VID/PID
+        if (customVid === undefined && customPid === undefined) {
+            filters.push({
+                classCode: VENDOR_CLASS,
+                subclassCode: VENDOR_SUBCLASS,
+                protocolCode: VENDOR_PROTOCOL
+            });
+        }
+
+        // Request device with filters
+        this.device = await navigator.usb.requestDevice({ filters });
 
         await this._openAndClaim();
     }
@@ -229,6 +235,17 @@ class EsparrierDevice {
             this.interfaceNumber = null;
             this.endpointIn = null;
             this.endpointOut = null;
+        }
+    }
+
+    /**
+     * Disconnect and forget the device (revoke permission)
+     */
+    async forget() {
+        const deviceToForget = this.device;
+        await this.disconnect();
+        if (deviceToForget) {
+            await deviceToForget.forget();
         }
     }
 

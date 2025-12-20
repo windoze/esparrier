@@ -259,6 +259,15 @@ header h1 {
     margin-top: 16px;
 }
 
+.button-group-split {
+    justify-content: space-between;
+}
+
+.button-group-right {
+    display: flex;
+    gap: 10px;
+}
+
 .btn {
     padding: 10px 20px;
     border: none;
@@ -299,6 +308,15 @@ header h1 {
 
 .btn-warning:hover:not(:disabled) {
     background: var(--warning-hover);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #dc2626;
 }
 
 .btn-small {
@@ -586,6 +604,11 @@ footer a:hover {
 
     .button-group {
         flex-direction: column;
+    }
+
+    .button-group-right {
+        flex-direction: column;
+        width: 100%;
     }
 
     .btn {
