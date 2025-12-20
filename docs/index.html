@@ -117,6 +117,36 @@
             </div>
         </section>
 
+        <section id="ota-section" class="card hidden">
+            <h2 data-i18n="firmwareUpdate">Firmware Update</h2>
+            <div id="ota-not-supported" class="hidden">
+                <p class="warning-text" data-i18n="otaNotSupported">OTA is not supported by this firmware. Please update manually using espflash.</p>
+            </div>
+            <div id="ota-content">
+                <div class="info-grid ota-info">
+                    <div class="info-item">
+                        <label data-i18n="currentVersion">Current Version</label>
+                        <span id="ota-current-version">--</span>
+                    </div>
+                    <div class="info-item">
+                        <label data-i18n="latestVersion">Latest Version</label>
+                        <span id="ota-latest-version">--</span>
+                    </div>
+                </div>
+                <div id="ota-update-available" class="ota-update-info hidden">
+                    <p data-i18n="otaUpdateAvailableInfo">A new firmware version is available. Use the esparrier-config CLI tool to update:</p>
+                    <pre class="code-block">ecc ota</pre>
+                    <p><a href="https://github.com/windoze/esparrier-config" target="_blank" data-i18n="otaToolLink">Get esparrier-config tool</a></p>
+                </div>
+                <div id="ota-up-to-date" class="ota-update-info hidden">
+                    <p class="success-text" data-i18n="otaUpToDate">Your firmware is up to date.</p>
+                </div>
+                <div class="button-group">
+                    <button id="ota-check-btn" class="btn btn-secondary" data-i18n="checkForUpdate">Check for Update</button>
+                </div>
+            </div>
+        </section>
+
         <section id="config-section" class="card hidden">
             <h2 data-i18n="configuration">Configuration</h2>
             <form id="config-form">
@@ -254,6 +284,7 @@
         </footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="i18n.js"></script>
     <script src="esparrier.js"></script>
     <script src="app.js"></script>

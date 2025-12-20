@@ -28,23 +28,31 @@ const CMD_WRITE_CONFIG = 'w'.charCodeAt(0);
 const CMD_COMMIT_CONFIG = 'c'.charCodeAt(0);
 const CMD_KEEP_AWAKE = 'k'.charCodeAt(0);
 const CMD_REBOOT = 'b'.charCodeAt(0);
+const CMD_OTA_START = 'O'.charCodeAt(0);
+const CMD_OTA_DATA = 'D'.charCodeAt(0);
+const CMD_OTA_ABORT = 'A'.charCodeAt(0);
+const CMD_OTA_STATUS = 'P'.charCodeAt(0);
 
 // Responses
 const RESP_STATE = 's'.charCodeAt(0);
 const RESP_CONFIG = 'r'.charCodeAt(0);
 const RESP_OK = 'o'.charCodeAt(0);
 const RESP_ERROR = 'e'.charCodeAt(0);
+const RESP_OTA_PROGRESS = 'P'.charCodeAt(0);
+const RESP_OTA_COMPLETE = 'C'.charCodeAt(0);
 
 // Error codes
 const ERR_ENDPOINT = 'e'.charCodeAt(0);
 const ERR_TIMEOUT = 't'.charCodeAt(0);
 const ERR_INVALID_CONFIG = 'i'.charCodeAt(0);
 const ERR_UNKNOWN_COMMAND = 'u'.charCodeAt(0);
+const ERR_OTA = 'O'.charCodeAt(0);
 
 // Feature flags
 const FEATURE_LED = 0b00000001;
 const FEATURE_SMARTLED = 0b00000010;
 const FEATURE_GRAPHICS = 0b00000100;
+const FEATURE_OTA = 0b01000000;
 const FEATURE_CLIPBOARD = 0b10000000;
 
 // Model IDs
@@ -347,7 +355,9 @@ class EsparrierDevice {
         if (state.featureFlags & FEATURE_LED) state.features.push('LED');
         if (state.featureFlags & FEATURE_SMARTLED) state.features.push('SmartLED');
         if (state.featureFlags & FEATURE_GRAPHICS) state.features.push('Graphics');
+        if (state.featureFlags & FEATURE_OTA) state.features.push('OTA');
         if (state.featureFlags & FEATURE_CLIPBOARD) state.features.push('Clipboard');
+        state.hasOta = (state.featureFlags & FEATURE_OTA) !== 0;
 
         if (state.ipAddress) {
             state.ipAddressStr = `${state.ipAddress.octets.join('.')}/${state.ipAddress.prefixLen}`;
@@ -485,6 +495,142 @@ class EsparrierDevice {
     }
 
     /**
+     * Parse OTA error response
+     */
+    parseOtaError(errorCode) {
+        switch (errorCode) {
+            case 'a'.charCodeAt(0): return 'OTA already in progress';
+            case 'n'.charCodeAt(0): return 'OTA not started';
+            case 'i'.charCodeAt(0): return 'OTA initialization failed';
+            case 'w'.charCodeAt(0): return 'OTA write failed';
+            case 'c'.charCodeAt(0): return 'CRC mismatch';
+            case 'f'.charCodeAt(0): return 'OTA flush failed';
+            case 's'.charCodeAt(0): return 'Invalid firmware size';
+            case 'p'.charCodeAt(0): return 'OTA partition not found';
+            default: return `Unknown OTA error (${String.fromCharCode(errorCode)})`;
+        }
+    }
+
+    /**
+     * Calculate CRC32 checksum (IEEE 802.3 polynomial)
+     * Matches the firmware's CRC32 implementation
+     */
+    static crc32(data) {
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < data.length; i++) {
+            crc ^= data[i];
+            for (let j = 0; j < 8; j++) {
+                if (crc & 1) {
+                    crc = (crc >>> 1) ^ 0xEDB88320;
+                } else {
+                    crc >>>= 1;
+                }
+            }
+        }
+        return (~crc) >>> 0;
+    }
+
+    /**
+     * Upload firmware via OTA
+     * @param {Uint8Array} firmware - Firmware binary data
+     * @param {function} [onProgress] - Progress callback (received, total)
+     * @returns {Promise<boolean>} - True if OTA completed successfully
+     */
+    async uploadOta(firmware, onProgress) {
+        const MAX_SIZE = 0x100000; // 1MB
+        const CHUNK_SIZE = 4096;
+
+        if (firmware.length === 0 || firmware.length > MAX_SIZE) {
+            throw new Error(`Invalid firmware size: ${firmware.length} (max ${MAX_SIZE} bytes)`);
+        }
+
+        // Calculate CRC32
+        const crc = EsparrierDevice.crc32(firmware);
+
+        // Send OTA start command: 'O' + size(4B LE) + crc(4B LE)
+        const startCmd = new Uint8Array(9);
+        startCmd[0] = CMD_OTA_START;
+        const sizeView = new DataView(startCmd.buffer);
+        sizeView.setUint32(1, firmware.length, true); // Little endian
+        sizeView.setUint32(5, crc, true);
+
+        await this.sendData(startCmd);
+        const startResponse = await this.receiveData();
+
+        if (startResponse[0] === RESP_ERROR) {
+            if (startResponse[1] === ERR_OTA && startResponse.length >= 3) {
+                throw new Error(this.parseOtaError(startResponse[2]));
+            }
+            throw new Error(this.parseError(startResponse[1]));
+        }
+        if (startResponse[0] !== RESP_OK) {
+            throw new Error('Failed to start OTA');
+        }
+
+        // Send firmware in chunks
+        let sent = 0;
+        for (let offset = 0; offset < firmware.length; offset += CHUNK_SIZE) {
+            const chunk = firmware.subarray(offset, Math.min(offset + CHUNK_SIZE, firmware.length));
+            const packets = Math.ceil(chunk.length / 64);
+
+            // Send OTA data command: 'D' + packets(1B)
+            await this.sendData([CMD_OTA_DATA, packets]);
+
+            // Send data packets (64 bytes each)
+            for (let i = 0; i < packets; i++) {
+                const packet = new Uint8Array(64);
+                const packetStart = i * 64;
+                const packetEnd = Math.min(packetStart + 64, chunk.length);
+                packet.set(chunk.subarray(packetStart, packetEnd));
+                await this.sendData(packet);
+            }
+
+            sent += chunk.length;
+            if (onProgress) {
+                onProgress(sent, firmware.length);
+            }
+
+            // Receive response
+            const response = await this.receiveData();
+
+            if (response[0] === RESP_OTA_COMPLETE) {
+                // OTA completed successfully, device will reboot
+                return true;
+            } else if (response[0] === RESP_OTA_PROGRESS) {
+                // Progress response, continue
+            } else if (response[0] === RESP_OK) {
+                // OK response, continue
+            } else if (response[0] === RESP_ERROR) {
+                if (response[1] === ERR_OTA && response.length >= 3) {
+                    throw new Error(this.parseOtaError(response[2]));
+                }
+                throw new Error(this.parseError(response[1]));
+            } else {
+                throw new Error('Unexpected OTA response');
+            }
+        }
+
+        // If we reach here, something went wrong
+        throw new Error('OTA did not complete as expected');
+    }
+
+    /**
+     * Abort an in-progress OTA update
+     */
+    async abortOta() {
+        const response = await this.sendCommand([CMD_OTA_ABORT]);
+
+        if (response[0] !== RESP_OK) {
+            if (response[0] === RESP_ERROR) {
+                throw new Error(this.parseError(response[1]));
+            }
+            throw new Error('Failed to abort OTA');
+        }
+
+        return true;
+    }
+
+    /**
      * Get device info from USB descriptors
      */
     getDeviceInfo() {
@@ -500,5 +646,215 @@ class EsparrierDevice {
     }
 }
 
+/**
+ * GitHub Release Helper for OTA firmware downloads
+ */
+const GITHUB_API_BASE = 'https://api.github.com/repos/windoze/esparrier/releases';
+
+// Model ID to firmware asset name mapping
+const MODEL_ASSET_NAMES = {
+    1: 'm5atoms3-lite',
+    2: 'm5atoms3',
+    3: 'm5atoms3r',
+    4: 'devkitc-1_0',
+    5: 'devkitc-1_1',
+    6: 'xiao-esp32s3',
+    7: 'esp32-s3-eth',
+    255: 'generic'
+};
+
+/**
+ * Get firmware release info from GitHub
+ * Uses /releases/latest to get tag, then /releases/tags/{tag} for full asset list
+ * @param {number} modelId - Device model ID
+ * @returns {Promise<{version: string, tagName: string, asset: Object}>}
+ */
+async function getFirmwareReleaseInfo(modelId) {
+    const modelName = MODEL_ASSET_NAMES[modelId];
+    if (!modelName) {
+        throw new Error(`Unknown model ID: ${modelId}`);
+    }
+
+    // First, get the latest release to find the tag name
+    const latestResponse = await fetch(`${GITHUB_API_BASE}/latest`, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+
+    if (!latestResponse.ok) {
+        throw new Error(`Failed to fetch latest release: ${latestResponse.status}`);
+    }
+
+    const latestRelease = await latestResponse.json();
+    const tagName = latestRelease.tag_name;
+
+    // Then fetch the full release by tag to get all assets
+    const releaseResponse = await fetch(`${GITHUB_API_BASE}/tags/${tagName}`, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+
+    if (!releaseResponse.ok) {
+        throw new Error(`Failed to fetch release ${tagName}: ${releaseResponse.status}`);
+    }
+
+    const release = await releaseResponse.json();
+
+    // Find the asset for this model
+    const assetPrefix = `esparrier-${modelName}-v`;
+    const asset = release.assets.find(a =>
+        a.name.startsWith(assetPrefix) && a.name.endsWith('.tar.gz')
+    );
+
+    if (!asset) {
+        throw new Error(`No firmware found for model '${modelName}' in release ${tagName}`);
+    }
+
+    // Parse version from tag (e.g., "v0.7.0" -> "0.7.0")
+    const version = tagName.startsWith('v') ? tagName.substring(1) : tagName;
+
+    return {
+        version,
+        tagName,
+        asset: {
+            id: asset.id,
+            name: asset.name,
+            size: asset.size,
+            // Use API URL for downloading to avoid CORS issues
+            downloadUrl: `https://api.github.com/repos/windoze/esparrier/releases/assets/${asset.id}`
+        }
+    };
+}
+
+/**
+ * Download firmware tarball from GitHub
+ * Uses GitHub API with Accept: application/octet-stream to avoid CORS issues
+ * @param {string} downloadUrl - Asset API URL (https://api.github.com/repos/.../releases/assets/{id})
+ * @param {function} [onProgress] - Progress callback (downloaded, total)
+ * @returns {Promise<Uint8Array>} - Tarball data
+ */
+async function downloadFirmwareTarball(downloadUrl, onProgress) {
+    // Use GitHub API with octet-stream accept header to download asset
+    // This avoids CORS issues that occur with browser_download_url
+    const response = await fetch(downloadUrl, {
+        headers: {
+            'Accept': 'application/octet-stream'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to download firmware: ${response.status}`);
+    }
+
+    const contentLength = parseInt(response.headers.get('content-length') || '0');
+    const reader = response.body.getReader();
+    const chunks = [];
+    let downloaded = 0;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        chunks.push(value);
+        downloaded += value.length;
+
+        if (onProgress && contentLength > 0) {
+            onProgress(downloaded, contentLength);
+        }
+    }
+
+    // Combine chunks
+    const tarball = new Uint8Array(downloaded);
+    let offset = 0;
+    for (const chunk of chunks) {
+        tarball.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    return tarball;
+}
+
+/**
+ * Extract firmware .bin file from a tar.gz archive
+ * Requires pako library for gzip decompression
+ * @param {Uint8Array} tarballData - Gzipped tar archive data
+ * @returns {Uint8Array} - Firmware binary data
+ */
+function extractFirmwareFromTarball(tarballData) {
+    // Check if pako is available
+    if (typeof pako === 'undefined') {
+        throw new Error('pako library is required for tar.gz extraction');
+    }
+
+    // Decompress gzip
+    let tarData;
+    try {
+        tarData = pako.ungzip(tarballData);
+    } catch (e) {
+        throw new Error(`Failed to decompress firmware archive: ${e.message}`);
+    }
+
+    // Parse tar archive and find the .bin file
+    let offset = 0;
+    while (offset < tarData.length) {
+        // Read tar header (512 bytes)
+        if (offset + 512 > tarData.length) break;
+
+        const header = tarData.subarray(offset, offset + 512);
+
+        // Check for end of archive (two zero blocks)
+        if (header.every(b => b === 0)) break;
+
+        // Extract filename (100 bytes, null-terminated)
+        let filenameEnd = 0;
+        for (let i = 0; i < 100 && header[i] !== 0; i++) {
+            filenameEnd = i + 1;
+        }
+        const filename = new TextDecoder().decode(header.subarray(0, filenameEnd));
+
+        // Extract file size (octal string at offset 124, 12 bytes)
+        const sizeStr = new TextDecoder().decode(header.subarray(124, 136)).trim();
+        const fileSize = parseInt(sizeStr, 8) || 0;
+
+        // Move past header
+        offset += 512;
+
+        // Check if this is the firmware .bin file (not bootloader or partition table)
+        if (filename.endsWith('.bin') &&
+            !filename.includes('bootloader') &&
+            !filename.includes('partition')) {
+            // Extract file data
+            const firmware = tarData.subarray(offset, offset + fileSize);
+            return new Uint8Array(firmware);
+        }
+
+        // Move to next file (tar files are padded to 512-byte blocks)
+        offset += Math.ceil(fileSize / 512) * 512;
+    }
+
+    throw new Error('No firmware .bin file found in the archive');
+}
+
+/**
+ * Compare semantic versions
+ * @param {string} v1 - Version string (e.g., "0.7.0")
+ * @param {string} v2 - Version string
+ * @returns {number} - Negative if v1 < v2, positive if v1 > v2, 0 if equal
+ */
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+
+    for (let i = 0; i < 3; i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 !== p2) return p1 - p2;
+    }
+    return 0;
+}
+
 // Export for use in other scripts
 window.EsparrierDevice = EsparrierDevice;
+window.getFirmwareReleaseInfo = getFirmwareReleaseInfo;
+window.downloadFirmwareTarball = downloadFirmwareTarball;
+window.extractFirmwareFromTarball = extractFirmwareFromTarball;
+window.compareVersions = compareVersions;
+window.MODEL_ASSET_NAMES = MODEL_ASSET_NAMES;

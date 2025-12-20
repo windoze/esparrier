@@ -118,7 +118,10 @@ impl OtaManager {
             return Err(OtaError::InvalidSize);
         }
 
-        info!("Starting OTA: size={}, crc=0x{:08x}", total_size, target_crc);
+        info!(
+            "Starting OTA: size={}, crc=0x{:08x}",
+            total_size, target_crc
+        );
 
         // Set the global flag BEFORE initializing OTA
         // This pauses HID report sending
@@ -152,7 +155,10 @@ impl OtaManager {
             // To get the offset, we need to find the partition in the partition table again
             // Read partition table
             let mut pt_buffer = [0u8; PARTITION_TABLE_MAX_LEN];
-            let pt = match esp_bootloader_esp_idf::partitions::read_partition_table(flash, &mut pt_buffer) {
+            let pt = match esp_bootloader_esp_idf::partitions::read_partition_table(
+                flash,
+                &mut pt_buffer,
+            ) {
                 Ok(pt) => pt,
                 Err(e) => {
                     error!("Failed to read partition table: {:?}", e);
@@ -161,7 +167,10 @@ impl OtaManager {
             };
 
             // Find the partition with matching type
-            let offset = pt.find_partition(esp_bootloader_esp_idf::partitions::PartitionType::App(part_type))
+            let offset = pt
+                .find_partition(esp_bootloader_esp_idf::partitions::PartitionType::App(
+                    part_type,
+                ))
                 .map_err(|e| {
                     error!("Failed to find partition: {:?}", e);
                     OtaError::PartitionNotFound
@@ -234,13 +243,11 @@ impl OtaManager {
         }
 
         // Write the chunk using shared flash storage (this is a blocking operation)
-        let result = with_flash_storage(|flash| {
-            match flash.write(write_offset, data) {
-                Ok(()) => Ok(()),
-                Err(e) => {
-                    error!("Failed to write OTA chunk at 0x{:x}: {:?}", write_offset, e);
-                    Err(OtaError::WriteFailed)
-                }
+        let result = with_flash_storage(|flash| match flash.write(write_offset, data) {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                error!("Failed to write OTA chunk at 0x{:x}: {:?}", write_offset, e);
+                Err(OtaError::WriteFailed)
             }
         })
         .await;
@@ -281,7 +288,11 @@ impl OtaManager {
     /// # Arguments
     /// * `verify_crc` - Whether to verify CRC32 of written data
     /// * `_enable_rollback` - Reserved for future use
-    pub async fn flush(&mut self, verify_crc: bool, _enable_rollback: bool) -> Result<(), OtaError> {
+    pub async fn flush(
+        &mut self,
+        verify_crc: bool,
+        _enable_rollback: bool,
+    ) -> Result<(), OtaError> {
         if !matches!(self.state, OtaState::Receiving { .. }) {
             return Err(OtaError::NotStarted);
         }

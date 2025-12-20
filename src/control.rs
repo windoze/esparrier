@@ -65,10 +65,17 @@ enum ControlCommand {
     Reboot,
     /// Start OTA update with total size (4 bytes LE) and CRC32 (4 bytes LE)
     #[cfg(feature = "ota")]
-    OtaStart { size: u32, crc: u32 },
-    /// OTA data chunk - number of 64-byte USB packets to receive (up to 64 packets = 4096 bytes)
+    OtaStart {
+        size: u32,
+        crc: u32,
+    },
+    /// OTA data chunk - number of 64-byte USB packets and actual data length
+    /// Format: 'D' + packets (1 byte) + length (2 bytes LE)
     #[cfg(feature = "ota")]
-    OtaData(u8),
+    OtaData {
+        packets: u8,
+        length: u16,
+    },
     /// Abort OTA update
     #[cfg(feature = "ota")]
     OtaAbort,
@@ -94,7 +101,12 @@ impl ControlCommand {
                 Some(Self::OtaStart { size, crc })
             }
             #[cfg(feature = "ota")]
-            b'D' if bytes.len() >= 2 => Some(Self::OtaData(bytes[1])),
+            b'D' if bytes.len() >= 4 => {
+                // OtaData: 'D' + packets (1 byte) + length (2 bytes LE)
+                let packets = bytes[1];
+                let length = u16::from_le_bytes([bytes[2], bytes[3]]);
+                Some(Self::OtaData { packets, length })
+            }
             #[cfg(feature = "ota")]
             b'A' => Some(Self::OtaAbort),
             #[cfg(feature = "ota")]
@@ -111,7 +123,10 @@ enum ControlCommandResponse {
     Error(Error),
     /// OTA progress: received bytes (4 bytes LE), total bytes (4 bytes LE)
     #[cfg(feature = "ota")]
-    OtaProgress { received: u32, total: u32 },
+    OtaProgress {
+        received: u32,
+        total: u32,
+    },
     /// OTA completed successfully
     #[cfg(feature = "ota")]
     OtaComplete,
@@ -271,11 +286,17 @@ pub async fn control_task(mut read_ep: EpOut, mut write_ep: EpIn) {
                     }
                 }
                 #[cfg(feature = "ota")]
-                Some(ControlCommand::OtaData(packets)) => {
+                Some(ControlCommand::OtaData { packets, length }) => {
                     // Receive OTA data: 'packets' number of 64-byte USB packets
-                    // Then write to flash (blocking operation)
-                    match receive_ota_chunk(&mut read_ep, &mut write_ep, &mut ota_manager, packets)
-                        .await
+                    // Then write 'length' bytes to flash (blocking operation)
+                    match receive_ota_chunk(
+                        &mut read_ep,
+                        &mut write_ep,
+                        &mut ota_manager,
+                        packets,
+                        length,
+                    )
+                    .await
                     {
                         Ok(complete) => {
                             if complete {
@@ -438,6 +459,7 @@ async fn receive_ota_chunk(
     _write_ep: &mut EpIn,
     ota_manager: &mut OtaManager,
     packets: u8,
+    length: u16,
 ) -> Result<bool, Error> {
     // Buffer for one OTA chunk (up to 4096 bytes)
     // We use a static buffer to avoid stack overflow
@@ -446,8 +468,9 @@ async fn receive_ota_chunk(
     let mut chunk_offset = 0usize;
 
     let packets = packets as usize;
-    if packets == 0 || packets > 64 {
-        warn!("Invalid OTA packet count: {}", packets);
+    let length = length as usize;
+    if packets == 0 || packets > 64 || length == 0 || length > MAX_CHUNK_SIZE {
+        warn!("Invalid OTA packet count {} or length {}", packets, length);
         return Err(Error::Ota(OtaError::InvalidSize));
     }
 
@@ -464,7 +487,8 @@ async fn receive_ota_chunk(
 
             // Copy received data to chunk buffer
             let copy_len = n.min(MAX_CHUNK_SIZE - chunk_offset);
-            chunk_buf[chunk_offset..chunk_offset + copy_len].copy_from_slice(&packet_buf[..copy_len]);
+            chunk_buf[chunk_offset..chunk_offset + copy_len]
+                .copy_from_slice(&packet_buf[..copy_len]);
             chunk_offset += copy_len;
 
             // Yield every 16 packets to let other tasks run
@@ -488,8 +512,9 @@ async fn receive_ota_chunk(
     }
 
     // Now write the chunk to flash (this is a BLOCKING operation internally)
+    // Use 'length' to exclude padding bytes from the last packet
     // The HID report writer should skip sending reports while OTA_IN_PROGRESS is true
-    let write_result = ota_manager.write_chunk(&chunk_buf[..chunk_offset]).await;
+    let write_result = ota_manager.write_chunk(&chunk_buf[..length]).await;
 
     // Yield after flash write to let other tasks run
     embassy_futures::yield_now().await;

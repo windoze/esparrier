@@ -57,8 +57,11 @@ const OTA_FLAG: u8 = if cfg!(feature = "ota") {
     0b0000_0000
 };
 
-pub const FEATURE_FLAGS: u8 =
-    LED_INDICATOR_FLAG | SMARTLED_INDICATOR_FLAG | GRAPHICS_INDICATOR_FLAG | CLIPBOARD_FLAG | OTA_FLAG;
+pub const FEATURE_FLAGS: u8 = LED_INDICATOR_FLAG
+    | SMARTLED_INDICATOR_FLAG
+    | GRAPHICS_INDICATOR_FLAG
+    | CLIPBOARD_FLAG
+    | OTA_FLAG;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "xiao-esp32s3")] {

@@ -44,12 +44,23 @@ const advancedConnectionSettings = document.getElementById('advanced-connection-
 const connectVidInput = document.getElementById('connect-vid');
 const connectPidInput = document.getElementById('connect-pid');
 
+// OTA elements
+const otaSection = document.getElementById('ota-section');
+const otaNotSupported = document.getElementById('ota-not-supported');
+const otaContent = document.getElementById('ota-content');
+const otaCurrentVersion = document.getElementById('ota-current-version');
+const otaLatestVersion = document.getElementById('ota-latest-version');
+const otaUpdateAvailable = document.getElementById('ota-update-available');
+const otaUpToDate = document.getElementById('ota-up-to-date');
+const otaCheckBtn = document.getElementById('ota-check-btn');
+
 // Device instance
 const device = new EsparrierDevice();
 
 // Current state
 let currentState = null;
 let currentConfig = null;
+let otaReleaseInfo = null;
 
 /**
  * Version comparison helpers
@@ -101,6 +112,7 @@ function updateConnectionUI(connected) {
         forgetBtn.disabled = true;
         deviceInfoSection.classList.add('hidden');
         configSection.classList.add('hidden');
+        otaSection.classList.add('hidden');
         firmwareWarning.classList.add('hidden');
         webusbUrlGroup.classList.remove('hidden');
         // Reset keep awake button to default state
@@ -110,6 +122,8 @@ function updateConnectionUI(connected) {
             btnText.textContent = i18n.t('keepAwakeOff');
             btnText.setAttribute('data-i18n', 'keepAwakeOff');
         }
+        // Reset OTA state
+        otaReleaseInfo = null;
     }
 }
 
@@ -143,6 +157,37 @@ function updateKeepAwakeButton(isAwake) {
         btnText.setAttribute('data-i18n', 'keepAwakeOff');
     }
 }
+
+/**
+ * Update OTA section UI based on device state
+ */
+function updateOtaSection(state) {
+    if (!state) {
+        otaSection.classList.add('hidden');
+        return;
+    }
+
+    otaSection.classList.remove('hidden');
+    otaCurrentVersion.textContent = state.version;
+
+    // Check if OTA is supported
+    if (!state.hasOta) {
+        otaNotSupported.classList.remove('hidden');
+        otaContent.classList.add('hidden');
+        return;
+    }
+
+    otaNotSupported.classList.add('hidden');
+    otaContent.classList.remove('hidden');
+
+    // Reset latest version display and hide update info
+    if (!otaReleaseInfo) {
+        otaLatestVersion.textContent = i18n.t('clickCheck');
+        otaUpdateAvailable.classList.add('hidden');
+        otaUpToDate.classList.add('hidden');
+    }
+}
+
 
 /**
  * Check firmware version and update UI accordingly
@@ -376,6 +421,7 @@ async function handleRefreshStatus() {
         currentState = await device.getState();
         updateDeviceInfo(currentState);
         checkFirmwareVersion(currentState);
+        updateOtaSection(currentState);
         logSuccess(i18n.t('logStatusUpdated'));
     } catch (error) {
         logError(`${i18n.t('logStatusFailed')} ${error.message}`);
@@ -469,6 +515,55 @@ function handleClearLog() {
 }
 
 /**
+ * Check for firmware updates
+ */
+async function handleCheckForUpdate() {
+    if (!currentState) {
+        logError(i18n.t('logRefreshFirst'));
+        return;
+    }
+
+    if (!currentState.hasOta) {
+        logError(i18n.t('otaNotSupported'));
+        return;
+    }
+
+    try {
+        logInfo(i18n.t('logCheckingForUpdate'));
+        otaCheckBtn.disabled = true;
+        otaLatestVersion.textContent = i18n.t('checking');
+        otaUpdateAvailable.classList.add('hidden');
+        otaUpToDate.classList.add('hidden');
+
+        otaReleaseInfo = await getFirmwareReleaseInfo(currentState.modelId);
+
+        otaLatestVersion.textContent = otaReleaseInfo.version;
+
+        const comparison = compareVersions(otaReleaseInfo.version, currentState.version);
+        if (comparison > 0) {
+            logSuccess(i18n.t('logUpdateAvailable', { version: otaReleaseInfo.version }));
+            otaUpdateAvailable.classList.remove('hidden');
+            otaUpToDate.classList.add('hidden');
+        } else if (comparison === 0) {
+            logInfo(i18n.t('logAlreadyLatest'));
+            otaUpdateAvailable.classList.add('hidden');
+            otaUpToDate.classList.remove('hidden');
+        } else {
+            logWarning(i18n.t('logNewerInstalled'));
+            otaUpdateAvailable.classList.add('hidden');
+            otaUpToDate.classList.remove('hidden');
+        }
+
+    } catch (error) {
+        logError(`${i18n.t('logCheckUpdateFailed')} ${error.message}`);
+        otaLatestVersion.textContent = i18n.t('error');
+    } finally {
+        otaCheckBtn.disabled = false;
+    }
+}
+
+
+/**
  * Initialize
  */
 function init() {
@@ -539,6 +634,9 @@ function init() {
     brightnessInput.addEventListener('input', () => {
         brightnessValue.textContent = brightnessInput.value;
     });
+
+    // OTA event listeners
+    otaCheckBtn.addEventListener('click', handleCheckForUpdate);
 
     // Advanced connection settings toggle
     advancedConnectionToggle.addEventListener('change', () => {

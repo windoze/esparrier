@@ -156,7 +156,27 @@ const translations = {
         firmwareOutdated: '⚠️ Firmware Outdated',
         firmwareWarningText: 'Your firmware version is too old to use this configuration tool. Please upgrade to version 0.6.0 or later.',
         downloadLatestFirmware: 'Download Latest Firmware',
-        logFirmwareTooOld: 'Firmware version {version} is too old. Please upgrade to 0.6.0 or later.'
+        logFirmwareTooOld: 'Firmware version {version} is too old. Please upgrade to 0.6.0 or later.',
+
+        // OTA section
+        firmwareUpdate: 'Firmware Update',
+        otaNotSupported: 'OTA is not supported by this firmware. Please update manually using espflash.',
+        currentVersion: 'Current Version',
+        latestVersion: 'Latest Version',
+        checkForUpdate: 'Check for Update',
+        clickCheck: 'Click "Check for Update"',
+        checking: 'Checking...',
+        error: 'Error',
+        otaUpdateAvailableInfo: 'A new firmware version is available. Use the esparrier-config CLI tool to update:',
+        otaToolLink: 'Get esparrier-config tool',
+        otaUpToDate: 'Your firmware is up to date.',
+
+        // OTA log messages
+        logCheckingForUpdate: 'Checking for firmware updates...',
+        logUpdateAvailable: 'Update available: version {version}',
+        logAlreadyLatest: 'You are already running the latest version',
+        logNewerInstalled: 'You have a newer version installed than the latest release',
+        logCheckUpdateFailed: 'Failed to check for updates:'
     },
     zh: {
         // Page title and header
@@ -311,7 +331,27 @@ const translations = {
         firmwareOutdated: '⚠️ 固件版本过旧',
         firmwareWarningText: '您的固件版本过旧，无法使用此配置工具。请升级到 0.6.0 或更高版本。',
         downloadLatestFirmware: '下载最新固件',
-        logFirmwareTooOld: '固件版本 {version} 过旧。请升级到 0.6.0 或更高版本。'
+        logFirmwareTooOld: '固件版本 {version} 过旧。请升级到 0.6.0 或更高版本。',
+
+        // OTA section
+        firmwareUpdate: '固件更新',
+        otaNotSupported: '此固件不支持 OTA。请使用 espflash 手动更新。',
+        currentVersion: '当前版本',
+        latestVersion: '最新版本',
+        checkForUpdate: '检查更新',
+        clickCheck: '点击"检查更新"',
+        checking: '检查中...',
+        error: '错误',
+        otaUpdateAvailableInfo: '有新的固件版本可用。请使用 esparrier-config 命令行工具进行更新：',
+        otaToolLink: '获取 esparrier-config 工具',
+        otaUpToDate: '您的固件已是最新版本。',
+
+        // OTA log messages
+        logCheckingForUpdate: '正在检查固件更新...',
+        logUpdateAvailable: '发现新版本：{version}',
+        logAlreadyLatest: '您已经在使用最新版本',
+        logNewerInstalled: '您安装的版本比最新发布版本更新',
+        logCheckUpdateFailed: '检查更新失败：'
     }
 };
 
