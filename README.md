@@ -219,7 +219,7 @@ If the board stops working after flashing and/or upgrading the program, you may 
 - [x] Re-configure without rebuilding
 - [x] Support other ESP32S3 boards
 - [x] Partially support clipboard, now plain ASCII text can be pasted.
-- [x] OTA update
+- [x] OTA update (via USB)
 - [ ] Support Mac special keys
 - [ ] Support TLS
 - [ ] NVS encryption

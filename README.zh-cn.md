@@ -220,7 +220,7 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 - [x] 无需重建即可更新配置
 - [x] 支持其他 ESP32S3 开发板
 - [x] 支持部分剪贴板功能，现在可以粘贴ASCII纯文本格式
-- [x] OTA 更新
+- [x] OTA 更新 (使用 USB)
 - [ ] 支持 Mac 特殊键
 - [ ] 支持 TLS
 - [ ] NVS 加密
