@@ -1,7 +1,6 @@
 Esparrier
 =========
 [![en](https://img.shields.io/badge/lang-en-blue.svg)](https://github.com/windoze/esparrier/blob/main/README.md)
-[![zh-cn](https://img.shields.io/badge/lang-zh--cn-green.svg)](https://github.com/windoze/esparrier/blob/main/README.zh-cn.md)
 ![CI](https://github.com/windoze/esparrier/actions/workflows/ci.yaml/badge.svg)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/windoze/esparrier?logo=GitHub)](https://github.com/windoze/esparrier/releases)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/windoze/esparrier)
@@ -46,7 +45,15 @@ The safest option is to get an official development board from Espressif, such a
         * `export WIFI_PASSWORD="YOUR_WIFI_PASSWORD"`
         * `export BARRIER_SERVER="BARRIER_SERVER_IP:PORT"`
         * `export SCREEN_NAME="SCREEN_NAME"`
-    2. Put your board in the download mode, then build and flash with `cargo run --release`. On M5Atom S3 Lite, you need to hold the reset button until the green LED turns on, then release the button. And you need to press the reset button again after flashing to exit the download mode.
+    2. Put your board in the download mode, then build and flash with `cargo run --release --features <FEATURES> -- --partition-table <PARTITION_TABLE>`.
+        * `<FEATURES>` options:
+            * `smartled` - Enable SmartLED feature (if the board has RGB LED), you need to set the environment variable `SMART_LED_PIN` to the correct pin number. Cannot be enabled together with `led` feature.
+            * `led` - Enable ordinary LED indicator feature (if the board has ordinary LED), you need to set the environment variable `LED_PIN` to the correct pin number. Cannot be enabled together with `smartled` feature.
+            * `clipboard` - Enable clipboard feature (if the board has a user button), you need to set the environment variable `PASTE_BUTTON_PIN` to the correct pin number.
+            * `ota` - Enable OTA update feature (requires 4MB or larger flash)
+        * `<PARTITION_TABLE>` options:
+            * `partitions_single_app.csv` - Use default partition table (1MB flash)
+            * `partitions_ota.csv` - Use OTA partition table (4MB or larger flash)
     3. If you skip the first step, the program will use default configurations, and it won't be able to connect to WiFi and Barrier/Deskflow server, you need to [update the configurations](#update-configurations) to make it work.
 
 ## Run
