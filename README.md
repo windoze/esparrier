@@ -16,21 +16,21 @@ Make sure your ESP32-S3 board meets following requirements:
 
 * It has native USB OTG port. Be aware that some boards have USB-Serial chip instead of native USB OTG port, they won't work. Check the manufacturer's documentation to be sure.
 * It has 520KB of built-in SRAM, all retail packages should meet this requirement, but you should check the datasheet to be sure.
-* It has at least 1MB of flash. Be aware that some packages don't have built-in flash, such as ESP32S3R2/ESP32S3R8, they require external flash chip to work.
+* It has at least 1MB of flash, 4MB or larger flash is required if you want to use OTA update feature. Be aware that some packages don't have built-in flash, such as ESP32S3R2/ESP32S3R8, they require external flash chip to work.
 
 The safest option is to get an official development board from Espressif, such as ESP32-S3-DevKitC-1 v1.0 or v1.1. Also because [Espressif has acquired a majority stake in M5Stack](https://www.espressif.com/en/news/Espressif_Acquires_M5Stack), the M5Atom S3 Lite and M5Atom S3 should be good choices as well.
 
 ## How to build
 
 * The release page provides pre-built binaries for some ESP32S3 boards, you can use them directly if your board is listed.
-    * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, and the clipboard feature is disabled as well.
-    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) and [M5AtomS3U](https://docs.m5stack.com/en/core/AtomS3U), the SmartLED feature and the clipboard feature are enabled.
-    * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
-    * [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R), the clipboard feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
-    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, and the clipboard feature is disabled due to the lack of a user button.
-    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
-    * (Untested) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
-    * [Waveshare ESP32-S3-ETH](https://www.waveshare.com/wiki/ESP32-S3-ETH), the SmartLED feature is enabled, and the clipboard feature is disabled due to the lack of a user button, and the W5500 Ethernet chip is used for the network connection instead of Wi-Fi.
+    * Generic ESP32S3 boards with native USB-OTG port, the indicator feature is unavailable, OTA and the clipboard feature are disabled as well.
+    * [M5Atom S3 Lite](https://docs.m5stack.com/en/core/AtomS3%20Lite) and [M5AtomS3U](https://docs.m5stack.com/en/core/AtomS3U), the SmartLED feature, the clipboard feature and the OTA feature are enabled.
+    * [M5Atom S3](https://docs.m5stack.com/en/core/AtomS3), the clipboard feature and the OTA feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
+    * [M5Atom S3R](https://docs.m5stack.com/en/core/AtomS3R), the clipboard feature and the OTA feature are enabled, and the indicator shows emoji animations on the built-in LCD screen.
+    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/), the led is used as the indicator, OTA feature is enabled, and the clipboard feature is disabled due to the lack of a user button.
+    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html), the SmartLED feature and the OTA feature are enabled, and the clipboard feature is disabled due to the lack of a user button.
+    * (Untested) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html), the SmartLED feature and the OTA feature are enabled, and the clipboard feature is disabled due to the lack of a user button.
+    * [Waveshare ESP32-S3-ETH](https://www.waveshare.com/wiki/ESP32-S3-ETH), the SmartLED feature and the OTA feature are enabled, and the clipboard feature is disabled due to the lack of a user button, and the W5500 Ethernet chip is used for the network connection instead of Wi-Fi.
 
 1. Install Rust toolchain.
 2. Install Rust ESP32 tools:

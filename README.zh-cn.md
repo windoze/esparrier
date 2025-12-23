@@ -16,21 +16,21 @@ Esparrier 是一个适用于 ESP32S3 的 [Barrier](https://github.com/debauchee/
 
 * 带有 USB OTG 端口。需要注意的是一些开发板的 USB 端口只能用于串口调试，无法用于 USB HID。请阅读开发板的说明书以确认 USB 端口是否支持 USB OTG。
 * 至少 520KB 的内置 SRAM，目前所有的零售 ESP32S3 模组都满足这个要求，但还是需要确认一下以免遇到应某些客户要求特殊定制的模组。
-* 至少 1MB 的 Flash。请注意一些 ESP32S3 模组没有内置 Flash，需要外接 Flash 芯片，例如 ESP32S3R2 或 ESP32S3R8。
+* 至少 1MB 的 Flash，如果要使用 OTA 功能，则需要 4MB 或更大的 Flash。请注意一些 ESP32S3 模组没有内置 Flash，需要外接 Flash 芯片，例如 ESP32S3R2 或 ESP32S3R8。
 
 最安全的选择是使用 Espressif 的开发板，例如 ESP32-S3-DevKitC-1，这是一个带有 USB OTG 端口的开发板，同时也是 Espressif官方开发板。另外由于 [Espressif 控股了 M5Stack](https://www.espressif.com/zh-hans/news/Espressif_Acquires_M5Stack)，所以 M5Stack 的开发板也是一个不错的选择，比如 M5AtomS3 或 M5AtomS3 Lite。
 
 ## 如何构建
 
 * 发布页面为部分ESP32S3开发板提供了预构建固件，若您的开发板在下列列表中可直接使用：
-    * 配备原生USB-OTG端口的通用ESP32S3开发板：不支持状态指示灯功能，剪贴板功能默认禁用
-    * [M5Atom S3 Lite](https://docs.m5stack.com/zh_CN/core/AtomS3%20Lite)与[M5AtomS3U](https://docs.m5stack.com/zh_CN/core/AtomS3U)：启用SmartLED智能灯效与剪贴板功能
-    * [M5Atom S3](https://docs.m5stack.com/zh_CN/core/AtomS3)：启用剪贴板功能，状态指示灯通过内置LCD屏显示表情动画
-    * [M5Atom S3R](https://docs.m5stack.com/zh_CN/core/AtomS3R)：启用剪贴板功能，状态指示灯通过内置LCD屏显示表情动画
-    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/cn/xiao_esp32s3_getting_started/)：使用板载LED作为状态指示灯，因缺少用户按键禁用剪贴板功能
-    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html)：启用SmartLED功能，因缺少用户按键禁用剪贴板功能
-    * (未实测) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.1.html)：启用SmartLED功能，因缺少用户按键禁用剪贴板功能
-    * [Waveshare ESP32-S3-ETH](https://www.waveshare.net/wiki/ESP32-S3-ETH)：启用SmartLED功能，因缺少用户按键禁用剪贴板功能，网络连接采用W5500以太网芯片替代Wi-Fi
+    * 配备原生USB-OTG端口的通用ESP32S3开发板：不支持状态指示灯功能，OTA及剪贴板功能默认禁用
+    * [M5Atom S3 Lite](https://docs.m5stack.com/zh_CN/core/AtomS3%20Lite)与[M5AtomS3U](https://docs.m5stack.com/zh_CN/core/AtomS3U)：启用SmartLED智能灯效与剪贴板功能及OTA功能
+    * [M5Atom S3](https://docs.m5stack.com/zh_CN/core/AtomS3)：启用剪贴板功能及OTA功能，状态指示灯通过内置LCD屏显示表情动画
+    * [M5Atom S3R](https://docs.m5stack.com/zh_CN/core/AtomS3R)：启用剪贴板功能及OTA功能，状态指示灯通过内置LCD屏显示表情动画
+    * [Seeed Studio XIAO ESP32S3](https://wiki.seeedstudio.com/cn/xiao_esp32s3_getting_started/)：使用板载LED作为状态指示灯，OTA功能启用，因缺少用户按键禁用剪贴板功能
+    * [Espressif ESP32-S3-DevKitC-1 v1.0](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.0.html)：启用SmartLED功能及OTA功能，因缺少用户按键禁用剪贴板功能
+    * (未实测) [Espressif ESP32-S3-DevKitC-1 v1.1](https://docs.espressif.com/projects/esp-dev-kits/zh_CN/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.1.html)：启用SmartLED功能及OTA功能，因缺少用户按键禁用剪贴板功能
+    * [Waveshare ESP32-S3-ETH](https://www.waveshare.net/wiki/ESP32-S3-ETH)：启用SmartLED功能及OTA功能，因缺少用户按键禁用剪贴板功能，网络连接采用W5500以太网芯片替代Wi-Fi
 
 1. 安装 Rust 工具链。
 2. 安装 Rust ESP32 工具：
