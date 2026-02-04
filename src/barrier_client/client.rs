@@ -1,5 +1,5 @@
 use embassy_net::{IpEndpoint, Stack, tcp::TcpSocket};
-use embassy_time::{Duration, TimeoutError, with_timeout};
+use embassy_time::{Duration, Instant, TimeoutError, with_timeout};
 use embedded_io_async::Write;
 use log::{debug, error, info, warn};
 
@@ -73,6 +73,9 @@ pub async fn start_barrier_client<Actor: Actuator>(
     #[cfg(feature = "clipboard")]
     let mut clipboard_stage = ClipboardStage::None;
 
+    // Track last user action time for jiggle control
+    let mut last_action_time = Instant::now();
+
     let mut packet_stream = PacketStream::new(stream);
     loop {
         match with_timeout(
@@ -87,8 +90,10 @@ pub async fn start_barrier_client<Actor: Actuator>(
             Err(TimeoutError) => {
                 // Periodical tasks
                 if get_running_state().await.keep_awake {
-                    // Jiggling the cursor to keep the device awake
-                    actor.jiggle().await?;
+                    // Only jiggle if there has been no user action for the jiggle_interval
+                    if last_action_time.elapsed() >= Duration::from_secs(jiggle_interval as u64) {
+                        actor.jiggle().await?;
+                    }
                 }
             }
             Ok(Err(e)) => {
@@ -121,8 +126,12 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         match packet_stream.write(Packet::KeepAlive).await {
                             Ok(_) => {
                                 if get_running_state().await.keep_awake {
-                                    // Jiggling the cursor to keep the device awake
-                                    actor.jiggle().await?;
+                                    // Only jiggle if there has been no user action for the jiggle_interval
+                                    if last_action_time.elapsed()
+                                        >= Duration::from_secs(jiggle_interval as u64)
+                                    {
+                                        actor.jiggle().await?;
+                                    }
                                 }
                                 Ok(())
                             }
@@ -136,15 +145,19 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         let abs_x = (x as u32 * 0x7fff).div_ceil(screen_size.0 as u32) as u16;
                         let abs_y = (y as u32 * 0x7fff).div_ceil(screen_size.1 as u32) as u16;
                         actor.set_cursor_position(abs_x, abs_y).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::MouseMove { x, y } => {
                         actor.move_cursor(x, y).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::KeyUp { id, mask, button } => {
                         actor.key_up(id, mask, button).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::KeyDown { id, mask, button } => {
                         actor.key_down(id, mask, button).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::KeyRepeat {
                         id,
@@ -153,15 +166,19 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         count,
                     } => {
                         actor.key_repeat(id, mask, button, count).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::MouseDown { id } => {
                         actor.mouse_down(id).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::MouseUp { id } => {
                         actor.mouse_up(id).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::MouseWheel { x_delta, y_delta } => {
                         actor.mouse_wheel(x_delta, y_delta).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::CursorEnter {
                         x,
@@ -170,6 +187,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         mask,
                     } => {
                         actor.enter(x, y, mask).await?;
+                        last_action_time = Instant::now();
                     }
                     Packet::CursorLeave => {
                         actor.leave().await?;
