@@ -81,6 +81,10 @@ pub struct AppConfig {
     #[serde(default = "get_default_brightness")]
     pub brightness: u8,
 
+    // Keep awake (jiggle mouse) on start
+    #[serde(default)]
+    pub keep_awake_on_start: bool,
+
     // Network configuration
 
     // Static IP configuration, CIDR notation, optional
@@ -165,6 +169,7 @@ impl Default for AppConfig {
             jiggle_interval: JIGGLE_INTERVAL,
             flip_wheel: REVERSED_WHEEL,
             brightness: BRIGHTNESS,
+            keep_awake_on_start: false,
             ip_addr: None,
             dns_server: Vec::new(),
             gateway: None,

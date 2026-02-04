@@ -22,8 +22,8 @@ use log::{debug, error, info, warn};
 use esparrier::constants::*;
 
 use esparrier::{
-    AppConfig, IndicatorStatus, UsbActuator, mk_static, set_indicator_status, start_barrier_client,
-    start_hid_task, start_indicator_task,
+    AppConfig, IndicatorStatus, UsbActuator, get_running_state_mut, mk_static,
+    set_indicator_status, start_barrier_client, start_hid_task, start_indicator_task,
 };
 
 // This creates a default app-descriptor required by the esp-idf bootloader.
@@ -58,6 +58,12 @@ async fn main(spawner: Spawner) {
     // Load the configuration
     AppConfig::init(peripherals.FLASH).await;
     println!("Config: {:?}", AppConfig::get());
+
+    // Initialize keep_awake state from config
+    if AppConfig::get().keep_awake_on_start {
+        get_running_state_mut().await.keep_awake = true;
+        info!("Keep awake enabled on start");
+    }
 
     // Setup watchdog on TIMG1, which is by default disabled by the bootloader
     let wdt1 = mk_static!(Wdt<TIMG1>, TimerGroup::new(peripherals.TIMG1).wdt);
