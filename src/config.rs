@@ -72,6 +72,8 @@ pub struct AppConfig {
     pub screen_height: u16,
     #[serde(default)]
     pub flip_wheel: bool,
+    #[serde(default = "get_default_scroll_scale")]
+    pub scroll_scale: f32,
     #[serde(default = "get_default_polling_rate")]
     pub polling_rate: u16,
     #[serde(default = "get_default_jiggle_interval")]
@@ -136,6 +138,10 @@ fn get_default_brightness() -> u8 {
     BRIGHTNESS
 }
 
+fn get_default_scroll_scale() -> f32 {
+    SCROLL_SCALE
+}
+    
 fn get_default_vid() -> u16 {
     USB_VID
 }
@@ -168,6 +174,7 @@ impl Default for AppConfig {
             polling_rate: POLLING_RATE,
             jiggle_interval: JIGGLE_INTERVAL,
             flip_wheel: REVERSED_WHEEL,
+            scroll_scale: SCROLL_SCALE,
             brightness: BRIGHTNESS,
             keep_awake_on_start: false,
             ip_addr: None,
