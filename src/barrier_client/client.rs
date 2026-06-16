@@ -142,9 +142,7 @@ pub async fn start_barrier_client<Actor: Actuator>(
                         }?;
                     }
                     Packet::MouseMoveAbs { x, y } => {
-                        let abs_x = (x as u32 * 0x7fff).div_ceil(screen_size.0 as u32) as u16;
-                        let abs_y = (y as u32 * 0x7fff).div_ceil(screen_size.1 as u32) as u16;
-                        actor.set_cursor_position(abs_x, abs_y).await?;
+                        actor.set_cursor_position(x, y).await?;
                         last_action_time = Instant::now();
                     }
                     Packet::MouseMove { x, y } => {

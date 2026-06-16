@@ -69,18 +69,23 @@ impl Actuator for UsbActuator {
     }
 
     async fn set_cursor_position(&mut self, x: u16, y: u16) -> Result<(), BarrierError> {
+        let dx = x as i32 - self.x as i32;
+        let dy = y as i32 - self.y as i32;
         self.x = x;
         self.y = y;
         let mut report = [0; 9];
-        let ret = self.hid.set_cursor_position(x, y, &mut report);
+        let ret = self.hid.mouse_move(dx as i16, dy as i16, &mut report);
         self.send_report(ret).await;
         Ok(())
     }
 
     async fn move_cursor(&mut self, x: i16, y: i16) -> Result<(), BarrierError> {
-        let (cx, cy) = self.get_cursor_position().await?;
-        self.set_cursor_position((cx as i32 + x as i32) as u16, (cy as i32 + y as i32) as u16)
-            .await
+        self.x = (self.x as i32 + x as i32) as u16;
+        self.y = (self.y as i32 + y as i32) as u16;
+        let mut report = [0; 9];
+        let ret = self.hid.mouse_move(x, y, &mut report);
+        self.send_report(ret).await;
+        Ok(())
     }
 
     async fn mouse_down(&mut self, button: i8) -> Result<(), BarrierError> {
@@ -133,11 +138,9 @@ impl Actuator for UsbActuator {
         debug!("Jiggle the host");
         if self.hid.is_empty() {
             let mut report = [0; 9];
-            let ret = self
-                .hid
-                .set_cursor_position(self.x + 1, self.y, &mut report);
+            let ret = self.hid.mouse_move(1, 0, &mut report);
             self.send_report(ret).await;
-            let ret = self.hid.set_cursor_position(self.x, self.y, &mut report);
+            let ret = self.hid.mouse_move(-1, 0, &mut report);
             self.send_report(ret).await;
         }
         Ok(())

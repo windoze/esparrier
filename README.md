@@ -62,7 +62,7 @@ The safest option is to get an official development board from Espressif, such a
 2. Plug the board into the USB port.
 3. The LED should be red on start, then turn blue when the board is connected to the WiFi, and finally turn dim yellow when the board is connected to the Barrier/Deskflow server.
 4. When Barrier/Deskflow enters the screen, the LED turns bright green, and when Barrier/Deskflow leaves the screen, the LED turns dim yellow.
-5. The board emulates a standard keyboard and an absolute mouse, it should work in any OS.
+5. The board emulates a standard keyboard and a relative mouse, allowing it to seamlessly span across multiple physical displays on the client machine.
 6. USB HID boot protocol is used, so you should be able to use the board as a USB keyboard/mouse in BIOS/EFI or even if the OS doesn't have a driver for it.
 
 ## Update Configurations
@@ -212,12 +212,12 @@ If the board stops working after flashing and/or upgrading the program, you may 
 * It doesn't support TLS, so you must run Barrier/Deskflow server without TLS.
 * When using with Deskflow, you need to make sure the Deskflow server is using "Barrier" protocol, not "Synergy" protocol.
 * Clipboard, file transfer, and cross-screen drag and drop are not supported due to the technical limitation, there is no way a standard USB HID device can do that, maybe an auxiliary app running on the host can help but I still don't have clear idea.
-* The mouse function doesn't work properly unless you set the screen size correctly, it may move too fast/slow or even jumpy. Usually the screen size should be the same as the host screen resolution.
+* The mouse function uses relative movements to bypass host OS multi-monitor limitations. Because of this, **you must disable pointer acceleration (e.g., "Enhance pointer precision" on Windows)** on the client OS, otherwise the cursor will drift out of sync with the server over time.
 * Frequently connect/disconnect may cause the board fail to connect to the WiFi and/or Barrier/Deskflow server, you may need to power off the board and wait for a while before trying again.
 * The USB VID/PID are randomly picked and not registered, you are not authorized to produce and sell USB devices using these VID/PID, so you may need to change the code to use your own VID/PID if you have any business purpose.
 * The USB remote wakeup may not work because the standard forbids a suspended device consume too much current but this program needs much more than the standard says to keep Wi-Fi connected. I still haven't figured out how to keep the program running with the current <2.5mA. Of course you can choose a board with external power source such as a battery, but it seems to be an overkill.
 * The program can accept inputs only **after** the board successfully connects to the WiFi and Barrier/Deskflow server, it may be too late to use the board as a USB keyboard/mouse in BIOS/EFI, some main board that has always-on USB ports may work, but I haven't tested it, or you can use a USB hub that can supply power even if the host is off.
-* The program is compatible with Windows, macOs, and Linux. The keyboard function should work on any OS that supports USB HID devices, but the mouse function may have issues as it's in the absolute mode, not relative mode, which is known not to work on Android and iOS/iPadOS.
+* The program is compatible with Windows, macOS, and Linux. The keyboard and mouse functions should work on any OS that supports USB HID devices. Since it now uses relative mouse mode, it should also be compatible with Android and iOS/iPadOS.
 * The built-in clipboard sharing function is incomplete, but it can be achieved with the [Clipper app](https://clipper.unwritten.codes), or the OS's built-in clipboard sharing function, such as [Clip Sync on Windows](https://support.microsoft.com/en-us/windows/about-the-clipboard-in-windows-c436501e-985d-1c8d-97ea-fe46ddf338c6) or [Universal Clipboard on macOs](https://support.apple.com/guide/mac-help/copy-and-paste-between-devices-mchl70368996/mac).
 
 ## TODO:

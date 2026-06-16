@@ -1,49 +1,45 @@
 #[derive(Debug, Default)]
-pub struct AbsMouseReport {
+pub struct MouseReport {
     button: u8,
-    x: u16,
-    y: u16,
 }
 
-impl AbsMouseReport {
-    pub fn move_to(&mut self, x: u16, y: u16) -> [u8; 7] {
-        self.x = x;
-        self.y = y;
-        self.send(None, None)
+impl MouseReport {
+    pub fn mouse_move(&mut self, dx: i16, dy: i16) -> [u8; 7] {
+        self.send(dx, dy, None, None)
     }
 
     pub fn mouse_down(&mut self, button: u8) -> [u8; 7] {
         self.button |= button;
-        self.send(None, None)
+        self.send(0, 0, None, None)
     }
 
     pub fn mouse_up(&mut self, button: u8) -> [u8; 7] {
         self.button &= !button;
-        self.send(None, None)
+        self.send(0, 0, None, None)
     }
 
     pub fn mouse_wheel(&mut self, scroll: i8, pan: i8) -> [u8; 7] {
-        self.send(scroll, pan)
+        self.send(0, 0, scroll, pan)
     }
 
     pub fn clear(&mut self) -> [u8; 7] {
         self.button = 0;
-        self.send(None, None)
+        self.send(0, 0, None, None)
     }
 
     pub fn is_empty(&self) -> bool {
         self.button == 0
     }
 
-    fn send<S: Into<Option<i8>>, P: Into<Option<i8>>>(&self, scroll: S, pan: P) -> [u8; 7] {
+    fn send<S: Into<Option<i8>>, P: Into<Option<i8>>>(&self, dx: i16, dy: i16, scroll: S, pan: P) -> [u8; 7] {
         let scroll = scroll.into().unwrap_or(0);
         let pan = pan.into().unwrap_or(0);
         let mut report = [0u8; 7];
         report[0] = self.button;
-        report[1] = (self.x & 0xff) as u8;
-        report[2] = (self.x >> 8) as u8;
-        report[3] = (self.y & 0xff) as u8;
-        report[4] = (self.y >> 8) as u8;
+        report[1] = (dx & 0xff) as u8;
+        report[2] = (dx >> 8) as u8;
+        report[3] = (dy & 0xff) as u8;
+        report[4] = (dy >> 8) as u8;
         report[5] = scroll as u8;
         report[6] = pan as u8;
         report
