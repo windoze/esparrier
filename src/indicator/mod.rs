@@ -71,7 +71,7 @@ pub async fn start_indicator_task(spawner: embassy_executor::Spawner) {
 
     let config = IndicatorConfig::default();
 
-    spawner.spawn(indicator_task(config, receiver)).ok();
+    spawner.spawn(indicator_task(config, receiver).expect("failed to spawn indicator task"));
     get_running_state_mut().await.server_connected = false;
     INDICATOR_SENDER.init(sender).ok();
     info!("Indicator task started.");

@@ -234,6 +234,8 @@ pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
         request_handler: None,
         poll_ms: app_config.get_polling_interval(),
         max_packet_size: 64,
+        hid_subclass: embassy_usb::class::hid::HidSubclass::No,
+        hid_boot_protocol: embassy_usb::class::hid::HidBootProtocol::None,
     };
 
     let hid_dev = HidWriter::<'_, esp_hal::otg_fs::asynch::Driver<'_>, 9>::new(
@@ -273,15 +275,19 @@ pub fn start_hid_task(spawner: Spawner, usb: Usb<'static>) {
     let read_ep = alt.endpoint_bulk_out(None, 64);
     let write_ep = alt.endpoint_bulk_in(None, 64);
     drop(function);
-    spawner.must_spawn(crate::control::control_task(read_ep, write_ep));
+    spawner.spawn(
+        crate::control::control_task(read_ep, write_ep).expect("failed to spawn control task"),
+    );
 
     // // Run the USB device.
-    spawner.must_spawn(usb_task(builder));
+    spawner.spawn(usb_task(builder).expect("failed to spawn USB task"));
 
     let hid_channel = mk_static!(HidReportChannel, HidReportChannel::new());
     let hid_receiver = hid_channel.receiver();
     let hid_sender = hid_channel.sender();
-    spawner.must_spawn(start_hid_report_writer(hid_dev, hid_receiver));
+    spawner.spawn(
+        start_hid_report_writer(hid_dev, hid_receiver).expect("failed to spawn HID report writer"),
+    );
 
     HID_REPORT_SENDER.init(hid_sender).ok();
 }

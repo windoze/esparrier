@@ -9,6 +9,7 @@ use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
 use esp_hal::{
     clock::CpuClock,
+    interrupt::software::SoftwareInterruptControl,
     otg_fs::Usb,
     peripherals::TIMG1,
     rng::Rng,
@@ -53,7 +54,8 @@ async fn main(spawner: Spawner) {
     // Setup Embassy
     // let systimer = SystemTimer::new(peripherals.SYSTIMER);
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    esp_rtos::start(timg0.timer0);
+    let sw_ints = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
+    esp_rtos::start(timg0.timer0, sw_ints.software_interrupt0);
 
     // Load the configuration
     AppConfig::init(peripherals.FLASH).await;
@@ -73,7 +75,7 @@ async fn main(spawner: Spawner) {
     wdt1.feed();
 
     // Start watchdog task
-    spawner.must_spawn(watchdog_task(wdt1));
+    spawner.spawn(watchdog_task(wdt1).expect("failed to spawn watchdog task"));
 
     // Setup HID task
     let usb = Usb::new(peripherals.USB0, peripherals.GPIO20, peripherals.GPIO19);
@@ -81,10 +83,7 @@ async fn main(spawner: Spawner) {
 
     // Setup paste button task
     #[cfg(feature = "clipboard")]
-    spawner
-        .spawn(esparrier::button_task())
-        .inspect_err(|e| error!("Failed to start button task: {e:?}"))
-        .unwrap();
+    spawner.spawn(esparrier::button_task().expect("failed to spawn button task"));
 
     // Setup indicator
     start_indicator_task(spawner).await;
@@ -96,20 +95,17 @@ async fn main(spawner: Spawner) {
 
     #[cfg(feature = "wifi")]
     let stack = {
-        use esp_radio::{Controller, wifi::PowerSaveMode};
+        use esp_radio::wifi::{Interface, PowerSaveMode, WifiController};
 
-        let esp_radio_ctrl = &*mk_static!(Controller<'static>, esp_radio::init().unwrap());
-
-        let (mut controller, interfaces) =
-            esp_radio::wifi::new(esp_radio_ctrl, peripherals.WIFI, Default::default())
-                .inspect_err(|e| {
-                    error!("Failed to initialize WiFi: {e:?}");
-                })
-                .unwrap();
+        let mut controller = WifiController::new(peripherals.WIFI, Default::default())
+            .inspect_err(|e| {
+                error!("Failed to initialize WiFi: {e:?}");
+            })
+            .unwrap();
         // Disable power saving for maximum performance
         controller.set_power_saving(PowerSaveMode::None).ok();
 
-        let wifi_interface = interfaces.sta;
+        let wifi_interface = Interface::station();
 
         // Init network stack
         let (stack, runner) = embassy_net::new(
@@ -119,10 +115,10 @@ async fn main(spawner: Spawner) {
             seed,
         );
         // Start WiFi connection task
-        spawner.must_spawn(wifi_task(controller));
+        spawner.spawn(wifi_task(controller).expect("failed to spawn WiFi task"));
 
         // Start network stack task
-        spawner.must_spawn(net_task(runner));
+        spawner.spawn(net_task(runner).expect("failed to spawn network task"));
 
         stack
     };
@@ -179,7 +175,7 @@ async fn main(spawner: Spawner) {
         })
         .unwrap();
         // Launch ethernet task
-        spawner.spawn(ethernet_task(runner)).unwrap();
+        spawner.spawn(ethernet_task(runner).expect("failed to spawn ethernet task"));
 
         // Init network stack
         static RESOURCES: StaticCell<StackResources<3>> = StaticCell::new();
@@ -191,7 +187,7 @@ async fn main(spawner: Spawner) {
         );
 
         // Start network stack task
-        spawner.must_spawn(net_task(runner));
+        spawner.spawn(net_task(runner).expect("failed to spawn network task"));
 
         stack
     };
@@ -245,26 +241,25 @@ async fn watchdog_task(watchdog: &'static mut Wdt<TIMG1<'static>>) {
 #[cfg(feature = "wifi")]
 #[embassy_executor::task]
 async fn wifi_task(mut controller: esp_radio::wifi::WifiController<'static>) {
-    use esp_radio::wifi::{ClientConfig, ModeConfig, WifiEvent, WifiStaState};
+    use esp_radio::wifi::{Config, sta::StationConfig};
 
     debug!("start connection task");
     loop {
-        if esp_radio::wifi::sta_state() == WifiStaState::Connected {
+        if controller.is_connected() {
             // wait until we're no longer connected
-            controller.wait_for_event(WifiEvent::StaDisconnected).await;
-            Timer::after(Duration::from_millis(5000)).await
+            controller.wait_for_disconnect_async().await.ok();
+            Timer::after(Duration::from_millis(5000)).await;
         }
-        if !matches!(controller.is_started(), Ok(true)) {
-            let client_config = ModeConfig::Client(
-                ClientConfig::default()
-                    .with_ssid(AppConfig::get().ssid.as_str().into())
-                    .with_password(AppConfig::get().password.as_ref().into()),
-            );
-            controller.set_config(&client_config).unwrap();
-            info!("Starting wifi");
-            controller.start_async().await.unwrap();
-            info!("Wifi started!");
-        }
+
+        let station_config = Config::Station(
+            StationConfig::default()
+                .with_ssid(AppConfig::get().ssid.as_str())
+                .with_password(alloc::string::String::from(
+                    AppConfig::get().password.as_ref(),
+                )),
+        );
+        controller.set_config(&station_config).unwrap();
+
         debug!("About to connect...");
 
         match controller.connect_async().await {
@@ -298,10 +293,7 @@ async fn ethernet_task(
 
 #[embassy_executor::task]
 async fn net_task(
-    #[cfg(feature = "wifi")] mut runner: embassy_net::Runner<
-        'static,
-        esp_radio::wifi::WifiDevice<'static>,
-    >,
+    #[cfg(feature = "wifi")] mut runner: embassy_net::Runner<'static, esp_radio::wifi::Interface>,
     #[cfg(feature = "ethernet")] mut runner: embassy_net::Runner<
         'static,
         embassy_net_wiznet::Device<'static>,

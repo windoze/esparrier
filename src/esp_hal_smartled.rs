@@ -199,7 +199,7 @@ impl<'d, const BUFFER_SIZE: usize> SmartLedsAdapter<'d, BUFFER_SIZE, Grb<u8>> {
 
 impl<'d, const BUFFER_SIZE: usize, Color> SmartLedsAdapter<'d, BUFFER_SIZE, Color>
 where
-    Color: rgb::ComponentSlice<u8>,
+    Color: rgb::bytemuck::Pod,
 {
     /// Create a new adapter object that drives the pin using the RMT channel.
     pub fn new_with_color<C, O>(
@@ -211,7 +211,8 @@ where
         O: PeripheralOutput<'d>,
         C: TxChannelCreator<'d, Blocking>,
     {
-        let channel = channel.configure_tx(pin, led_config()).unwrap();
+        let config = led_config();
+        let channel = channel.configure_tx(&config).unwrap().with_pin(pin);
 
         // Assume the RMT peripheral is set up to use the APB clock
         let src_clock = Clocks::get().apb_clock.as_mhz();
@@ -228,7 +229,7 @@ where
 impl<'d, const BUFFER_SIZE: usize, Color> SmartLedsWrite
     for SmartLedsAdapter<'d, BUFFER_SIZE, Color>
 where
-    Color: rgb::ComponentSlice<u8>,
+    Color: rgb::bytemuck::Pod,
 {
     type Error = LedAdapterError;
     type Color = Color;
@@ -248,7 +249,8 @@ where
         // This will result in an `BufferSizeExceeded` error in case
         // the iterator provides more elements than the buffer can take.
         for item in iterator {
-            convert_to_pulses(item.into().as_slice(), &mut seq_iter, self.pulses)?;
+            let color = item.into();
+            convert_to_pulses(rgb::bytemuck::bytes_of(&color), &mut seq_iter, self.pulses)?;
         }
 
         // Finally, add an end element.
@@ -256,7 +258,15 @@ where
 
         // Perform the actual RMT operation. We use the u32 values here right away.
         let channel = self.channel.take().unwrap();
-        match channel.transmit(&self.rmt_buffer)?.wait() {
+        let transaction = match channel.transmit(&self.rmt_buffer) {
+            Ok(transaction) => transaction,
+            Err((e, chan)) => {
+                self.channel = Some(chan);
+                return Err(LedAdapterError::TransmissionError(e));
+            }
+        };
+
+        match transaction.wait() {
             Ok(chan) => {
                 self.channel = Some(chan);
                 Ok(())
@@ -317,7 +327,7 @@ impl<'d, const BUFFER_SIZE: usize> SmartLedsAdapterAsync<'d, BUFFER_SIZE, Grb<u8
 
 impl<'d, const BUFFER_SIZE: usize, Color> SmartLedsAdapterAsync<'d, BUFFER_SIZE, Color>
 where
-    Color: rgb::ComponentSlice<u8>,
+    Color: rgb::bytemuck::Pod,
 {
     /// Create a new adapter object that drives the pin using the RMT channel.
     pub fn new_with_color<C, O>(
@@ -329,7 +339,8 @@ where
         O: PeripheralOutput<'d>,
         C: TxChannelCreator<'d, Async>,
     {
-        let channel = channel.configure_tx(pin, led_config()).unwrap();
+        let config = led_config();
+        let channel = channel.configure_tx(&config).unwrap().with_pin(pin);
 
         // Assume the RMT peripheral is set up to use the APB clock
         let src_clock = Clocks::get().apb_clock.as_mhz();
@@ -353,7 +364,8 @@ where
         // This will result in an `BufferSizeExceeded` error in case
         // the iterator provides more elements than the buffer can take.
         for item in iterator {
-            Self::convert_to_pulses(item.into().as_slice(), &mut seq_iter, self.pulses)?;
+            let color = item.into();
+            Self::convert_to_pulses(rgb::bytemuck::bytes_of(&color), &mut seq_iter, self.pulses)?;
         }
         Ok(())
     }
@@ -375,7 +387,7 @@ where
 impl<'d, const BUFFER_SIZE: usize, Color> SmartLedsWriteAsync
     for SmartLedsAdapterAsync<'d, BUFFER_SIZE, Color>
 where
-    Color: rgb::ComponentSlice<u8>,
+    Color: rgb::bytemuck::Pod,
 {
     type Error = LedAdapterError;
     type Color = Color;
