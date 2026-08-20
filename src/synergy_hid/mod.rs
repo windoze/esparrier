@@ -38,7 +38,10 @@ impl ReportType {
 #[derive(Debug)]
 pub struct SynergyHid {
     flip_mouse_wheel: bool,
+    scroll_scale: f32,
     server_buttons: [u16; 512],
+    scroll_remainder_x: f32,
+    scroll_remainder_y: f32,
 
     // Report 1
     keyboard_report: KeyboardReport,
@@ -49,10 +52,13 @@ pub struct SynergyHid {
 }
 
 impl SynergyHid {
-    pub fn new(flip_mouse_wheel: bool) -> Self {
+    pub fn new(flip_mouse_wheel: bool, scroll_scale: f32) -> Self {
         Self {
             flip_mouse_wheel,
+            scroll_scale,
             server_buttons: [0; 512],
+            scroll_remainder_x: 0.0,
+            scroll_remainder_y: 0.0,
             keyboard_report: KeyboardReport::default(),
             mouse_report: AbsMouseReport::default(),
             consumer_report: ConsumerReport::default(),
@@ -76,7 +82,6 @@ impl SynergyHid {
         debug!("Key down {key} {mask} {button}");
         self.server_buttons[button as usize] = key;
         let hid = synergy_to_hid(key);
-        // debug!("Key Down {:#04x} -> Keycode: {:?}", key, hid);
         match hid {
             KeyCode::None => {
                 if key != 0 {
@@ -109,17 +114,14 @@ impl SynergyHid {
         debug!("Key up {key} {mask} {button}");
         let key = self.server_buttons[button as usize];
         let hid = if self.server_buttons[button as usize] != 0 {
-            // debug!("Key {key} up");
             self.server_buttons[button as usize] = 0;
             synergy_to_hid(key)
         } else if key == 0 {
             debug!("Key 0 up, clear all key down");
             KeyCode::None
         } else {
-            // warn!("Key {key} up with no key down");
             KeyCode::None
         };
-        // debug!("Key Down {:#04x} -> Keycode: {:?}", key, hid);
         match hid {
             KeyCode::None => {
                 if key != 0 {
@@ -171,17 +173,32 @@ impl SynergyHid {
         y: i16,
         report: &'a mut [u8],
     ) -> (ReportType, &'a [u8]) {
-        let x = (x as f32 / 120.0) as i16;
-        let y = (y as f32 / 120.0) as i16;
-        let mut x = x as i8;
-        let mut y = y as i8;
-        if self.flip_mouse_wheel {
-            x = -x;
-            y = -y;
-        }
+        let dx = (x as f32 / 120.0) * self.scroll_scale;
+        let dy = (y as f32 / 120.0) * self.scroll_scale;
+
+        let (dx, dy) = if self.flip_mouse_wheel {
+            (-dx, -dy)
+        } else {
+            (dx, dy)
+        };
+
+        self.scroll_remainder_x += dx;
+        self.scroll_remainder_y += dy;
+
+        let final_x = self.scroll_remainder_x as i8;
+        let final_y = self.scroll_remainder_y as i8;
+
+        self.scroll_remainder_x -= final_x as f32;
+        self.scroll_remainder_y -= final_y as f32;
+
         report[0] = ReportType::Mouse as u8;
-        report[1..8].copy_from_slice(&self.mouse_report.mouse_wheel(y, x));
+        report[1..8].copy_from_slice(&self.mouse_report.mouse_wheel(final_y, final_x));
         (ReportType::Mouse, &report[..8])
+    }
+
+    pub fn reset_scroll(&mut self) {
+        self.scroll_remainder_x = 0.0;
+        self.scroll_remainder_y = 0.0;
     }
 
     pub fn clear<'a>(
@@ -224,7 +241,7 @@ mod test {
 
     #[test]
     fn test_key() {
-        let mut hid = super::SynergyHid::new(false);
+        let mut hid = super::SynergyHid::new(false, 1.0);
         let mut report = [0; 9];
         assert_eq!(
             hid.key_down(0x0000, 0x0000, 0x0000, &mut report),
@@ -237,7 +254,6 @@ mod test {
                 [0, 0, HID_KEY_A, 0, 0, 0, 0, 0].as_ref()
             )
         );
-
         assert_eq!(
             hid.key_down('B' as u16, 0x0000, 0x0000, &mut report),
             (
@@ -257,7 +273,6 @@ mod test {
             hid.key_up('C' as u16, 0x0000, 0x0000, &mut report),
             (ReportType::Keyboard, [0, 0, 0, 0, 0, 0, 0, 0].as_ref())
         );
-
         // kKeyAudioMute(0xE0AD) -> HID_USAGE_CONSUMER_MUTE(0x00E2)
         assert_eq!(
             hid.key_down(0xE0AD, 0x0000, 1, &mut report),

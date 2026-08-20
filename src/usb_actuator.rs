@@ -21,7 +21,7 @@ impl UsbActuator {
             height: AppConfig::get().screen_height,
             x: 0,
             y: 0,
-            hid: SynergyHid::new(AppConfig::get().flip_wheel),
+            hid: SynergyHid::new(AppConfig::get().flip_wheel, AppConfig::get().scroll_scale),
         }
     }
 
@@ -154,9 +154,7 @@ impl Actuator for UsbActuator {
 
     async fn enter(&mut self, x: u16, y: u16, mask: u16) -> Result<(), BarrierError> {
         info!("Entering, x: {x}, y: {y}, mask: {mask:#018b}");
-        // Server sends cursor position on entering, client should move the cursor
         self.set_cursor_position(x, y).await?;
-        // Server sends modifier mask on entering, client should press the keys
         let mut modifiers = [0u16; 16];
         let mods = modifier_mask_to_synergy(mask, &mut modifiers);
         for key in mods {
@@ -168,6 +166,7 @@ impl Actuator for UsbActuator {
 
     async fn leave(&mut self) -> Result<(), BarrierError> {
         info!("Leaving");
+        self.hid.reset_scroll();
         let mut report = [0; 9];
         let ret = self.hid.clear(ReportType::Keyboard, &mut report);
         self.send_report(ret).await;
