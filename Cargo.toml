@@ -28,7 +28,7 @@ esp-backtrace = { version = "0.19.0", features = [
     "println",
 ] }
 
-esp-hal = { version = "1.1.1", features = ["esp32s3", "unstable"] }
+esp-hal = { version = "1.1.2", features = ["esp32s3", "unstable"] }
 esp-println = { version = "0.17.0", default-features = false, features = [
     "colors",
     "critical-section",
@@ -36,7 +36,7 @@ esp-println = { version = "0.17.0", default-features = false, features = [
     "log-04",
     "uart",
 ] }
-log = { version = "0.4.33", features = [
+log = { version = "0.4.34", features = [
     "max_level_debug",
     "release_max_level_info",
 ] }
@@ -83,7 +83,7 @@ serde-json-core = { version = "0.6.0" }
 embedded-storage = "0.3.1"
 esp-storage = { version = "0.9.0", features = ["esp32s3"] }
 thiserror-no-std = "2.0.2"
-fugit = "0.4.0"
+fugit = "0.3.9"
 
 embassy-futures = "0.1.2"
 embassy-usb = { version = "0.6.0", features = [
@@ -91,7 +91,7 @@ embassy-usb = { version = "0.6.0", features = [
     "max-interface-count-4",
 ] }
 embassy-usb-driver = "0.2.2"
-usbd-hid = "0.10.0"
+usbd-hid = "0.10.2"
 
 cfg-if = "1.0.4"
 const-str = "1.1.0"
