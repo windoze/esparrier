@@ -127,6 +127,8 @@ pub const JIGGLE_INTERVAL: u16 = 60;
 pub const POLLING_RATE: u16 = 200;
 #[env_item]
 pub const REVERSED_WHEEL: bool = false;
+#[env_item]
+pub const SCROLL_SCALE: f32 = 0.7;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "graphics")] {
