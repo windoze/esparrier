@@ -332,3 +332,125 @@ pub fn modifier_mask_to_synergy(mask: u16, buf: &mut [u16]) -> &[u16] {
     // TODO: Add other modifiers
     &buf[..idx]
 }
+
+/// Maps a Linux XKB keycode (evdev keycode + 8), as sent by a Barrier/Deskflow
+/// server running on Linux (X11 or Wayland) in the `button` field, to a USB HID
+/// keyboard usage (page 0x07).
+///
+/// The result is the *physical* key, so the target computer applies its own
+/// keyboard layout, like with a real USB keyboard.
+///
+/// Returns 0 for unknown keys and for keys that are not on the keyboard page
+/// (e.g. media keys), the caller should fall back to the key ID mapping.
+pub fn linux_keycode_to_hid(button: u16) -> u8 {
+    // XKB keycodes are evdev keycodes with an offset of 8
+    let Some(evdev) = button.checked_sub(8) else {
+        return 0;
+    };
+    match evdev {
+        1 => 0x29,                      // KEY_ESC
+        2..=10 => (evdev + 0x1C) as u8, // KEY_1..KEY_9
+        11 => 0x27,                     // KEY_0
+        12 => 0x2D,                     // KEY_MINUS
+        13 => 0x2E,                     // KEY_EQUAL
+        14 => 0x2A,                     // KEY_BACKSPACE
+        15 => 0x2B,                     // KEY_TAB
+        16 => 0x14,                     // KEY_Q
+        17 => 0x1A,                     // KEY_W
+        18 => 0x08,                     // KEY_E
+        19 => 0x15,                     // KEY_R
+        20 => 0x17,                     // KEY_T
+        21 => 0x1C,                     // KEY_Y
+        22 => 0x18,                     // KEY_U
+        23 => 0x0C,                     // KEY_I
+        24 => 0x12,                     // KEY_O
+        25 => 0x13,                     // KEY_P
+        26 => 0x2F,                     // KEY_LEFTBRACE
+        27 => 0x30,                     // KEY_RIGHTBRACE
+        28 => 0x28,                     // KEY_ENTER
+        29 => 0xE0,                     // KEY_LEFTCTRL
+        30 => 0x04,                     // KEY_A
+        31 => 0x16,                     // KEY_S
+        32 => 0x07,                     // KEY_D
+        33 => 0x09,                     // KEY_F
+        34 => 0x0A,                     // KEY_G
+        35 => 0x0B,                     // KEY_H
+        36 => 0x0D,                     // KEY_J
+        37 => 0x0E,                     // KEY_K
+        38 => 0x0F,                     // KEY_L
+        39 => 0x33,                     // KEY_SEMICOLON
+        40 => 0x34,                     // KEY_APOSTROPHE
+        41 => 0x35,                     // KEY_GRAVE
+        42 => 0xE1,                     // KEY_LEFTSHIFT
+        43 => 0x31, // KEY_BACKSLASH (also the "#" key on ISO keyboards, OSes treat 0x31/0x32 alike)
+        44 => 0x1D, // KEY_Z
+        45 => 0x1B, // KEY_X
+        46 => 0x06, // KEY_C
+        47 => 0x19, // KEY_V
+        48 => 0x05, // KEY_B
+        49 => 0x11, // KEY_N
+        50 => 0x10, // KEY_M
+        51 => 0x36, // KEY_COMMA
+        52 => 0x37, // KEY_DOT
+        53 => 0x38, // KEY_SLASH
+        54 => 0xE5, // KEY_RIGHTSHIFT
+        55 => 0x55, // KEY_KPASTERISK
+        56 => 0xE2, // KEY_LEFTALT
+        57 => 0x2C, // KEY_SPACE
+        58 => 0x39, // KEY_CAPSLOCK
+        59..=68 => (evdev - 1) as u8, // KEY_F1..KEY_F10 -> 0x3A..0x43
+        69 => 0x53, // KEY_NUMLOCK
+        70 => 0x47, // KEY_SCROLLLOCK
+        71 => 0x5F, // KEY_KP7
+        72 => 0x60, // KEY_KP8
+        73 => 0x61, // KEY_KP9
+        74 => 0x56, // KEY_KPMINUS
+        75 => 0x5C, // KEY_KP4
+        76 => 0x5D, // KEY_KP5
+        77 => 0x5E, // KEY_KP6
+        78 => 0x57, // KEY_KPPLUS
+        79 => 0x59, // KEY_KP1
+        80 => 0x5A, // KEY_KP2
+        81 => 0x5B, // KEY_KP3
+        82 => 0x62, // KEY_KP0
+        83 => 0x63, // KEY_KPDOT
+        85 => 0x94, // KEY_ZENKAKUHANKAKU
+        86 => 0x64, // KEY_102ND (the extra key next to left shift on ISO keyboards)
+        87 => 0x44, // KEY_F11
+        88 => 0x45, // KEY_F12
+        89 => 0x87, // KEY_RO
+        90 => 0x92, // KEY_KATAKANA
+        91 => 0x93, // KEY_HIRAGANA
+        92 => 0x8A, // KEY_HENKAN
+        93 => 0x88, // KEY_KATAKANAHIRAGANA
+        94 => 0x8B, // KEY_MUHENKAN
+        95 => 0x8C, // KEY_KPJPCOMMA
+        96 => 0x58, // KEY_KPENTER
+        97 => 0xE4, // KEY_RIGHTCTRL
+        98 => 0x54, // KEY_KPSLASH
+        99 => 0x46, // KEY_SYSRQ (Print Screen)
+        100 => 0xE6, // KEY_RIGHTALT (AltGr)
+        102 => 0x4A, // KEY_HOME
+        103 => 0x52, // KEY_UP
+        104 => 0x4B, // KEY_PAGEUP
+        105 => 0x50, // KEY_LEFT
+        106 => 0x4F, // KEY_RIGHT
+        107 => 0x4D, // KEY_END
+        108 => 0x51, // KEY_DOWN
+        109 => 0x4E, // KEY_PAGEDOWN
+        110 => 0x49, // KEY_INSERT
+        111 => 0x4C, // KEY_DELETE
+        // 113..=115 (mute, volume) are consumer keys, handled by the key ID mapping
+        117 => 0x67,                             // KEY_KPEQUAL
+        119 => 0x48,                             // KEY_PAUSE
+        121 => 0x85,                             // KEY_KPCOMMA
+        122 => 0x90,                             // KEY_HANGEUL
+        123 => 0x91,                             // KEY_HANJA
+        124 => 0x89,                             // KEY_YEN
+        125 => 0xE3,                             // KEY_LEFTMETA
+        126 => 0xE7,                             // KEY_RIGHTMETA
+        127 => 0x65,                             // KEY_COMPOSE (Menu)
+        183..=194 => (evdev - 183 + 0x68) as u8, // KEY_F13..KEY_F24 -> 0x68..0x73
+        _ => 0,
+    }
+}

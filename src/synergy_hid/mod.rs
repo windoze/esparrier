@@ -10,7 +10,9 @@ use descriptors::COMPOSITE_REPORT_DESCRIPTOR;
 pub(super) use hid::KeyboardReport;
 pub(super) use hid::*;
 pub use keycodes::modifier_mask_to_synergy;
-pub(crate) use keycodes::{KeyCode, synergy_mouse_button, synergy_to_hid};
+pub(crate) use keycodes::{KeyCode, linux_keycode_to_hid, synergy_mouse_button, synergy_to_hid};
+
+use crate::config::KeyMapping;
 
 use log::{debug, warn};
 
@@ -38,6 +40,7 @@ impl ReportType {
 #[derive(Debug)]
 pub struct SynergyHid {
     flip_mouse_wheel: bool,
+    key_mapping: KeyMapping,
     server_buttons: [u16; 512],
 
     // Report 1
@@ -49,9 +52,10 @@ pub struct SynergyHid {
 }
 
 impl SynergyHid {
-    pub fn new(flip_mouse_wheel: bool) -> Self {
+    pub fn new(flip_mouse_wheel: bool, key_mapping: KeyMapping) -> Self {
         Self {
             flip_mouse_wheel,
+            key_mapping,
             server_buttons: [0; 512],
             keyboard_report: KeyboardReport::default(),
             mouse_report: AbsMouseReport::default(),
@@ -75,7 +79,7 @@ impl SynergyHid {
     ) -> (ReportType, &'a [u8]) {
         debug!("Key down {key} {mask} {button}");
         self.server_buttons[button as usize] = key;
-        let hid = synergy_to_hid(key);
+        let hid = self.to_hid(key, button);
         // debug!("Key Down {:#04x} -> Keycode: {:?}", key, hid);
         match hid {
             KeyCode::None => {
@@ -111,7 +115,7 @@ impl SynergyHid {
         let hid = if self.server_buttons[button as usize] != 0 {
             // debug!("Key {key} up");
             self.server_buttons[button as usize] = 0;
-            synergy_to_hid(key)
+            self.to_hid(key, button)
         } else if key == 0 {
             debug!("Key 0 up, clear all key down");
             KeyCode::None
@@ -140,6 +144,18 @@ impl SynergyHid {
                 (ReportType::Consumer, &report[0..3])
             }
         }
+    }
+
+    /// Translates a key event into a HID key code, according to the configured key mapping.
+    fn to_hid(&self, key: u16, button: u16) -> KeyCode {
+        if self.key_mapping == KeyMapping::Linux {
+            let hid = linux_keycode_to_hid(button);
+            if hid != 0 {
+                return KeyCode::Key(hid);
+            }
+        }
+        // Fallback for media keys and keys without a physical key code
+        synergy_to_hid(key)
     }
 
     pub fn set_cursor_position<'a>(
@@ -224,7 +240,7 @@ mod test {
 
     #[test]
     fn test_key() {
-        let mut hid = super::SynergyHid::new(false);
+        let mut hid = super::SynergyHid::new(false, crate::config::KeyMapping::KeyId);
         let mut report = [0; 9];
         assert_eq!(
             hid.key_down(0x0000, 0x0000, 0x0000, &mut report),

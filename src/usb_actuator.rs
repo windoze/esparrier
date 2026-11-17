@@ -21,7 +21,7 @@ impl UsbActuator {
             height: AppConfig::get().screen_height,
             x: 0,
             y: 0,
-            hid: SynergyHid::new(AppConfig::get().flip_wheel),
+            hid: SynergyHid::new(AppConfig::get().flip_wheel, AppConfig::get().key_mapping),
         }
     }
 

@@ -73,6 +73,10 @@ const translations = {
         screenWidth: 'Screen Width',
         screenHeight: 'Screen Height',
         flipMouseWheel: 'Flip Mouse Wheel Direction',
+        keyMapping: 'Key Mapping',
+        keyMappingKeyId: 'Characters (target must use US layout)',
+        keyMappingLinux: 'Physical keys, Linux server (any layout)',
+        keyMappingHint: 'Use "Physical keys" if the target computer uses a non-US keyboard layout',
 
         // Performance settings
         performanceSettings: 'Performance Settings',
@@ -248,6 +252,10 @@ const translations = {
         screenWidth: '屏幕宽度',
         screenHeight: '屏幕高度',
         flipMouseWheel: '反转鼠标滚轮方向',
+        keyMapping: '按键映射',
+        keyMappingKeyId: '字符（目标电脑须使用美式键盘布局）',
+        keyMappingLinux: '物理按键，Linux 服务器（任意布局）',
+        keyMappingHint: '如果目标电脑使用非美式键盘布局，请选择“物理按键”',
 
         // Performance settings
         performanceSettings: '性能设置',

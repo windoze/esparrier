@@ -56,6 +56,18 @@ impl<const N: usize> AsRef<str> for Secret<N> {
     }
 }
 
+/// How key events from the Barrier/Deskflow server are translated into USB HID key codes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyMapping {
+    /// Translate the character (key ID) sent by the server, assuming the target uses a US keyboard layout.
+    #[default]
+    KeyId,
+    /// Use the physical key code sent by a Linux (X11/Wayland) server, the target applies its own
+    /// keyboard layout. Works with any layout as long as server and target use the same one.
+    Linux,
+}
+
 #[allow(dead_code)]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AppConfig {
@@ -76,6 +88,9 @@ pub struct AppConfig {
     pub polling_rate: u16,
     #[serde(default = "get_default_jiggle_interval")]
     pub jiggle_interval: u16,
+    // How key events are translated into USB HID key codes
+    #[serde(default)]
+    pub key_mapping: KeyMapping,
 
     // Indicator brightness, used by both SmartLED and graphical indicators
     #[serde(default = "get_default_brightness")]
@@ -168,6 +183,7 @@ impl Default for AppConfig {
             polling_rate: POLLING_RATE,
             jiggle_interval: JIGGLE_INTERVAL,
             flip_wheel: REVERSED_WHEEL,
+            key_mapping: KeyMapping::KeyId,
             brightness: BRIGHTNESS,
             keep_awake_on_start: false,
             ip_addr: None,

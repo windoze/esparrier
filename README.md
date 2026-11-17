@@ -212,6 +212,7 @@ If the board stops working after flashing and/or upgrading the program, you may 
 * It doesn't support TLS, so you must run Barrier/Deskflow server without TLS.
 * When using with Deskflow, you need to make sure the Deskflow server is using "Barrier" protocol, not "Synergy" protocol.
 * Clipboard, file transfer, and cross-screen drag and drop are not supported due to the technical limitation, there is no way a standard USB HID device can do that, maybe an auxiliary app running on the host can help but I still don't have clear idea.
+* By default the board translates the typed characters into key codes of a US keyboard, so the host must use a US keyboard layout. If the host uses another layout (e.g. German QWERTZ) and the Barrier/Deskflow server runs on Linux, set `"key_mapping": "linux"` in the config, the board then sends the physical keys and the host applies its own layout.
 * The mouse function doesn't work properly unless you set the screen size correctly, it may move too fast/slow or even jumpy. Usually the screen size should be the same as the host screen resolution.
 * Frequently connect/disconnect may cause the board fail to connect to the WiFi and/or Barrier/Deskflow server, you may need to power off the board and wait for a while before trying again.
 * The USB VID/PID are randomly picked and not registered, you are not authorized to produce and sell USB devices using these VID/PID, so you may need to change the code to use your own VID/PID if you have any business purpose.
