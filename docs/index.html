@@ -211,6 +211,14 @@
                             <span data-i18n="flipMouseWheel">Flip Mouse Wheel Direction</span>
                         </label>
                     </div>
+                    <div class="form-group">
+                        <label for="key_mapping" data-i18n="keyMapping">Key Mapping</label>
+                        <select id="key_mapping" name="key_mapping">
+                            <option value="key_id" data-i18n="keyMappingKeyId">Characters (target must use US layout)</option>
+                            <option value="linux" data-i18n="keyMappingLinux">Physical keys, Linux server (any layout)</option>
+                        </select>
+                        <small data-i18n="keyMappingHint">Use "Physical keys" if the target computer uses a non-US keyboard layout</small>
+                    </div>
                 </fieldset>
 
                 <fieldset>

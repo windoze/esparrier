@@ -254,6 +254,7 @@ function populateConfigForm(config) {
     document.getElementById('screen_width').value = config.screen_width || 1920;
     document.getElementById('screen_height').value = config.screen_height || 1080;
     document.getElementById('flip_wheel').checked = config.flip_wheel || false;
+    document.getElementById('key_mapping').value = config.key_mapping || 'key_id';
 
     // Performance settings
     document.getElementById('polling_rate').value = config.polling_rate || 200;
@@ -281,6 +282,7 @@ function getConfigFromForm() {
         screen_width: parseInt(document.getElementById('screen_width').value),
         screen_height: parseInt(document.getElementById('screen_height').value),
         flip_wheel: document.getElementById('flip_wheel').checked,
+        key_mapping: document.getElementById('key_mapping').value,
         polling_rate: parseInt(document.getElementById('polling_rate').value),
         jiggle_interval: parseInt(document.getElementById('jiggle_interval').value),
         brightness: parseInt(document.getElementById('brightness').value),
